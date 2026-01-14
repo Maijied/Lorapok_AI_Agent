@@ -7,6 +7,7 @@ const { program } = require('commander');
 const { LorapokEnhancedAgent, MODELS: DEFAULT_MODELS } = require('./lib/agent-enhanced');
 const { LorapokConfig } = require('./lib/config');
 const TerminalUI = require('./lib/ui');
+const { renderMarkdown } = require('./lib/renderer');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -142,7 +143,7 @@ async function chatLoop() {
                         agent.analyzeProject({ signal })
                     );
                     if (result && !result.aborted) {
-                        console.log(result.content);
+                        console.log(renderMarkdown(result.content));
                     }
                     continue;
                 }
@@ -233,7 +234,7 @@ async function chatLoop() {
 
                 // Code Hiding & Formatting
                 const cleanContent = TerminalUI.hideLongCodeBlocks(response.content);
-                console.log(cleanContent);
+                console.log(renderMarkdown(cleanContent));
                 console.log('');
 
                 // Action Parsing & Implementation Loop

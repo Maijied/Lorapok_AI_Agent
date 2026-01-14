@@ -1,20 +1,23 @@
 FROM node:18-alpine
 
-LABEL maintainer="Maijied"
+LABEL maintainer="Maizied"
 LABEL description="Lorapok AI Coding Agent"
 
 # Create app directory
 WORKDIR /app
 
-# Install dependencies first (for caching)
+# Install git and other utilities
+RUN apk add --no-cache git
+
+# Install all dependencies (required for testing)
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Create config directory
-RUN mkdir -p /root/.lorapok
+# Create config directory and logs directory
+RUN mkdir -p /root/.lorapok/logs
 
 # Expose port
 EXPOSE 3847

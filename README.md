@@ -1,130 +1,83 @@
-# 🐛 Lorapok Coding Agent
+# 🐛 Lorapok - Expert AI Coding Agent (Beta)
 
-AI-powered coding assistant with Perplexity API integration.
+Lorapok is a full-featured, action-oriented coding agent powered by the **Perplexity Sonar API**. It goes beyond simple chat by proactively suggesting and implementing code changes across your project with full file and git awareness.
 
-## Features
+## 🚀 Key Features
 
-- 💬 **Chat** - Interactive AI conversations
-- ✨ **Generate Code** - Create code from descriptions
-- 🔍 **Analyze Code** - Get insights and suggestions
-- 🐛 **Debug** - AI-powered error resolution
-- 📁 **File Management** - AI file generation & editing
-- 🔗 **Git Integration** - Smart commits & branch management
-- 🌐 **REST API** - Web server for integrations
+- 💬 **Chat-First UI** - Starts directly into an interactive conversation.
+- 🛠️ **Slash Commands** - Access commands like `/plan`, `/analyze`, `/logs`, and `/git` via a consistent dropdown menu.
+- ⚡ **Proactive Actions** - The agent identifies `CREATE`, `UPDATE`, and `DELETE` actions and applies them with your permission.
+- 📝 **Intelligent Diffs** - View concise, line-by-line diffs in a dedicated "Code Viewport" before confirming changes.
+- 🐳 **Always-Docker** - Environment consistency guaranteed via automatic Docker redirection.
+- 🔗 **Full Project Awareness** - The agent understands your entire project file tree in every interaction.
+- 🐛 **Professional Branding** - Sleek Terminal UI with expert tips and detailed diagnostic logs.
 
-📚 **See [USAGE.md](USAGE.md) for detailed usage instructions.**
+---
 
-## Quick Start
+## 🏗️ Quick Start (One-Step)
 
-### 1. Clone & Install
-
+### 1. Clone & Setup
 ```bash
 git clone https://github.com/Maijied/Lorapok_AI_Agent.git
 cd Lorapok_AI_Agent
-npm install
 ```
 
 ### 2. Configure API Key
-
-Get your API key from [Perplexity](https://www.perplexity.ai/api-platform) and add to `.env`:
-
+Get your key from [Perplexity](https://www.perplexity.ai/api-platform) and add to `.env`:
 ```bash
 cp .env.example .env
-# Edit .env and add your API key
+# Add PERPLEXITY_API_KEY to .env
 ```
 
-```env
-PERPLEXITY_API_KEY=pplx_your_api_key_here
-PORT=3847
-```
-
-### 3. Run
-
-**Global Command:**
+### 3. Install & Run
+**Linux/macOS:**
 ```bash
-# Once installed, you can run it from anywhere!
+chmod +x scripts/install.sh && ./scripts/install.sh
 lorapok
 ```
 
-**Direct Execution:**
+**Windows (PowerShell):**
 ```bash
-node index.js
-```
-
-**CLI Commands:**
-```bash
-node index.js chat              # Start chat mode
-node index.js generate "code"   # Generate code
-node index.js setup             # Configure settings
-node index.js --help            # View all commands
-```
-
-**Web Server:**
-```bash
-node server.js
-# API available at http://localhost:3847
+.\scripts\install.ps1
+lorapok
 ```
 
 ---
 
-## Docker Setup
+## 📘 Usage Overview
 
-### Using Docker Compose (Recommended)
+### Direct Commands (/)
+Type `/` or press Enter on an empty prompt in chat mode to open the command menu:
+- `/plan` - Start a structured multi-step technical workflow.
+- `/analyze` - Get deep architectural insights into your project.
+- `/logs` - View real-time diagnostic logs for debugging.
+- `/git` - Manage your repository with AI-generated commit messages.
+- `/settings` - Swap models or change default languages.
 
+### Mentions (@)
+Use `@` in chat to autocomplete and mention specific files to the agent for context-aware help.
+
+---
+
+## 🌐 Web API & Automation
+
+Lorapok includes a REST API for integration with other tools:
 ```bash
-# Build and run
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
+npm run server
+# Access at http://localhost:3847
 ```
 
-### Using Docker CLI
+- **Health**: `GET /health`
+- **Chat**: `POST /api/chat`
+- **Generate**: `POST /api/generate`
 
+---
+
+## 🧪 Testing
+Lorapok comes with a comprehensive Jest suite.
 ```bash
-# Build image
-docker build -t lorapok-agent .
-
-# Run container
-docker run -d \
-  --name lorapok \
-  -p 3847:3847 \
-  -e PERPLEXITY_API_KEY=your_key \
-  lorapok-agent
+npm test
 ```
 
-**API Endpoint:** `http://localhost:3847`
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/api/models` | List AI models |
-| POST | `/api/chat` | Chat with AI |
-| POST | `/api/generate` | Generate code |
-| POST | `/api/analyze` | Analyze code |
-| POST | `/api/debug` | Debug code |
-| GET | `/api/files` | List files |
-| GET | `/api/git/status` | Git status |
-
----
-
-## Configuration
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PERPLEXITY_API_KEY` | Your Perplexity API key | Required |
-| `PORT` | Server port | 3847 |
-| `NODE_ENV` | Environment | development |
-
----
-
-## License
-
+## 📜 License
 MIT

@@ -159,7 +159,7 @@ class GitManager {
         if (!this.isGitRepo()) {
             return { success: false, error: 'Not a git repository' };
         }
-        const format = '--format=%h|%an|%ar|%s';
+        const format = '--format="%h|%an|%ar|%s"';
         const result = this.executeGit(`log -${count} ${format}`);
 
         if (!result.success) return result;

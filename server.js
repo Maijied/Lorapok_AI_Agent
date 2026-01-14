@@ -2,8 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const { LorapokEnhancedAgent, MODELS } = require('./agent-enhanced');
-const { LorapokConfig } = require('./config');
+const { LorapokEnhancedAgent, MODELS } = require('./lib/agent-enhanced');
+const { LorapokConfig } = require('./lib/config');
 
 const app = express();
 const sessions = new Map();
@@ -259,28 +259,30 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`
-🐛 ════════════════════════════════════
-   LORAPOK API SERVER v1.0.0
-════════════════════════════════════
-
-   Server running on port ${PORT}
-   
-   Endpoints:
-   - GET  /health
-   - GET  /api/models
-   - POST /api/chat
-   - POST /api/generate
-   - POST /api/analyze
-   - POST /api/debug
-   - GET  /api/files
-   - GET  /api/git/status
-   - GET  /api/settings
-
-════════════════════════════════════
-  `);
-});
+const PORT = process.env.PORT || 3847;
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`
+    🐛 ════════════════════════════════════
+       LORAPOK API SERVER v1.0.0
+    ════════════════════════════════════
+    
+       Server running on port ${PORT}
+       
+       Endpoints:
+       - GET  /health
+       - GET  /api/models
+       - POST /api/chat
+       - POST /api/generate
+       - POST /api/analyze
+       - POST /api/debug
+       - GET  /api/files
+       - GET  /api/git/status
+       - GET  /api/settings
+    
+    ════════════════════════════════════
+      `);
+    });
+}
 
 module.exports = app;

@@ -10,6 +10,7 @@ const TerminalUI = require('./lib/ui');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const readline = require('readline');
 
 // Global Session Data
 const sessionData = {
@@ -30,10 +31,20 @@ const setupExitHandlers = () => {
         if (ctrlCCount >= 2) {
             console.log(chalk.red('\n\nAgent powering down. Goodbye! 🐛'));
             TerminalUI.showInteractionSummary(sessionData);
-            process.exit(0);
+            // Delay exit to allow enquirer cleanup and avoid ERR_USE_AFTER_CLOSE
+            setTimeout(() => process.exit(0), 200);
+            return;
         }
         console.log(chalk.yellow('\n(Press Ctrl+C again to exit)'));
         setTimeout(() => { ctrlCCount = 0; }, 2000);
+    });
+
+    // Suppress the annoying ERR_USE_AFTER_CLOSE which is common with enquirer + signal exit
+    process.on('uncaughtException', (err) => {
+        if (err.code === 'ERR_USE_AFTER_CLOSE') return;
+        // For other errors, log and exit
+        if (process.env.NODE_ENV === 'development') console.error(err);
+        process.exit(1);
     });
 };
 
@@ -51,7 +62,45 @@ async function initialization() {
         config.setApiKey(newKey);
     }
 
-    agent = new LorapokEnhancedAgent(config.getApiKey());
+    // If running in Docker (and not specifically developing Lorapok itself), use /project
+    const projectRoot = process.env.LORAPOK_DOCKER === 'true' && fs.existsSync('/project')
+        ? '/project'
+        : process.cwd();
+
+    agent = new LorapokEnhancedAgent(config.getApiKey(), projectRoot);
+}
+
+/**
+ * Runs a long-running task with a spinner and ESC-to-cancel support
+ */
+async function withCancellation(spinnerMessage, taskFn) {
+    const spinner = TerminalUI.createSpinner(spinnerMessage).start();
+    const controller = new AbortController();
+
+    const handleKey = (str, key) => {
+        if (key && key.name === 'escape') {
+            controller.abort();
+        }
+    };
+
+    readline.emitKeypressEvents(process.stdin);
+    if (process.stdin.isTTY) process.stdin.setRawMode(true);
+    process.stdin.on('keypress', handleKey);
+
+    try {
+        const result = await taskFn(controller.signal);
+        return result;
+    } catch (err) {
+        if (err.message === 'ABORTED') {
+            console.log(chalk.yellow('\n🛑 Action cancelled by user.'));
+            return { aborted: true };
+        }
+        throw err;
+    } finally {
+        process.stdin.removeListener('keypress', handleKey);
+        if (process.stdin.isTTY) process.stdin.setRawMode(false);
+        spinner.stop();
+    }
 }
 
 async function chatLoop() {
@@ -87,10 +136,12 @@ async function chatLoop() {
                 if (cmd === 'logs') { await showLogs(); continue; }
                 if (cmd === 'clear') { console.clear(); continue; }
                 if (cmd === 'analyze') {
-                    const spinner = TerminalUI.createSpinner('Analyzing project...').start();
-                    const analysis = await agent.analyzeProject();
-                    spinner.stop();
-                    console.log(analysis.content);
+                    const result = await withCancellation('Analyzing project...', (signal) =>
+                        agent.analyzeProject({ signal })
+                    );
+                    if (result && !result.aborted) {
+                        console.log(result.content);
+                    }
                     continue;
                 }
                 if (cmd === 'plan') {
@@ -150,7 +201,9 @@ async function chatLoop() {
             }
 
             // Handle @file Mentions
-            const fileMatches = input.match(/@(\S+)/g);
+            // Regex: match @foo only if preceded by start-of-line or whitespace
+            const mentionRegex = /(?<=^|\s)@(\S+)/g;
+            const fileMatches = input.match(mentionRegex);
             let processedInput = input;
             if (fileMatches) {
                 for (const match of fileMatches) {
@@ -166,11 +219,13 @@ async function chatLoop() {
 
             if (!input.trim()) continue;
 
-            const spinner = TerminalUI.createSpinner('Thinking...').start();
             try {
                 sessionData.count++;
-                const response = await agent.chat(processedInput);
-                spinner.stop();
+                const response = await withCancellation('Thinking...', (signal) =>
+                    agent.chat(processedInput, null, { signal })
+                );
+
+                if (!response || response.aborted) continue;
 
                 console.log(chalk.cyan.bold('\n🐛 LORAPOK:'));
 
@@ -204,17 +259,18 @@ async function chatLoop() {
                     }
                 }
             } catch (err) {
-                spinner.stop();
                 console.log(TerminalUI.formatError(err.message));
                 sessionData.successRate = Math.max(0, sessionData.successRate - 5);
             }
         } catch (err) {
-            // Handle Esc/Ctrl+C
+            // Handle Esc/Rejections (Silent errors from enquirer)
             if (!err || err === '' || err.message === '') {
-                break; // Exit to summary
+                // If they cancelled, just re-show the prompt
+                continue;
             }
+            // For actual errors, log them but STAY in the session
             console.error(chalk.red(`\nAn error occurred: ${err.message || err}\n`));
-            break;
+            continue;
         }
     }
 
@@ -222,10 +278,12 @@ async function chatLoop() {
 }
 
 async function runProWorkflow(objective) {
-    const spinner = TerminalUI.createSpinner('Planning...').start();
     try {
-        const planRes = await agent.plan(objective);
-        spinner.stop();
+        const planRes = await withCancellation('Planning...', (signal) =>
+            agent.plan(objective, { signal })
+        );
+        if (!planRes || planRes.aborted) return;
+
         TerminalUI.showPlanning(planRes.content);
 
         const confirmPlan = new Select({
@@ -235,10 +293,11 @@ async function runProWorkflow(objective) {
         const planChoice = await confirmPlan.run().catch(() => 'Cancel');
         if (planChoice !== 'Yes, proceed with tasks') return;
 
-        spinner.text = chalk.gray('Generating Tasks...');
-        spinner.start();
-        const taskRes = await agent.tasks(planRes.content);
-        spinner.stop();
+        const taskRes = await withCancellation('Generating Tasks...', (signal) =>
+            agent.tasks(planRes.content, { signal })
+        );
+        if (!taskRes || taskRes.aborted) return;
+
         TerminalUI.showTasks(taskRes.content);
 
         const confirmTasks = new Select({
@@ -248,10 +307,10 @@ async function runProWorkflow(objective) {
         const taskChoice = await confirmTasks.run().catch(() => 'Cancel');
         if (taskChoice !== 'Yes, generate code') return;
 
-        spinner.text = chalk.gray('Generating Implementation...');
-        spinner.start();
-        const implRes = await agent.generateCode(objective);
-        spinner.stop();
+        const implRes = await withCancellation('Generating Implementation...', (signal) =>
+            agent.generateCode(objective, { signal })
+        );
+        if (!implRes || implRes.aborted) return;
 
         const actions = agent.parseActions(implRes.content);
 
@@ -292,14 +351,14 @@ async function runProWorkflow(objective) {
             console.log(TerminalUI.formatSuccess('Implementation steps completed.'));
         }
 
-        spinner.text = chalk.gray('Finalizing Walkthrough...');
-        spinner.start();
-        const walkRes = await agent.summarize({ objective, plan: planRes.content, actions: actions.length });
-        spinner.stop();
-        TerminalUI.showWalkthrough(walkRes.content);
+        const walkRes = await withCancellation('Finalizing Walkthrough...', (signal) =>
+            agent.summarize({ objective, plan: planRes.content, actions: actions.length }, { signal })
+        );
+        if (walkRes && !walkRes.aborted) {
+            TerminalUI.showWalkthrough(walkRes.content);
+        }
 
     } catch (err) {
-        spinner.stop();
         if (err && err !== '') {
             console.log(TerminalUI.formatError(err.message || err));
         }

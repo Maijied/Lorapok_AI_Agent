@@ -37,12 +37,20 @@ if (process.env.LORAPOK_DOCKER === 'true') {
 
     console.log(chalk.cyan('\n🐛 Lorapok: Redirecting to Docker container...'));
 
-    const dockerArgs = ['compose', 'run', '--rm', '-e', 'LORAPOK_DOCKER=true', 'lorapok', 'node', 'bin/lorapok.js', ...args];
+    // Pass current working directory as PROJECT_ROOT
+    const projectRoot = process.cwd();
+    const dockerArgs = [
+        'compose', 'run', '--rm',
+        '-e', 'LORAPOK_DOCKER=true',
+        '-e', `PROJECT_ROOT=${projectRoot}`,
+        'lorapok', 'node', 'bin/lorapok.js', ...args
+    ];
 
     const result = spawnSync('docker', dockerArgs, {
         stdio: 'inherit',
         cwd: cwd,
-        shell: true
+        shell: true,
+        env: { ...process.env, PROJECT_ROOT: projectRoot } // Inject for docker-compose substitution
     });
 
     if (result.error) {

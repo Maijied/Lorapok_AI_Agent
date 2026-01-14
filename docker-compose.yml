@@ -14,12 +14,16 @@ services:
       - .:/app
       - /app/node_modules
       - lorapok-config:/root/.lorapok
+      - ${PROJECT_ROOT:-.}:/project
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3847/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
 volumes:
   lorapok-config:

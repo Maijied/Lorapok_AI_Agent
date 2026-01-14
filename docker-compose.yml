@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  lorapok:
+    build: .
+    container_name: lorapok-agent
+    restart: unless-stopped
+    ports:
+      - "3847:3847"
+    environment:
+      - NODE_ENV=production
+      - PORT=3847
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+    volumes:
+      - lorapok-config:/root/.lorapok
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3847/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  lorapok-config:
+    name: lorapok-config

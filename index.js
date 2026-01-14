@@ -107,24 +107,26 @@ async function chatLoop() {
     while (true) {
         try {
             const inputPrompt = new Input({
-                message: chalk.blue('You:')
+                message: chalk.cyan.bold('╭─ 👤 You') + '\n' + chalk.cyan.bold('╰─➤')
             });
 
             let input = await inputPrompt.run();
 
             // Handle Trigger Keys: / or empty input
+            // Handle Trigger Keys: / or empty input
             if (input === '/' || input === '') {
                 const select = new Select({
                     message: 'Select Command',
                     choices: [
-                        { name: 'chat', message: '💬 Continue Chatting' },
-                        { name: 'help', message: '❓ Help Reference' },
-                        { name: 'plan', message: '📝 New Project/Plan' },
+                        { name: 'chat', message: '💬 Chat' },
+                        { name: 'plan', message: '📝 Plan & Execute' },
                         { name: 'analyze', message: '🔍 Analyze Project' },
-                        { name: 'logs', message: '📊 View Diagnostic Logs' },
-                        { name: 'files', message: '📁 File Management' },
-                        { name: 'git', message: '🔗 Git Management' },
+                        { name: 'files', message: '📁 Files' },
+                        { name: 'git', message: '🔗 Git Ops' },
+                        { name: 'logs', message: '📊 Logs' },
                         { name: 'settings', message: '⚙️  Settings' },
+                        { name: 'help', message: '❓ Help' },
+                        { name: 'clear', message: '🧹 Clear' },
                         { name: 'exit', message: '❌ Exit' }
                     ]
                 });
@@ -427,7 +429,8 @@ async function main() {
         return;
     }
 
-    TerminalUI.showHeader();
+    const version = require('./package.json').version;
+    TerminalUI.showHeader(version, config.getModel(), agent.projectRoot);
     TerminalUI.showWelcome();
     // Startup directly into Chat Mode
     await chatLoop();

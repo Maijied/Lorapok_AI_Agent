@@ -31,10 +31,10 @@ The project follows a modular structure:
 - **API Key**: Managed via `lorapok setup` or `.env` file.
 - **Models**: Supports Sonar, Sonar Pro, Sonar Reasoning, and Sonar Deep Research.
 
-## 🛠️ How to Continue
+## 🛠️ Developer Rules (Always Follow)
 1. **Tests**: Always run `npm test` before major changes.
-2. **Execution**: Use `docker-compose up` to start the REST API.
-3. **CLI**: Use `npm link` to run `lorapok` globally (or `node bin/lorapok.js`).
+2. **Docker Update**: ALWAYS run `npm run update` after making changes to the source code to ensure the container stays in sync with the host.
+3. **Identity**: Maintain the 🐛 Lorapok persona at all costs.
 4. **Logs**: Check `~/.lorapok/logs/error.log` for debugging.
 
 ---

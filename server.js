@@ -131,11 +131,15 @@ app.get('/api/files/tree', (req, res) => {
     }
 });
 
-app.get('/api/files/:path(*)', (req, res) => {
+app.get('/api/files/read', (req, res) => {
     try {
+        const filePath = req.query.path;
+        if (!filePath) {
+            return res.status(400).json({ error: 'Path query parameter is required' });
+        }
         const agent = getAgent('default');
-        const content = agent.fileManager.readFile(req.params.path);
-        res.json({ path: req.params.path, content });
+        const content = agent.fileManager.readFile(filePath);
+        res.json({ path: filePath, content });
     } catch (error) {
         res.status(404).json({ error: error.message });
     }

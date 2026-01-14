@@ -40,7 +40,13 @@ PORT=3847
 
 ### 3. Run
 
-**Interactive CLI:**
+**Global Command:**
+```bash
+# Once installed, you can run it from anywhere!
+lorapok
+```
+
+**Direct Execution:**
 ```bash
 node index.js
 ```

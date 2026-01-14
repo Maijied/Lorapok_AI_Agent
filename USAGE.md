@@ -9,17 +9,14 @@ Complete guide for using the AI-powered coding assistant.
 ### 1. Configure API Key
 
 ```bash
-# Interactive setup
-node index.js setup
-
-# Or edit .env directly
-PERPLEXITY_API_KEY=pplx_your_key_here
+# Initial setup
+lorapok setup
 ```
 
 ### 2. Launch
 
 ```bash
-node index.js
+lorapok
 ```
 
 ---

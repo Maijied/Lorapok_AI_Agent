@@ -12,6 +12,8 @@ AI-powered coding assistant with Perplexity API integration.
 - 🔗 **Git Integration** - Smart commits & branch management
 - 🌐 **REST API** - Web server for integrations
 
+📚 **See [USAGE.md](USAGE.md) for detailed usage instructions.**
+
 ## Quick Start
 
 ### 1. Clone & Install

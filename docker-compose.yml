@@ -3,7 +3,7 @@ version: '3.8'
 services:
   lorapok:
     build: .
-    container_name: lorapok-agent
+    container_name: lorapok-ai-agent
     restart: unless-stopped
     ports:
       - "3847:3847"

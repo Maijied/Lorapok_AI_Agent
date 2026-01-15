@@ -37,7 +37,27 @@ class ActionsManager {
 
         try {
             const res = await axios.get(`${this.baseUrl}/repos/${ctx.owner}/${ctx.repo}/actions/workflows`, { headers: this.headers });
-            return { success: true, workflows: res.data.workflows, total: res.data.total_count };
+            const workflows = res.data.workflows;
+
+            // Fetch latest run for each workflow to get status
+            const workflowsWithStatus = await Promise.all(workflows.map(async (wf) => {
+                try {
+                    const runsRes = await axios.get(`${this.baseUrl}/repos/${ctx.owner}/${ctx.repo}/actions/workflows/${wf.id}/runs`, {
+                        headers: this.headers,
+                        params: { per_page: 1 }
+                    });
+                    const latestRun = runsRes.data.workflow_runs[0];
+                    return {
+                        ...wf,
+                        latest_status: latestRun ? latestRun.status : null,
+                        latest_conclusion: latestRun ? latestRun.conclusion : null
+                    };
+                } catch (e) {
+                    return { ...wf, latest_status: null, latest_conclusion: null };
+                }
+            }));
+
+            return { success: true, workflows: workflowsWithStatus, total: res.data.total_count };
         } catch (e) {
             return { success: false, error: e.message };
         }
@@ -71,6 +91,18 @@ class ActionsManager {
             return { success: true, jobs: res.data.jobs };
         } catch (e) {
             return { success: false, error: e.message };
+        }
+    }
+
+    async rerunWorkflowRun(runId) {
+        const ctx = await this.getRepoContext();
+        if (!ctx) return { success: false, error: 'Could not determine GitHub repository context.' };
+
+        try {
+            await axios.post(`${this.baseUrl}/repos/${ctx.owner}/${ctx.repo}/actions/runs/${runId}/rerun`, {}, { headers: this.headers });
+            return { success: true };
+        } catch (e) {
+            return { success: false, error: e.response?.data?.message || e.message };
         }
     }
 }

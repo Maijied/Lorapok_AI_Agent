@@ -336,11 +336,19 @@ async function showActionsMenu() {
             return;
         }
 
-        const choices = wfRes.workflows.map(w => ({
-            name: w.id.toString(),
-            message: `${chalk.bold(w.name)} ${chalk.gray('(' + w.path + ')')}`,
-            value: w
-        }));
+        const choices = wfRes.workflows.map(w => {
+            let statusIcon = chalk.gray('•');
+            if (w.latest_status === 'completed') {
+                statusIcon = w.latest_conclusion === 'success' ? chalk.green('➜') : chalk.red('➜');
+            } else if (w.latest_status) {
+                statusIcon = chalk.yellow('⏳');
+            }
+            return {
+                name: w.id.toString(),
+                message: `${statusIcon} ${chalk.bold(w.name)} ${chalk.gray('(' + w.path + ')')}`,
+                value: w
+            };
+        });
 
         choices.push({ name: 'exit', message: '❌ Exit' });
 
@@ -368,11 +376,19 @@ async function showActionsMenu() {
         // Show Runs Table
         TerminalUI.showWorkflowRuns(runsRes.runs);
 
-        const runChoices = runsRes.runs.slice(0, 5).map(r => ({
-            name: r.id.toString(),
-            message: `${r.status === 'completed' ? (r.conclusion === 'success' ? '✔' : '✖') : '⏳'} ${r.name} #${r.run_number} (${r.event})`,
-            value: r
-        }));
+        const runChoices = runsRes.runs.slice(0, 5).map(r => {
+            let icon = chalk.gray('•');
+            if (r.status === 'completed') {
+                icon = r.conclusion === 'success' ? chalk.green('➜') : chalk.red('➜');
+            } else if (r.status) {
+                icon = chalk.yellow('⏳');
+            }
+            return {
+                name: r.id.toString(),
+                message: `${icon} ${r.name} #${r.run_number} (${r.event})`,
+                value: r
+            };
+        });
         runChoices.push({ name: 'back', message: '⬅ Back to Workflows' });
 
         const runSelect = new Select({
@@ -392,11 +408,34 @@ async function showActionsMenu() {
 
         if (jobsRes.success) {
             TerminalUI.showRunDetails(selectedRun, jobsRes.jobs);
+
+            // Offer Rerun if failed or completed
+            const afterRunSelect = new Select({
+                message: 'Actions:',
+                choices: [
+                    { name: 'continue', message: '⬅ Back to Runs' },
+                    { name: 'rerun', message: `${chalk.blue('🔄')} Rerun this workflow` }
+                ]
+            });
+
+            const afterAction = await afterRunSelect.run().catch(() => 'continue');
+            if (afterAction === 'rerun') {
+                const rerunSpinner = TerminalUI.createSpinner('Requesting rerun...');
+                rerunSpinner.start();
+                const rerunRes = await actionsManager.rerunWorkflowRun(selectedRun.id);
+                rerunSpinner.stop();
+
+                if (rerunRes.success) {
+                    console.log(TerminalUI.formatSuccess('Workflow rerun requested!'));
+                } else {
+                    console.log(TerminalUI.formatError(rerunRes.error));
+                }
+                await new Input({ message: 'Press Enter to continue' }).run();
+            }
         } else {
             console.log(TerminalUI.formatError(jobsRes.error));
+            await new Input({ message: 'Press Enter to continue' }).run();
         }
-
-        await new Input({ message: 'Press Enter to continue' }).run();
     }
 }
 
@@ -771,12 +810,12 @@ async function showSettings() {
             'Change Model',
             'Change Language',
             'Update API Key',
-            'Back'
+            { name: 'back', message: '⬅ Back' }
         ]
     });
 
     const choice = await select.run();
-    if (choice === 'Back') return;
+    if (choice === 'back' || choice === 'Back') return;
 
     if (choice === 'Change Name') {
         const currentName = config.getUserName() || 'Developer';
@@ -821,7 +860,7 @@ async function showGitMenu() {
                 { name: 'remotes', message: '🌐 Manage Remotes' },
                 { name: 'auth', message: '🔑 Authentication' },
                 { name: 'advanced', message: '⚙️  Advanced...' },
-                { name: 'back', message: '⬅️  Back' }
+                { name: 'back', message: '⬅ Back' }
             ]
         });
 
@@ -878,9 +917,10 @@ async function showGitMenu() {
                     TerminalUI.showGitBranches(res.branches);
                     const branchAction = new Select({
                         message: 'Branch Operations',
-                        choices: ['Create New Branch', 'Switch Branch', 'Back']
+                        choices: ['Create New Branch', 'Switch Branch', { name: 'back', message: '⬅ Back' }]
                     });
                     const bCmd = await branchAction.run();
+                    if (bCmd === 'back' || bCmd === 'Back') continue;
                     if (bCmd === 'Create New Branch') {
                         const name = await new Input({ message: 'New branch name:' }).run();
                         if (name) {
@@ -927,10 +967,10 @@ async function showGitMenu() {
 
                 const sSelect = new Select({
                     message: 'Sync Operation',
-                    choices: ['Pull', 'Push', 'Back']
+                    choices: ['Pull', 'Push', { name: 'back', message: '⬅ Back' }]
                 });
                 const sCmd = await sSelect.run();
-                if (sCmd === 'Back') continue;
+                if (sCmd === 'back' || sCmd === 'Back') continue;
 
                 const remote = remotesRes.remotes.length === 1
                     ? remotesRes.remotes[0].name
@@ -1040,7 +1080,7 @@ async function showStashMenu() {
                 { name: 'pop', message: '📤 Pop Stash (Apply & Remove)' },
                 { name: 'list', message: '📋 List Stashes' },
                 { name: 'clear', message: '🔥 Clear All Stashes' },
-                { name: 'back', message: '⬅️  Back' }
+                { name: 'back', message: '⬅ Back' }
             ]
         });
 
@@ -1088,7 +1128,7 @@ async function showAdvancedGitMenu() {
                 { name: 'clean', message: '🧹 Clean Untracked Files' },
                 { name: 'reset', message: '⚠️  Hard Reset (to HEAD)' },
                 { name: 'init', message: '🏁 Initialize Repository' },
-                { name: 'back', message: '⬅️  Back' }
+                { name: 'back', message: '⬅ Back' }
             ]
         });
 
@@ -1119,7 +1159,7 @@ async function showAdvancedGitMenu() {
                     console.log(chalk.cyan('\nTags: ') + (tagRes.tags.join(', ') || chalk.gray('None')));
                     const tagAction = new Select({
                         message: 'Tag Operations',
-                        choices: ['Create Tag', 'Back']
+                        choices: ['Create Tag', { name: 'back', message: '⬅ Back' }]
                     });
                     if (await tagAction.run() === 'Create Tag') {
                         const name = await new Input({ message: 'Tag name (v1.0):' }).run();
@@ -1166,7 +1206,7 @@ async function showAdvancedGitMenu() {
 
                 const checkIgnored = new Select({
                     message: 'Diagnostic Actions',
-                    choices: ['Check if file is ignored', 'Back']
+                    choices: ['Check if file is ignored', { name: 'back', message: '⬅ Back' }]
                 });
                 if (await checkIgnored.run() === 'Check if file is ignored') {
                     const file = await new Input({ message: 'Enter file path:' }).run();
@@ -1219,7 +1259,7 @@ async function showRemoteMenu() {
                 { name: 'remove', message: '❌ Remove Remote' },
                 { name: 'rename', message: '✏️  Rename Remote' },
                 { name: 'url', message: '🔗 Update Remote URL' },
-                { name: 'back', message: '⬅️  Back' }
+                { name: 'back', message: '⬅ Back' }
             ]
         });
 
@@ -1364,7 +1404,7 @@ async function showAuthMenu() {
         choices.push({ name: 'token', message: '🔑 Enter Access Token Manually' });
         choices.push({ name: 'password', message: '🔒 Enter GitHub Password (Legacy)' });
         choices.push({ name: 'clear', message: '🗑️  Clear Credentials' });
-        choices.push({ name: 'back', message: '⬅️  Back' });
+        choices.push({ name: 'back', message: '⬅ Back' });
 
         const select = new Select({
             message: 'Choose authentication method:',

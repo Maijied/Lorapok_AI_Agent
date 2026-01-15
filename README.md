@@ -17,6 +17,7 @@ Lorapok features a **Luxury Terminal Engine** designed for developers who demand
 - 💬 **Interactive Chat**: Directly communicate your objectives in a natural conversation.
 - 📋 **Structured Planning (/plan)**: Generates detailed implementation strategies with automatic task-list tracking.
 - ⚡ **Proactive Code Actions**: Automatically identifies and proposes `CREATE`, `UPDATE`, and `DELETE` actions.
+- 💻 **Bash Command Execution**: Proposes shell commands with session-aware CWD tracking and interactive approval.
 - 🔍 **Deep Project Analysis (/analyze)**: Scans your directory structure to provide architectural insights.
 - 🐳 **Seamless Docker Engine**: Runs via Docker for perfect consistency across any environment.
 - 🛠️ **Self-Healing Config**: Intelligent error recovery that detects invalid API keys and helps you fix them on the fly.

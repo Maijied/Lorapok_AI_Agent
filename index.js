@@ -14,16 +14,22 @@ const os = require('os');
 const { spawnSync } = require('child_process');
 const readline = require('readline');
 
+let agent, config, currentCwd;
+
 /**
  * Execute a bash command and return the result
  */
 function executeCommand(command) {
     try {
         console.log(chalk.gray('Executing...'));
+
+        // Timeout protection (60s)
         const result = spawnSync(command, {
             shell: true,
             encoding: 'utf8',
-            stdio: ['inherit', 'pipe', 'pipe'] // Inherit stdin for simple interactions, pipe others
+            cwd: currentCwd,
+            timeout: 60000,
+            stdio: ['inherit', 'pipe', 'pipe']
         });
 
         if (result.stdout) {
@@ -31,15 +37,32 @@ function executeCommand(command) {
             console.log(result.stdout);
         }
 
-        if (result.stderr && result.status !== 0) {
-            console.error(chalk.red('\nCommand Error:'));
+        if (result.stderr && (result.status !== 0 || result.stderr.length > 0)) {
+            const isWarning = result.status === 0;
+            console.error(isWarning ? chalk.yellow('\nCommand Warning:') : chalk.red('\nCommand Error:'));
             console.error(result.stderr);
+        }
+
+        // Persistent CWD tracking: If command contains 'cd', we try to update currentCwd
+        if (command.includes('cd ') || command.trim().startsWith('cd')) {
+            const pwdResult = spawnSync('cd ' + command + ' && pwd', {
+                shell: true,
+                encoding: 'utf8',
+                cwd: currentCwd
+            });
+            if (pwdResult.status === 0 && pwdResult.stdout) {
+                const newPath = pwdResult.stdout.trim();
+                if (fs.existsSync(newPath)) {
+                    currentCwd = newPath;
+                }
+            }
         }
 
         return {
             success: result.status === 0,
             stdout: result.stdout,
-            stderr: result.stderr
+            stderr: result.stderr,
+            timedOut: result.error?.code === 'ETIMEDOUT'
         };
     } catch (error) {
         return {
@@ -56,8 +79,6 @@ const sessionData = {
     successRate: 100,
     startTime: Date.now()
 };
-
-let agent, config;
 
 // ==================== KEYBOARD HANDLING ====================
 let ctrlCCount = 0;
@@ -117,6 +138,7 @@ async function initialization() {
         : process.cwd();
 
     agent = new LorapokEnhancedAgent(config.getApiKey(), projectRoot);
+    currentCwd = projectRoot;
 
     // Log active workspace for clarity
     const displayPath = projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : projectRoot;

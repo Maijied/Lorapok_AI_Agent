@@ -1,20 +1,30 @@
-# 🐛 Lorapok - Expert AI Coding Agent (Beta)
+# 🐛 Lorapok - Expert AI Coding Agent
 
-Lorapok is a full-featured, action-oriented coding agent powered by the **Perplexity Sonar API**. It goes beyond simple chat by proactively suggesting and implementing code changes across your project with full file and git awareness.
-
-## 🚀 Key Features
-
-- 💬 **Chat-First UI** - Starts directly into an interactive conversation.
-- 🛠️ **Slash Commands** - Access commands like `/plan`, `/analyze`, `/logs`, and `/git` via a consistent dropdown menu.
-- ⚡ **Proactive Actions** - The agent identifies `CREATE`, `UPDATE`, and `DELETE` actions and applies them with your permission.
-- 📝 **Intelligent Diffs** - View concise, line-by-line diffs in a dedicated "Code Viewport" before confirming changes.
-- 🐳 **Always-Docker** - Environment consistency guaranteed via automatic Docker redirection.
-- 🔗 **Full Project Awareness** - The agent understands your entire project file tree in every interaction.
-- 🐛 **Professional Branding** - Sleek Terminal UI with expert tips and detailed diagnostic logs.
+Lorapok is a powerful, action-oriented coding agent designed for rapid development. Powered by the **Perplexity Sonar API**, it combines architectural analysis, structured planning, and proactive file execution into a single, high-performance terminal experience.
 
 ---
 
-## 🏗️ Quick Start (One-Step)
+## 💎 Premium UI & High-Contrast Aesthetics
+
+Lorapok features a **Luxury Terminal Engine** designed for developers who demand clarity and style:
+- **High-Contrast Rendering**: Vibrant, color-coded output optimized for dark terminal themes.
+- **Smart Pivot Tables**: Too much data for a horizontal table? Lorapok automatically converts dense technical data into beautiful **Card Views** to ensure 100% readability.
+- **Vibrant Branding**: A stunning gradient-styled startup logo and professional status headers.
+- **Task Visualization**: Clear, status-aware checklists (`▢` for pending, `✔` for completed).
+
+## 🚀 Key Features
+
+- 💬 **Interactive Chat**: Directly communicate your objectives in a natural conversation.
+- 📋 **Structured Planning (/plan)**: Generates detailed implementation strategies with automatic task-list tracking.
+- ⚡ **Proactive Code Actions**: Automatically identifies and proposes `CREATE`, `UPDATE`, and `DELETE` actions.
+- 🔍 **Deep Project Analysis (/analyze)**: Scans your directory structure to provide architectural insights.
+- 🐳 **Seamless Docker Engine**: Runs via Docker for perfect consistency across any environment.
+- 🛠️ **Self-Healing Config**: Intelligent error recovery that detects invalid API keys and helps you fix them on the fly.
+- 🔗 **Smart Workspace Handling**: Automatically detects and maps your host directories correctly, even when running inside a container.
+
+---
+
+## 🏗️ Quick Start
 
 ### 1. Clone & Setup
 ```bash
@@ -26,57 +36,57 @@ cd Lorapok_AI_Agent
 Get your key from [Perplexity](https://www.perplexity.ai/api-platform) and add to `.env`:
 ```bash
 cp .env.example .env
-# Add PERPLEXITY_API_KEY to .env
+# Open .env and add your PERPLEXITY_API_KEY
 ```
 
-### 3. Install & Run
-**Linux/macOS:**
+### 3. Install
+Run the one-step installer to link the `lorapok` command to your system:
 ```bash
-chmod +x scripts/install.sh && ./scripts/install.sh
-lorapok
-```
+# Linux/macOS
+./scripts/install.sh
 
-**Windows (PowerShell):**
-```bash
+# Windows (PowerShell)
 .\scripts\install.ps1
+```
+
+### 4. Run!
+Simply type `lorapok` in any project folder:
+```bash
 lorapok
 ```
 
 ---
 
-## 📘 Usage Overview
+## 📘 Commands & Usage
 
-### Direct Commands (/)
-Type `/` or press Enter on an empty prompt in chat mode to open the command menu:
+Type `/` at the prompt to access the full command suite:
 - `/plan` - Start a structured multi-step technical workflow.
 - `/analyze` - Get deep architectural insights into your project.
-- `/logs` - View real-time diagnostic logs for debugging.
-- `/git` - Manage your repository with AI-generated commit messages.
-- `/settings` - Swap models or change default languages.
+- `/files` - Visualize your project structure and verify file visibility.
+- `/git` - Check status and generate AI-powered commit messages.
+- `/settings` - Swap models, change languages, or update your API key securely.
 
-### Mentions (@)
-Use `@` in chat to autocomplete and mention specific files to the agent for context-aware help.
+### File Mentions (@)
+Need the agent to look at a specific file? Type `@` and use autocomplete to mention it in your message.
 
 ---
 
-## 🌐 Web API & Automation
+## 🌐 API & Server Mode
 
-Lorapok includes a REST API for integration with other tools:
+Lorapok isn't just a CLI; it can run as a REST server for integration:
 ```bash
 npm run server
-# Access at http://localhost:3847
 ```
+- **Port**: 3847
+- **Endpoints**: `/health`, `/api/chat`, `/api/generate`
 
-- **Health**: `GET /health`
-- **Chat**: `POST /api/chat`
-- **Generate**: `POST /api/generate`
-
----
-
-## 🧪 Testing
-Lorapok comes with a comprehensive Jest suite.
+## 🧪 Development & Testing
 ```bash
+# Run Jest test suite
 npm test
+
+# Update Docker image after changes
+npm run update
 ```
 
 ## 📜 License

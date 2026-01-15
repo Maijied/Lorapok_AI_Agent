@@ -10,6 +10,7 @@ services:
       - PORT=3847
       - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
       - LORAPOK_DOCKER=true
+      - PROJECT_ROOT=${PROJECT_ROOT}
     volumes:
       - .:/app
       - /app/node_modules

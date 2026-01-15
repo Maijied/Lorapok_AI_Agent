@@ -60,7 +60,19 @@ async function initialization() {
         const prompt = new Input({ message: 'Enter your Perplexity API Key:' });
         const newKey = await prompt.run();
         if (!newKey) process.exit(1);
-        config.setApiKey(newKey);
+        config.setApiKey(newKey.trim());
+    }
+
+    // First-run: Ask for username
+    if (config.isFirstRun()) {
+        console.log(chalk.cyan.bold('\n🐛 Welcome to Lorapok!'));
+        const namePrompt = new Input({
+            message: 'What should I call you?',
+            initial: process.env.USER || 'Developer'
+        });
+        const userName = await namePrompt.run();
+        config.setUserName(userName || 'Developer');
+        console.log(chalk.green(`\nNice to meet you, ${config.getUserName()}! 🚀\n`));
     }
 
     // If running in Docker (and not specifically developing Lorapok itself), use /project
@@ -69,6 +81,10 @@ async function initialization() {
         : process.cwd();
 
     agent = new LorapokEnhancedAgent(config.getApiKey(), projectRoot);
+
+    // Log active workspace for clarity
+    const displayPath = projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : projectRoot;
+    console.log(chalk.gray(`\n  📂 Workspace: ${chalk.white.bold(displayPath)}`));
 }
 
 /**
@@ -92,7 +108,7 @@ async function withCancellation(spinnerMessage, taskFn) {
         const result = await taskFn(controller.signal);
         return result;
     } catch (err) {
-        if (err.message === 'ABORTED') {
+        if (err.message === 'ABORTED' || err.name === 'AbortError') {
             console.log(chalk.yellow('\n🛑 Action cancelled by user.'));
             return { aborted: true };
         }
@@ -104,16 +120,59 @@ async function withCancellation(spinnerMessage, taskFn) {
     }
 }
 
+/**
+ * Central Error Handler - Detects 401s and offers a fix
+ */
+async function handleError(err) {
+    if (!err || (typeof err === 'object' && !err.message)) return;
+
+    const msg = err.message || String(err);
+    if (msg === 'ABORTED') return;
+
+    console.log(TerminalUI.formatError(msg));
+
+    // If the key is invalid, offer to update it immediately
+    if (msg.includes('Invalid API key') || msg.includes('401')) {
+        const updateKey = new Select({
+            message: 'Your API key seems invalid. Update it now?',
+            choices: ['Yes, enter new key', 'No, I will check my .env']
+        });
+
+        const updateChoice = await updateKey.run().catch(() => 'No');
+        if (updateChoice === 'Yes, enter new key') {
+            const newKey = await new Input({ message: 'Paste new Perplexity API Key:' }).run().catch(() => null);
+            if (newKey && newKey.trim()) {
+                const cleanedKey = newKey.trim().replace(/^["'](.+)["']$/, '$1');
+
+                // Verify the new key before setting it
+                console.log(chalk.gray('  Verify new key...'));
+                try {
+                    const probeAgent = new (require('./lib/agent').LorapokCodingAgent)(cleanedKey);
+                    await probeAgent.callPerplexityAPI([{ role: 'user', content: 'hi' }], 'sonar', { maxTokens: 1 });
+
+                    // If we get here, the key is valid
+                    config.setApiKey(cleanedKey);
+                    agent.apiKey = cleanedKey;
+                    console.log(TerminalUI.formatSuccess('API Key verified and updated! You can try your request again.'));
+                } catch (verifyErr) {
+                    console.log(TerminalUI.formatError(`The new key is also invalid: ${verifyErr.message}`));
+                    console.log(chalk.gray('  Please check your Perplexity account balance and API settings.'));
+                }
+            }
+        }
+    }
+}
+
 async function chatLoop() {
+    const userName = config.getUserName() || 'You';
     while (true) {
         try {
             const inputPrompt = new Input({
-                message: chalk.cyan.bold('╭─ 👤 You') + '\n' + chalk.cyan.bold('╰─➤')
+                message: chalk.cyan.bold(`╭─ 👤 ${userName}`) + '\n' + chalk.cyan.bold('╰─➤')
             });
 
             let input = await inputPrompt.run();
 
-            // Handle Trigger Keys: / or empty input
             // Handle Trigger Keys: / or empty input
             if (input === '/' || input === '') {
                 const select = new Select({
@@ -143,7 +202,7 @@ async function chatLoop() {
                         agent.analyzeProject({ signal })
                     );
                     if (result && !result.aborted) {
-                        console.log(renderMarkdown(result.content));
+                        console.log(await renderMarkdown(result.content));
                     }
                     continue;
                 }
@@ -153,7 +212,18 @@ async function chatLoop() {
                     continue;
                 }
                 if (cmd === 'files') {
-                    console.log(chalk.cyan('\nProject Files:\n'));
+                    const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
+                    console.log(chalk.cyan(`\n📁 Project Files in ${chalk.white.bold(displayPath)}:\n`));
+
+                    // Diagnostic: Check if directory actually has files via fs
+                    try {
+                        const directFiles = fs.readdirSync(agent.projectRoot);
+                        if (directFiles.length === 0) {
+                            console.log(chalk.yellow(`  ⚠️  The directory is empty inside the container (${agent.projectRoot}).`));
+                            console.log(chalk.gray(`  If this is unexpected, check your Docker volume mounts.\n`));
+                        }
+                    } catch (e) { }
+
                     console.log(agent.showFileTree());
                     await new Input({ message: 'Press Enter to continue' }).run();
                     continue;
@@ -204,7 +274,6 @@ async function chatLoop() {
             }
 
             // Handle @file Mentions
-            // Regex: match @foo only if preceded by start-of-line or whitespace
             const mentionRegex = /(?<=^|\s)@(\S+)/g;
             const fileMatches = input.match(mentionRegex);
             let processedInput = input;
@@ -234,7 +303,7 @@ async function chatLoop() {
 
                 // Code Hiding & Formatting
                 const cleanContent = TerminalUI.hideLongCodeBlocks(response.content);
-                console.log(renderMarkdown(cleanContent));
+                console.log(await renderMarkdown(cleanContent));
                 console.log('');
 
                 // Action Parsing & Implementation Loop
@@ -262,17 +331,11 @@ async function chatLoop() {
                     }
                 }
             } catch (err) {
-                console.log(TerminalUI.formatError(err.message));
+                await handleError(err);
                 sessionData.successRate = Math.max(0, sessionData.successRate - 5);
             }
         } catch (err) {
-            // Handle Esc/Rejections (Silent errors from enquirer)
-            if (!err || err === '' || err.message === '') {
-                // If they cancelled, just re-show the prompt
-                continue;
-            }
-            // For actual errors, log them but STAY in the session
-            console.error(chalk.red(`\nAn error occurred: ${err.message || err}\n`));
+            await handleError(err);
             continue;
         }
     }
@@ -287,7 +350,7 @@ async function runProWorkflow(objective) {
         );
         if (!planRes || planRes.aborted) return;
 
-        TerminalUI.showPlanning(planRes.content);
+        await TerminalUI.showPlanning(planRes.content);
 
         const confirmPlan = new Select({
             message: 'Approve plan?',
@@ -301,7 +364,7 @@ async function runProWorkflow(objective) {
         );
         if (!taskRes || taskRes.aborted) return;
 
-        TerminalUI.showTasks(taskRes.content);
+        await TerminalUI.showTasks(taskRes.content);
 
         const confirmTasks = new Select({
             message: 'Start implementation?',
@@ -323,7 +386,6 @@ async function runProWorkflow(objective) {
         } else {
             console.log(chalk.cyan.bold(`\n📝 PROPOSED IMPLEMENTATION (${actions.length} actions)\n`));
 
-            const results = [];
             for (const action of actions) {
                 let currentContent = '';
                 try {
@@ -345,10 +407,6 @@ async function runProWorkflow(objective) {
 
                 if (action.type === 'CREATE' || action.type === 'UPDATE') {
                     agent.fileManager.writeFile(action.filePath, action.content);
-                    results.push({ action: action.type, file: action.filePath, success: true });
-                } else if (action.type === 'DELETE') {
-                    // Logic for delete if needed, for now just log
-                    results.push({ action: 'DELETE', file: action.filePath, success: 'Manual action required' });
                 }
             }
             console.log(TerminalUI.formatSuccess('Implementation steps completed.'));
@@ -358,13 +416,11 @@ async function runProWorkflow(objective) {
             agent.summarize({ objective, plan: planRes.content, actions: actions.length }, { signal })
         );
         if (walkRes && !walkRes.aborted) {
-            TerminalUI.showWalkthrough(walkRes.content);
+            await TerminalUI.showWalkthrough(walkRes.content);
         }
 
     } catch (err) {
-        if (err && err !== '') {
-            console.log(TerminalUI.formatError(err.message || err));
-        }
+        await handleError(err);
     }
 }
 
@@ -373,6 +429,7 @@ async function showSettings() {
         name: 'setting',
         message: 'Settings',
         choices: [
+            'Change Name',
             'Change Model',
             'Change Language',
             'Update API Key',
@@ -383,7 +440,14 @@ async function showSettings() {
     const choice = await select.run();
     if (choice === 'Back') return;
 
-    if (choice === 'Change Model') {
+    if (choice === 'Change Name') {
+        const currentName = config.getUserName() || 'Developer';
+        const nameRes = await new Input({
+            message: 'Your Name:',
+            initial: currentName
+        }).run();
+        config.setUserName(nameRes);
+    } else if (choice === 'Change Model') {
         const models = await agent.checkAvailableModels();
         const modelSelect = new Select({
             message: 'Select Model',
@@ -425,15 +489,14 @@ async function main() {
     await initialization();
 
     if (process.argv.length > 2) {
-        // Non-interactive command handling
         program.parse(process.argv);
         return;
     }
 
     const version = require('./package.json').version;
-    TerminalUI.showHeader(version, config.getModel(), agent.projectRoot);
+    const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
+    TerminalUI.showHeader(version, config.getModel(), displayPath);
     TerminalUI.showWelcome();
-    // Startup directly into Chat Mode
     await chatLoop();
 
     console.log(chalk.red('\nExiting Lorapok. Goodbye! 🐛'));

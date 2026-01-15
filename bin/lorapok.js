@@ -1,63 +1,49 @@
 #!/usr/bin/env node
 
-const { spawnSync } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
-const os = require('os');
 const fs = require('fs');
 
-// Helper to use chalk if available on host, otherwise fallback
-function getChalk() {
-    try {
-        return require('chalk');
-    } catch (e) {
-        return {
-            cyan: s => s, gray: s => s, yellow: s => s,
-            red: s => s, green: s => s, white: s => s,
-            magenta: s => s, blue: s => s, bold: s => s
-        };
-    }
-}
-const chalk = getChalk();
+/**
+ * Lorapok CLI Entry Point
+ * Redirects to Docker unless LORAPOK_DOCKER=true or specifically requested local execution
+ */
 
-// Check if we are already inside the Lorapok Docker container
-if (process.env.LORAPOK_DOCKER === 'true') {
-    // If inside Docker, run the actual agent logic
+const isDocker = process.env.LORAPOK_DOCKER === 'true';
+
+if (isDocker) {
+    // Inside Docker: Run the main application
     require('../index.js');
 } else {
-    // If on the host machine, redirect the command to Docker Compose
-    const args = process.argv.slice(2);
-    const cwd = path.join(__dirname, '..');
-
-    // Auto-build check: If node_modules inside docker don't exist or image is missing
-    // In this repo, since we mount the volume, we mainly care about the image existing
-    if (args.includes('--build')) {
-        console.log(chalk.yellow('🛠️  Forcing Docker rebuild...'));
-        spawnSync('docker', ['compose', 'build'], { stdio: 'inherit', cwd, shell: true });
-    }
-
-    console.log(chalk.cyan('\n🐛 Lorapok: Redirecting to Docker container...'));
-
-    // Pass current working directory as PROJECT_ROOT
+    // On Host: Redirect all lorapok commands to the Docker container
     const projectRoot = process.cwd();
-    const dockerArgs = [
-        'compose', 'run', '--rm',
-        '-e', 'LORAPOK_DOCKER=true',
-        '-e', `PROJECT_ROOT=${projectRoot}`,
-        'lorapok', 'node', 'bin/lorapok.js', ...args
+
+    // Check if we are in a directory that should be mounted
+    // Default to mounting current directory to /project
+
+    const args = [
+        'compose',
+        'run',
+        '--rm',
+        'lorapok',
+        'node', 'index.js',
+        ...process.argv.slice(2)
     ];
 
-    const result = spawnSync('docker', dockerArgs, {
+    const docker = spawn('docker', args, {
         stdio: 'inherit',
-        cwd: cwd,
-        shell: true,
-        env: { ...process.env, PROJECT_ROOT: projectRoot } // Inject for docker-compose substitution
+        cwd: path.join(__dirname, '..'),
+        env: { ...process.env, PROJECT_ROOT: projectRoot }
     });
 
-    if (result.error) {
-        console.error(chalk.red('\n❌ Failed to start Docker.'));
-        console.error(chalk.gray('   Is Docker Desktop running? Is "docker compose" available?'));
-        process.exit(1);
-    }
+    docker.on('exit', (code) => {
+        process.exit(code || 0);
+    });
 
-    process.exit(result.status);
+    docker.on('error', (err) => {
+        console.error('❌ Failed to start Lorapok via Docker.');
+        console.error('Ensure Docker and Docker Compose are installed and running.');
+        console.error(err.message);
+        process.exit(1);
+    });
 }

@@ -1,31 +1,64 @@
+# 🐛 Lorapok AI Agent - Git Ignore
+
 # Dependencies
 node_modules/
+jspm_packages/
 
-# Environment
+# Environment / Secret
 .env
 .env.local
 .env.*.local
+*.env
 
-# Lorapok config (user-specific)
+# Lorapok Specific
 .lorapok/
+ai_output/
 
-# Build
+# Build & Distribution
 dist/
 build/
+out/
+*.tsbuildinfo
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# OS
+# OS Files
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# IDE
+# IDE & Editor
 .vscode/
+!.vscode/extensions.json
 .idea/
-*.swp
-*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.project
+.settings/
+.classpath/
 
-# Test coverage
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Testing
 coverage/
+.nyc_output/
+
+# Temporary
+.tmp/
+temp/
+tmp/
+.antigravity/
+.gemini/

@@ -3,11 +3,13 @@
 require('dotenv').config();
 const { Select, Input, Autocomplete } = require('enquirer');
 const chalk = require('chalk');
+const boxen = require('boxen');
 const { program } = require('commander');
 const { LorapokEnhancedAgent, MODELS: DEFAULT_MODELS } = require('./lib/agent-enhanced');
 const { LorapokConfig } = require('./lib/config');
 const TerminalUI = require('./lib/ui');
 const { renderMarkdown } = require('./lib/renderer');
+const ActionsManager = require('./services/ActionsManager');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -113,7 +115,13 @@ const setupExitHandlers = () => {
 // ==================== CORE FUNCTIONS ====================
 
 async function initialization() {
+    // Initialize Config
     config = new LorapokConfig();
+    const existingToken = config.getGitHubToken();
+    if (existingToken) {
+        process.env.GH_TOKEN = existingToken;
+        process.env.GITHUB_TOKEN = existingToken;
+    }
     const apiKey = config.getApiKey();
 
     if (!apiKey) {
@@ -143,6 +151,38 @@ async function initialization() {
 
     agent = new LorapokEnhancedAgent(config.getApiKey(), projectRoot);
     currentCwd = projectRoot;
+
+    // Connect Git processing logs
+    agent.gitManager.setLogger((cmd, out, success) => {
+        TerminalUI.showGitProcess(cmd, out, success);
+    });
+
+    // Unified Auth: Config global git credential if token exists
+    if (existingToken) {
+        agent.gitManager.configureTokenAuth(existingToken);
+    }
+
+    // Git Identity Check & Auto-setup
+    const identity = agent.gitManager.getUserConfig();
+    if (identity.name === 'Not set' || identity.email === 'Not set') {
+        process.stdout.write(chalk.yellow('\n⚠️  Git identity not found. '));
+        const setup = new Select({
+            message: 'Configure Git identity now?',
+            choices: ['Yes', 'No (Commits might fail)']
+        });
+        const choice = await setup.run().catch(() => 'No');
+        if (choice === 'Yes') {
+            const name = await new Input({ message: 'Git user.name:', initial: config.getUserName() || '' }).run();
+            const email = await new Input({ message: 'Git user.email:' }).run();
+            if (name && email) {
+                const globalSetup = new Select({ message: 'Config scope?', choices: ['Global', 'Local'] });
+                const scope = await globalSetup.run() === 'Global';
+                const res = agent.gitManager.configUser(name, email, scope);
+                if (res.success) console.log(TerminalUI.formatSuccess(`Git identity configured (${scope ? 'Global' : 'Local'}).`));
+                else console.log(TerminalUI.formatError(`Failed to set identity: ${res.error}`));
+            }
+        }
+    }
 
     // Log active workspace for clarity
     const displayPath = projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : projectRoot;
@@ -225,6 +265,141 @@ async function handleError(err) {
     }
 }
 
+/**
+ * Interactive GitHub Actions Menu
+ */
+async function showActionsMenu() {
+    const actionsManager = new ActionsManager(agent.gitManager);
+
+    // Check Auth
+    if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+        console.log(chalk.red('\n🚫 No GitHub Token found.'));
+
+        const authSelect = new Select({
+            message: 'Authentication required. How would you like to login?',
+            choices: [
+                { name: 'browser', message: '🌐 Login via Browser (Recommended)' },
+                { name: 'token', message: '🔑 Enter Token Manually' },
+                { name: 'cancel', message: '❌ Cancel' }
+            ]
+        });
+
+        const authChoice = await authSelect.run().catch(() => 'cancel');
+
+        if (authChoice === 'cancel') return;
+
+        if (authChoice === 'browser') {
+            const GithubAuth = require('./services/GithubAuth');
+            const ghAuth = new GithubAuth();
+            const url = ghAuth.getSmartAuthUrl();
+            const opened = await ghAuth.openBrowser(url);
+
+            const msg = '1. Browser should open... or click: ' + chalk.underline.bold(url);
+            console.log(boxen(chalk.cyan(`${msg}\n2. Scroll down and click "Generate token"\n3. Copy the token and paste it below.`), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
+
+            const token = await new Input({ message: 'Paste Token:' }).run();
+            if (token) {
+                process.env.GH_TOKEN = token;
+                config.setGitHubToken(token);
+                agent.gitManager.configureTokenAuth(token);
+            }
+            else return;
+        } else if (authChoice === 'token') {
+            const token = await new Input({ message: 'GitHub Token:' }).run();
+            if (token) {
+                process.env.GH_TOKEN = token;
+                config.setGitHubToken(token);
+                agent.gitManager.configureTokenAuth(token);
+            }
+            else return;
+        }
+    }
+
+    while (true) {
+        console.clear();
+        console.log(chalk.magenta.bold('\n⚡ GitHub Actions Explorer\n'));
+
+        const spinner = TerminalUI.createSpinner('Fetching workflows...');
+        spinner.start();
+        const wfRes = await actionsManager.getWorkflows();
+        spinner.stop();
+
+        if (!wfRes.success) {
+            console.log(TerminalUI.formatError(wfRes.error));
+            await new Input({ message: 'Press Enter to return' }).run();
+            return;
+        }
+
+        if (wfRes.total === 0) {
+            console.log(chalk.yellow('\nNo workflows found in this repository.'));
+            await new Input({ message: 'Press Enter to return' }).run();
+            return;
+        }
+
+        const choices = wfRes.workflows.map(w => ({
+            name: w.id.toString(),
+            message: `${chalk.bold(w.name)} ${chalk.gray('(' + w.path + ')')}`,
+            value: w
+        }));
+
+        choices.push({ name: 'exit', message: '❌ Exit' });
+
+        const wfSelect = new Select({
+            message: 'Select Workflow:',
+            choices: choices,
+            result(name) { return this.map(name)[name]; }
+        });
+
+        const selectedWf = await wfSelect.run().catch(() => 'exit');
+        if (selectedWf === 'exit' || !selectedWf.id) break;
+
+        // Fetch Runs
+        const runSpinner = TerminalUI.createSpinner(`Fetching runs for ${selectedWf.name}...`);
+        runSpinner.start();
+        const runsRes = await actionsManager.getWorkflowRuns(selectedWf.id);
+        runSpinner.stop();
+
+        if (!runsRes.success) {
+            console.log(TerminalUI.formatError(runsRes.error));
+            await new Input({ message: 'Press Enter manually' }).run(); // wait
+            continue;
+        }
+
+        // Show Runs Table
+        TerminalUI.showWorkflowRuns(runsRes.runs);
+
+        const runChoices = runsRes.runs.slice(0, 5).map(r => ({
+            name: r.id.toString(),
+            message: `${r.status === 'completed' ? (r.conclusion === 'success' ? '✔' : '✖') : '⏳'} ${r.name} #${r.run_number} (${r.event})`,
+            value: r
+        }));
+        runChoices.push({ name: 'back', message: '⬅ Back to Workflows' });
+
+        const runSelect = new Select({
+            message: 'Select Run to view details:',
+            choices: runChoices,
+            result(name) { return this.map(name)[name]; }
+        });
+
+        const selectedRun = await runSelect.run().catch(() => 'back');
+        if (selectedRun === 'back' || !selectedRun.id) continue;
+
+        // Fetch Jobs
+        const jobSpinner = TerminalUI.createSpinner('Fetching job logs...');
+        jobSpinner.start();
+        const jobsRes = await actionsManager.getRunJobs(selectedRun.id);
+        jobSpinner.stop();
+
+        if (jobsRes.success) {
+            TerminalUI.showRunDetails(selectedRun, jobsRes.jobs);
+        } else {
+            console.log(TerminalUI.formatError(jobsRes.error));
+        }
+
+        await new Input({ message: 'Press Enter to continue' }).run();
+    }
+}
+
 async function chatLoop() {
     const userName = config.getUserName() || 'You';
     while (true) {
@@ -245,6 +420,7 @@ async function chatLoop() {
                         { name: 'analyze', message: '🔍 Analyze Project' },
                         { name: 'files', message: '📁 Files' },
                         { name: 'git', message: '🔗 Git Ops' },
+                        { name: 'actions', message: '⚡ GitHub Actions' },
                         { name: 'logs', message: '📊 Logs' },
                         { name: 'settings', message: '⚙️  Settings' },
                         { name: 'help', message: '❓ Help' },
@@ -291,12 +467,10 @@ async function chatLoop() {
                     continue;
                 }
                 if (cmd === 'git') {
-                    const status = agent.getGitStatus();
-                    console.log(chalk.cyan('\nGit Status:\n'));
-                    console.log(status.success ? status.files.map(f => ` - ${f.status}: ${f.file}`).join('\n') : status.error);
-                    await new Input({ message: 'Press Enter to continue' }).run();
+                    await showGitMenu();
                     continue;
                 }
+                if (cmd === "actions") { await showActionsMenu(); continue; }
                 if (cmd === 'settings') {
                     await showSettings();
                     continue;
@@ -327,6 +501,19 @@ async function chatLoop() {
                 if (cmd === 'plan') {
                     const obj = await new Input({ message: 'What is the objective?' }).run().catch(() => null);
                     if (obj) await runProWorkflow(obj);
+                    continue;
+                }
+                if (cmd === 'git') {
+                    await showGitMenu();
+                    continue;
+                }
+                if (cmd === 'actions' || cmd === 'ci') {
+                    await showActionsMenu();
+                    continue;
+                }
+                if (cmd === 'files') {
+                    console.log(agent.showFileTree());
+                    await new Input({ message: 'Press Enter to continue' }).run();
                     continue;
                 }
 
@@ -412,6 +599,28 @@ async function chatLoop() {
                                 agent.fileManager.writeFile(action.filePath, action.content);
                             }
                             console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
+                        }
+                    }
+
+                    // Proactive commit suggestion
+                    const status = agent.getGitStatus();
+                    if (status.success && status.total > 0) {
+                        const commitConfirm = new Select({
+                            message: `Implementation complete. Commit these ${status.total} changes now?`,
+                            choices: ['Yes (AI Message)', 'Yes (Manual Message)', 'No']
+                        });
+                        const commitChoice = await commitConfirm.run().catch(() => 'No');
+                        if (commitChoice !== 'No') {
+                            if (commitChoice === 'Yes (AI Message)') {
+                                const res = await withCancellation('Generating commit message...', (signal) => agent.smartCommit('.', { signal }));
+                                if (res?.success) console.log(TerminalUI.formatSuccess(`Changes committed: ${res.output || 'Commit successful'}`));
+                            } else {
+                                const msg = await new Input({ message: 'Commit message:' }).run();
+                                if (msg) {
+                                    const res = agent.commitChanges(msg);
+                                    if (res.success) console.log(TerminalUI.formatSuccess('Changes committed.'));
+                                }
+                            }
                         }
                     }
                 }
@@ -513,9 +722,31 @@ async function runProWorkflow(objective) {
                     } else if (action.type === 'CREATE' || action.type === 'UPDATE') {
                         agent.fileManager.writeFile(action.filePath, action.content);
                     }
-                    console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
                 }
             }
+
+            // Proactive commit suggestion
+            const status = agent.getGitStatus();
+            if (status.success && status.total > 0) {
+                const commitConfirm = new Select({
+                    message: `Implementation complete. Commit these ${status.total} changes now?`,
+                    choices: ['Yes (AI Message)', 'Yes (Manual Message)', 'No']
+                });
+                const commitChoice = await commitConfirm.run().catch(() => 'No');
+                if (commitChoice !== 'No') {
+                    if (commitChoice === 'Yes (AI Message)') {
+                        const res = await withCancellation('Generating commit message...', (signal) => agent.smartCommit('.', { signal }));
+                        if (res?.success) console.log(TerminalUI.formatSuccess(`Changes committed: ${res.output || 'Commit successful'}`));
+                    } else {
+                        const msg = await new Input({ message: 'Commit message:' }).run();
+                        if (msg) {
+                            const res = agent.commitChanges(msg);
+                            if (res.success) console.log(TerminalUI.formatSuccess('Changes committed.'));
+                        }
+                    }
+                }
+            }
+
             console.log(TerminalUI.formatSuccess('Implementation steps completed.'));
         }
 
@@ -573,6 +804,481 @@ async function showSettings() {
     console.log(TerminalUI.formatSuccess('Settings updated.'));
 }
 
+async function showGitMenu() {
+    while (true) {
+        const select = new Select({
+            name: 'gitAction',
+            message: '🔗 Git Operations',
+            choices: [
+                { name: 'status', message: '🔍 Status' },
+                { name: 'diff', message: '📝 View Diff' },
+                { name: 'commit_ai', message: '🤖 Smart Commit (AI)' },
+                { name: 'commit_manual', message: '📝 Manual Commit' },
+                { name: 'branches', message: '🌿 Branches' },
+                { name: 'log', message: '📜 Commit Log' },
+                { name: 'sync', message: '🔄 Push/Pull' },
+                { name: 'stash', message: '📥 Stash Management' },
+                { name: 'remotes', message: '🌐 Manage Remotes' },
+                { name: 'auth', message: '🔑 Authentication' },
+                { name: 'advanced', message: '⚙️  Advanced...' },
+                { name: 'back', message: '⬅️  Back' }
+            ]
+        });
+
+        const action = await select.run().catch(() => 'back');
+        if (action === 'back') break;
+
+        try {
+            if (action === 'status') {
+                const status = agent.getGitStatus();
+                if (status.success) {
+                    TerminalUI.showGitStatus(status);
+                } else {
+                    console.log(TerminalUI.formatError(status.error));
+                }
+            } else if (action === 'diff') {
+                const res = agent.gitManager.getDiff();
+                if (res.success) {
+                    if (!res.output) {
+                        console.log(chalk.gray('\nNo changes to show.'));
+                    } else {
+                        console.log(chalk.cyan('\nGit Diff:'));
+                        console.log(await renderMarkdown(`\`\`\`diff\n${res.output.substring(0, 2000)}${res.output.length > 2000 ? '\n... (truncated)' : ''}\n\`\`\``));
+                    }
+                } else {
+                    console.log(TerminalUI.formatError(res.error));
+                }
+            } else if (action === 'commit_ai') {
+                const res = await withCancellation('Generating smart commit...', (signal) =>
+                    agent.smartCommit('.', { signal })
+                );
+                if (res && res.success) {
+                    console.log(TerminalUI.formatSuccess(`Changes committed: ${res.message}`));
+                } else if (res && !res.aborted) {
+                    console.log(TerminalUI.formatError(res.error || 'Commit failed.'));
+                }
+            } else if (action === 'commit_manual') {
+                const status = agent.getGitStatus();
+                if (status.success && status.total > 0) {
+                    const msg = await new Input({ message: 'Commit message:' }).run();
+                    if (msg) {
+                        const res = await agent.commitChanges(msg);
+                        if (res.success) {
+                            console.log(TerminalUI.formatSuccess('Changes committed successfully.'));
+                        } else {
+                            console.log(TerminalUI.formatError(res.error));
+                        }
+                    }
+                } else {
+                    console.log(chalk.yellow('\nNothing to commit.'));
+                }
+            } else if (action === 'branches') {
+                const res = agent.gitManager.getBranches();
+                if (res.success) {
+                    TerminalUI.showGitBranches(res.branches);
+                    const branchAction = new Select({
+                        message: 'Branch Operations',
+                        choices: ['Create New Branch', 'Switch Branch', 'Back']
+                    });
+                    const bCmd = await branchAction.run();
+                    if (bCmd === 'Create New Branch') {
+                        const name = await new Input({ message: 'New branch name:' }).run();
+                        if (name) {
+                            const createRes = agent.createGitBranch(name);
+                            if (createRes.success) console.log(TerminalUI.formatSuccess(`Switched to new branch: ${name}`));
+                            else console.log(TerminalUI.formatError(createRes.error));
+                        }
+                    } else if (bCmd === 'Switch Branch') {
+                        const swRes = new Select({
+                            message: 'Select branch to switch to:',
+                            choices: res.branches.map(b => b.name)
+                        });
+                        const target = await swRes.run();
+                        const switchRes = agent.switchGitBranch(target);
+                        if (switchRes.success) console.log(TerminalUI.formatSuccess(`Switched to branch: ${target}`));
+                        else console.log(TerminalUI.formatError(switchRes.error));
+                    }
+                }
+            } else if (action === 'log') {
+                const res = agent.getGitLog(15);
+                if (res.success) {
+                    TerminalUI.showGitLog(res.commits);
+                } else {
+                    console.log(TerminalUI.formatError(res.error));
+                }
+            } else if (action === 'sync') {
+                const remotesRes = agent.gitManager.getRemotesDetailed();
+                if (!remotesRes.success) {
+                    console.log(TerminalUI.formatError(remotesRes.error));
+                    continue;
+                }
+
+                if (remotesRes.remotes.length === 0) {
+                    console.log(chalk.yellow('\n⚠️  No remotes configured.'));
+                    const addRemote = await new Select({
+                        message: 'Add a remote now?',
+                        choices: ['Yes', 'No']
+                    }).run();
+                    if (addRemote === 'Yes') {
+                        await showRemoteMenu();
+                    }
+                    continue;
+                }
+
+                const sSelect = new Select({
+                    message: 'Sync Operation',
+                    choices: ['Pull', 'Push', 'Back']
+                });
+                const sCmd = await sSelect.run();
+                if (sCmd === 'Back') continue;
+
+                const remote = remotesRes.remotes.length === 1
+                    ? remotesRes.remotes[0].name
+                    : await new Select({ message: 'Select remote:', choices: remotesRes.remotes.map(r => r.name) }).run();
+
+                const branchRes = agent.gitManager.getCurrentBranch();
+                const branch = branchRes.success ? branchRes.output : 'main';
+
+                // Smart Auth Retry Wrapper
+                const performGitAction = async (actionFn, actionName) => {
+                    let res = await withCancellation(`${actionName}ing ${remote}/${branch}...`, () =>
+                        Promise.resolve(actionFn(branch, remote))
+                    );
+
+                    // If auth failed, offer professional fix
+                    if (res && !res.success && (res.output.includes('Authentication failed') || res.output.includes('403') || res.output.includes('could not read Username') || res.output.includes('terminal prompts disabled'))) {
+                        console.log(chalk.yellow(`\n⚠️  Authentication failed for ${remote}.`));
+
+                        // Detect available options
+                        const sshAvailable = agent.gitManager.testSSHConnection().success;
+                        const choices = [
+                            { name: 'browser', message: '🌐 Login via Browser (Recommended)' },
+                            { name: 'token', message: '🔑 Enter Token or Password' }
+                        ];
+                        if (sshAvailable) choices.push({ name: 'ssh', message: '🗝️  Switch to SSH' });
+                        choices.push({ name: 'cancel', message: '❌ Cancel' });
+
+                        const fixSelect = new Select({
+                            message: 'Select Authentication Method:',
+                            choices: choices
+                        });
+
+                        const fix = await fixSelect.run().catch(() => 'cancel');
+
+                        if (fix === 'browser') {
+                            const GithubAuth = require('./services/GithubAuth');
+                            const ghAuth = new GithubAuth();
+                            const url = ghAuth.getSmartAuthUrl();
+
+                            // Attempt to open browser
+                            await ghAuth.openBrowser(url);
+
+                            console.log(boxen(chalk.cyan(`1. Browser should open... or click: ${chalk.underline.bold(url)}\n2. Scroll down and click "Generate token"\n3. Copy the token and paste it below.`), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
+
+                            const token = await new Input({ message: 'Paste Token:' }).run();
+                            if (token) {
+                                process.env.GH_TOKEN = token;
+                                config.setGitHubToken(token);
+                                agent.gitManager.configureTokenAuth(token);
+                                res = await withCancellation(`Retrying with new token...`, () => Promise.resolve(actionFn(branch, remote)));
+                            }
+                        } else if (fix === 'token') {
+                            const token = await new Input({ message: 'GitHub Token or Password:' }).run();
+                            if (token) {
+                                process.env.GH_TOKEN = token;
+                                config.setGitHubToken(token);
+                                agent.gitManager.configureTokenAuth(token);
+                                res = await withCancellation(`Retrying with token...`, () => Promise.resolve(actionFn(branch, remote)));
+                            }
+                        } else if (fix === 'ssh') {
+                            const sshRes = agent.gitManager.convertToSSH(remote);
+                            if (sshRes.success) {
+                                console.log(TerminalUI.formatSuccess('Switched remote to SSH.'));
+                                res = await withCancellation(`Retrying via SSH...`, () => Promise.resolve(actionFn(branch, remote)));
+                            } else {
+                                console.log(TerminalUI.formatError(sshRes.error));
+                            }
+                        }
+                    }
+                    return res;
+                };
+
+                if (sCmd === 'Pull') {
+                    const res = await performGitAction((b, r) => agent.gitManager.pull(b, r), 'Pull');
+                    if (res) TerminalUI.showGitSync('Pull', remote, branch, res.success, res.output || res.error);
+                } else {
+                    const res = await performGitAction((b, r) => agent.gitManager.push(b, r), 'Push');
+                    if (res) TerminalUI.showGitSync('Push', remote, branch, res.success, res.output || res.error);
+                }
+            } else if (action === 'stash') {
+                await showStashMenu();
+                continue;
+            } else if (action === 'remotes') {
+                await showRemoteMenu();
+                continue;
+            } else if (action === 'auth') {
+                await showAuthMenu();
+                continue;
+            } else if (action === 'advanced') {
+                await showAdvancedGitMenu();
+                continue;
+            }
+        } catch (e) {
+            console.log(TerminalUI.formatError(`Git operation failed: ${e.message}`));
+        }
+
+        await new Input({ message: 'Press Enter to continue' }).run().catch(() => null);
+    }
+}
+
+async function showStashMenu() {
+    while (true) {
+        const select = new Select({
+            message: '📥 Git Stash Management',
+            choices: [
+                { name: 'push', message: '📥 Push Stash' },
+                { name: 'pop', message: '📤 Pop Stash (Apply & Remove)' },
+                { name: 'list', message: '📋 List Stashes' },
+                { name: 'clear', message: '🔥 Clear All Stashes' },
+                { name: 'back', message: '⬅️  Back' }
+            ]
+        });
+
+        const action = await select.run().catch(() => 'back');
+        if (action === 'back') break;
+
+        try {
+            if (action === 'push') {
+                const msg = await new Input({ message: 'Stash message (optional):' }).run();
+                const res = agent.gitManager.stash(msg);
+                if (res.success) console.log(TerminalUI.formatSuccess('Changes stashed.'));
+                else console.log(TerminalUI.formatError(res.error));
+            } else if (action === 'pop') {
+                const res = agent.gitManager.stashPop();
+                if (res.success) console.log(TerminalUI.formatSuccess('Stash popped successfully.'));
+                else console.log(TerminalUI.formatError(res.error));
+            } else if (action === 'list') {
+                const res = agent.gitManager.getStashes();
+                if (res.success) {
+                    console.log(chalk.cyan('\nStash List:'));
+                    console.log(res.output || chalk.gray('No stashes found.'));
+                } else console.log(TerminalUI.formatError(res.error));
+            } else if (action === 'clear') {
+                const res = agent.gitManager.stashClear();
+                if (res.success) console.log(TerminalUI.formatSuccess('All stashes cleared.'));
+                else console.log(TerminalUI.formatError(res.error));
+            }
+        } catch (e) {
+            console.log(TerminalUI.formatError(e.message));
+        }
+        await new Input({ message: 'Press Enter' }).run().catch(() => null);
+    }
+}
+
+async function showAdvancedGitMenu() {
+    while (true) {
+        const select = new Select({
+            message: '⚙️  Advanced Git Operations',
+            choices: [
+                { name: 'amend', message: '⚒️  Amend Last Commit' },
+                { name: 'tags', message: '🏷️  Manage Tags' },
+                { name: 'merge', message: '🤝 Merge Branch' },
+                { name: 'cherry', message: '🍒 Cherry-pick Commit' },
+                { name: 'diag', message: '🔍 Repo Diagnostics' },
+                { name: 'clean', message: '🧹 Clean Untracked Files' },
+                { name: 'reset', message: '⚠️  Hard Reset (to HEAD)' },
+                { name: 'init', message: '🏁 Initialize Repository' },
+                { name: 'back', message: '⬅️  Back' }
+            ]
+        });
+
+        const action = await select.run().catch(() => 'back');
+        if (action === 'back') break;
+
+        try {
+            if (action === 'amend') {
+                const confirm = new Select({
+                    message: 'Amend last commit?',
+                    choices: ['Yes (Keep Message)', 'Yes (Change Message)', 'No']
+                });
+                const choice = await confirm.run();
+                if (choice === 'No') continue;
+
+                let msg = '';
+                if (choice === 'Yes (Change Message)') {
+                    msg = await new Input({ message: 'New commit message:' }).run();
+                }
+
+                const res = agent.gitManager.amendCommit(msg);
+                if (res.success) console.log(TerminalUI.formatSuccess('Last commit amended.'));
+                else console.log(TerminalUI.formatError(res.error));
+
+            } else if (action === 'tags') {
+                const tagRes = agent.gitManager.getTags();
+                if (tagRes.success) {
+                    console.log(chalk.cyan('\nTags: ') + (tagRes.tags.join(', ') || chalk.gray('None')));
+                    const tagAction = new Select({
+                        message: 'Tag Operations',
+                        choices: ['Create Tag', 'Back']
+                    });
+                    if (await tagAction.run() === 'Create Tag') {
+                        const name = await new Input({ message: 'Tag name (v1.0):' }).run();
+                        const msg = await new Input({ message: 'Tag message (optional):' }).run();
+                        if (name) {
+                            const res = agent.gitManager.createTag(name, msg);
+                            if (res.success) console.log(TerminalUI.formatSuccess(`Tag ${name} created.`));
+                            else console.log(TerminalUI.formatError(res.error));
+                        }
+                    }
+                }
+            } else if (action === 'merge') {
+                const branchRes = agent.gitManager.getBranches();
+                if (branchRes.success) {
+                    const otherBranches = branchRes.branches.filter(b => !b.current).map(b => b.name);
+                    if (otherBranches.length === 0) {
+                        console.log(chalk.yellow('\nNo other branches to merge from.'));
+                    } else {
+                        const target = await new Select({ message: 'Select branch to merge INTO current branch:', choices: otherBranches }).run();
+                        const res = agent.gitManager.merge(target);
+                        if (res.success) console.log(TerminalUI.formatSuccess(`Merged ${target} into current branch.`));
+                        else console.log(TerminalUI.formatError(res.error));
+                    }
+                }
+            } else if (action === 'cherry') {
+                const hash = await new Input({ message: 'Enter commit hash to cherry-pick:' }).run();
+                if (hash) {
+                    const res = agent.gitManager.cherryPick(hash);
+                    if (res.success) console.log(TerminalUI.formatSuccess(`Successfully cherry-picked ${hash}`));
+                    else console.log(TerminalUI.formatError(res.error));
+                }
+            } else if (action === 'diag') {
+                const userRes = agent.gitManager.getUserConfig();
+                const branchRes = agent.gitManager.getCurrentBranch();
+                const stagedCount = agent.gitManager.getStagedCount();
+                const ignoredRes = agent.gitManager.listIgnored();
+
+                TerminalUI.showGitDiagnostics({
+                    user: userRes,
+                    branch: branchRes.success ? branchRes.output : 'Unknown',
+                    stagedCount,
+                    ignored: ignoredRes.success ? ignoredRes.output.split('\n').filter(l => l.trim()) : []
+                });
+
+                const checkIgnored = new Select({
+                    message: 'Diagnostic Actions',
+                    choices: ['Check if file is ignored', 'Back']
+                });
+                if (await checkIgnored.run() === 'Check if file is ignored') {
+                    const file = await new Input({ message: 'Enter file path:' }).run();
+                    if (file) {
+                        const res = agent.gitManager.checkIgnore(file);
+                        if (res.success) console.log(chalk.cyan(`\nIgnore Rule: `) + chalk.yellow(res.output));
+                        else console.log(chalk.green('\nFile is NOT ignored.'));
+                    }
+                }
+            } else if (action === 'clean') {
+                const dry = agent.gitManager.clean(true);
+                console.log(chalk.cyan('\nFiles to be removed:'));
+                console.log(dry.output || chalk.gray('None.'));
+                if (dry.output) {
+                    const confirm = await new Select({ message: 'Remove these files forever?', choices: ['Yes', 'No'] }).run();
+                    if (confirm === 'Yes') {
+                        const res = agent.gitManager.clean(false);
+                        if (res.success) console.log(TerminalUI.formatSuccess('Cleanup complete.'));
+                        else console.log(TerminalUI.formatError(res.error));
+                    }
+                }
+            } else if (action === 'reset') {
+                const confirm = await new Select({ message: '⚠️ HARD RESET will discard all unstaged changes. Continue?', choices: ['Yes', 'No'] }).run();
+                if (confirm === 'Yes') {
+                    const res = agent.gitManager.reset('HEAD', '--hard');
+                    if (res.success) console.log(TerminalUI.formatSuccess('Hard reset complete.'));
+                    else console.log(TerminalUI.formatError(res.error));
+                }
+            } else if (action === 'init') {
+                const res = agent.gitManager.initRepo();
+                if (res.success) console.log(TerminalUI.formatSuccess('Git repository initialized.'));
+                else console.log(TerminalUI.formatError(res.error));
+            }
+        } catch (e) {
+            console.log(TerminalUI.formatError(e.message));
+        }
+        await new Input({ message: 'Press Enter' }).run().catch(() => null);
+    }
+}
+
+async function showRemoteMenu() {
+    while (true) {
+        const res = agent.gitManager.getRemotesDetailed();
+        if (res.success) TerminalUI.showGitRemotes(res.remotes);
+
+        const select = new Select({
+            message: '🌐 Git Remote Management',
+            choices: [
+                { name: 'add', message: '➕ Add Remote' },
+                { name: 'remove', message: '❌ Remove Remote' },
+                { name: 'rename', message: '✏️  Rename Remote' },
+                { name: 'url', message: '🔗 Update Remote URL' },
+                { name: 'back', message: '⬅️  Back' }
+            ]
+        });
+
+        const action = await select.run().catch(() => 'back');
+        if (action === 'back') break;
+
+        try {
+            if (action === 'add') {
+                const name = await new Input({ message: 'Remote name (e.g., origin):' }).run();
+                const url = await new Input({ message: 'URL:' }).run();
+                if (name && url) {
+                    const addRes = agent.gitManager.setRemote(name, url);
+                    if (addRes.success) console.log(TerminalUI.formatSuccess(`Remote ${name} added.`));
+                    else console.log(TerminalUI.formatError(addRes.error));
+                }
+            } else if (action === 'remove') {
+                if (res.remotes.length === 0) {
+                    console.log(chalk.yellow('\nNo remotes to remove.'));
+                    continue;
+                }
+                const name = await new Select({ message: 'Select remote to remove:', choices: res.remotes.map(r => r.name) }).run();
+                const confirm = await new Select({ message: `Remove remote ${name}?`, choices: ['Yes', 'No'] }).run();
+                if (confirm === 'Yes') {
+                    const remRes = agent.gitManager.removeRemote(name);
+                    if (remRes.success) console.log(TerminalUI.formatSuccess(`Remote ${name} removed.`));
+                    else console.log(TerminalUI.formatError(remRes.error));
+                }
+            } else if (action === 'rename') {
+                if (res.remotes.length === 0) {
+                    console.log(chalk.yellow('\nNo remotes to rename.'));
+                    continue;
+                }
+                const oldName = await new Select({ message: 'Select remote to rename:', choices: res.remotes.map(r => r.name) }).run();
+                const newName = await new Input({ message: 'New name:' }).run();
+                if (oldName && newName) {
+                    const renRes = agent.gitManager.renameRemote(oldName, newName);
+                    if (renRes.success) console.log(TerminalUI.formatSuccess(`Remote renamed to ${newName}.`));
+                    else console.log(TerminalUI.formatError(renRes.error));
+                }
+            } else if (action === 'url') {
+                if (res.remotes.length === 0) {
+                    console.log(chalk.yellow('\nNo remotes to update.'));
+                    continue;
+                }
+                const name = await new Select({ message: 'Select remote:', choices: res.remotes.map(r => r.name) }).run();
+                const url = await new Input({ message: 'New URL:' }).run();
+                if (name && url) {
+                    const setRes = agent.gitManager.setRemote(name, url);
+                    if (setRes.success) console.log(TerminalUI.formatSuccess(`Remote ${name} URL updated.`));
+                    else console.log(TerminalUI.formatError(setRes.error));
+                }
+            }
+        } catch (e) {
+            console.log(TerminalUI.formatError(e.message));
+        }
+        await new Input({ message: 'Press Enter' }).run().catch(() => null);
+    }
+}
+
 async function showLogs() {
     const logPath = path.join(os.homedir(), '.lorapok', 'logs', 'combined.log');
     console.log(chalk.cyan(`\n📊 Diagnostic Logs [Last 20 lines]:\n`));
@@ -618,3 +1324,110 @@ program
     .action(main);
 
 program.parse(process.argv);
+async function showAuthMenu() {
+    const GithubAuth = require('./services/GithubAuth');
+    const ghAuth = new GithubAuth();
+
+    while (true) {
+        const token = config.getGitHubToken();
+        const statusText = token
+            ? chalk.green('✅ Authenticated')
+            : chalk.red('❌ Not Authenticated');
+
+        console.log(boxen(
+            chalk.cyan.bold('🔐 GitHub Authentication\n\n') + statusText,
+            { padding: 1, borderStyle: 'round', borderColor: token ? 'green' : 'red' }
+        ));
+
+        const select = new Select({
+            message: 'Choose authentication method:',
+            choices: [
+                { name: 'generate', message: '🌐 Generate New Token (Opens URL)' },
+                { name: 'token', message: '🔑 Enter Personal Access Token' },
+                { name: 'password', message: '🔒 Enter GitHub Password (Legacy)' },
+                { name: 'clear', message: '🗑️  Clear Saved Credentials' },
+                { name: 'back', message: '⬅️  Back to Git Menu' }
+            ]
+        });
+
+        const action = await select.run().catch(() => 'back');
+        if (action === 'back') break;
+
+        if (action === 'generate') {
+            const url = ghAuth.getSmartAuthUrl();
+
+            // Try to open browser (won't work in Docker but try anyway)
+            const result = await ghAuth.openBrowser(url);
+
+            // Always show the URL prominently
+            console.log('\n' + boxen(
+                ghAuth.getAuthInstructions(url),
+                { padding: 1, borderStyle: 'double', borderColor: 'yellow' }
+            ));
+
+            if (!result.opened) {
+                console.log(chalk.yellow('\n⚠️  Browser could not be opened (Docker environment).'));
+                console.log(chalk.white('   Please manually copy the URL above.\n'));
+            }
+
+            const newToken = await new Input({ message: 'Paste your new token:' }).run();
+            if (newToken && newToken.trim()) {
+                applyToken(newToken.trim());
+                console.log(TerminalUI.formatSuccess('Token saved! Git & Actions are now synced.'));
+            }
+
+        } else if (action === 'token') {
+            console.log(chalk.cyan('\n📋 Enter your GitHub Personal Access Token'));
+            console.log(chalk.gray('   (Get one at: https://github.com/settings/tokens)\n'));
+
+            const newToken = await new Input({ message: 'Token:' }).run();
+            if (newToken && newToken.trim()) {
+                applyToken(newToken.trim());
+                console.log(TerminalUI.formatSuccess('Token saved! Git & Actions are now synced.'));
+            }
+
+        } else if (action === 'password') {
+            console.log(chalk.yellow('\n⚠️  GitHub no longer supports password authentication for Git.'));
+            console.log(chalk.white('   You must use a Personal Access Token instead.'));
+            console.log(chalk.gray('   Generate one at: https://github.com/settings/tokens\n'));
+
+            const confirm = await new Select({
+                message: 'Would you like to generate a token instead?',
+                choices: ['Yes, open token page', 'No, go back']
+            }).run();
+
+            if (confirm === 'Yes, open token page') {
+                const url = ghAuth.getSmartAuthUrl();
+                await ghAuth.openBrowser(url);
+                console.log('\n' + boxen(
+                    ghAuth.getAuthInstructions(url),
+                    { padding: 1, borderStyle: 'double', borderColor: 'yellow' }
+                ));
+
+                const newToken = await new Input({ message: 'Paste your new token:' }).run();
+                if (newToken && newToken.trim()) {
+                    applyToken(newToken.trim());
+                    console.log(TerminalUI.formatSuccess('Token saved! Git & Actions are now synced.'));
+                }
+            }
+
+        } else if (action === 'clear') {
+            config.setGitHubToken(null);
+            process.env.GH_TOKEN = '';
+            process.env.GITHUB_TOKEN = '';
+            // Clear global git config
+            agent.gitManager.executeGit('config --global --unset url."https://@github.com/".insteadOf', { silent: true });
+            console.log(TerminalUI.formatSuccess('Credentials cleared from config & Git.'));
+        }
+
+        await new Input({ message: 'Press Enter to continue' }).run().catch(() => null);
+    }
+}
+
+// Helper function to apply token everywhere
+function applyToken(token) {
+    process.env.GH_TOKEN = token;
+    process.env.GITHUB_TOKEN = token;
+    config.setGitHubToken(token);
+    agent.gitManager.configureTokenAuth(token);
+}

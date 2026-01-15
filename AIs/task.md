@@ -2574,11 +2574,11 @@ now this things to git
 
 *User accepted the command `git log -n 5 --oneline`*
 
-*User accepted the command `git filter-branch --force --tree-filter 'sed -i "s/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/your_api_key_here/g" .env.example' HEAD`*
+*User accepted the command `git filter-branch --force --tree-filter 'sed -i "s/YOUR_API_KEY/your_api_key_here/g" .env.example' HEAD`*
 
 *Checked command status*
 
-*User accepted the command `git filter-branch --force --tree-filter 'if [ -f .env.example ]; then sed -i "s/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/your_api_key_here/g" .env.example; fi' HEAD`*
+*User accepted the command `git filter-branch --force --tree-filter 'if [ -f .env.example ]; then sed -i "s/YOUR_API_KEY/your_api_key_here/g" .env.example; fi' HEAD`*
 
 *Checked command status*
 

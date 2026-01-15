@@ -11,7 +11,43 @@ const { renderMarkdown } = require('./lib/renderer');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { spawnSync } = require('child_process');
 const readline = require('readline');
+
+/**
+ * Execute a bash command and return the result
+ */
+function executeCommand(command) {
+    try {
+        console.log(chalk.gray('Executing...'));
+        const result = spawnSync(command, {
+            shell: true,
+            encoding: 'utf8',
+            stdio: ['inherit', 'pipe', 'pipe'] // Inherit stdin for simple interactions, pipe others
+        });
+
+        if (result.stdout) {
+            console.log(chalk.gray('\nCommand Output:'));
+            console.log(result.stdout);
+        }
+
+        if (result.stderr && result.status !== 0) {
+            console.error(chalk.red('\nCommand Error:'));
+            console.error(result.stderr);
+        }
+
+        return {
+            success: result.status === 0,
+            stdout: result.stdout,
+            stderr: result.stderr
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
 
 // Global Session Data
 const sessionData = {
@@ -311,23 +347,46 @@ async function chatLoop() {
                 if (actions.length > 0) {
                     console.log(chalk.cyan.bold(`📝 AGENT PROPOSES ${actions.length} ACTIONS`));
                     for (const action of actions) {
-                        let current = '';
-                        try { current = agent.fileManager.readFile(action.filePath); } catch { }
+                        if (action.type === 'COMMAND') {
+                            TerminalUI.showCommand(action.description, action.content);
+                            const confirm = new Select({
+                                message: `Execute this bash command?`,
+                                choices: ['Yes', 'No', 'Skip All']
+                            });
 
-                        TerminalUI.showDiff(action.filePath, current, action.content);
+                            const choice = await confirm.run().catch(() => 'No');
+                            if (choice === 'Skip All') break;
+                            if (choice === 'No') continue;
 
-                        const confirm = new Select({
-                            message: `Apply ${action.type} to ${action.filePath}?`,
-                            choices: ['Yes', 'No', 'Skip All']
-                        });
+                            const result = executeCommand(action.content);
+                            if (result.success) {
+                                console.log(TerminalUI.formatSuccess(`Command executed.`));
+                            } else {
+                                console.log(TerminalUI.formatError(`Command failed.`));
+                            }
+                        } else {
+                            let current = '';
+                            try { current = agent.fileManager.readFile(action.filePath); } catch { }
 
-                        const choice = await confirm.run().catch(() => 'No');
-                        if (choice === 'Skip All') break;
-                        if (choice === 'No') continue;
+                            TerminalUI.showDiff(action.filePath, current, action.content);
 
-                        TerminalUI.showEditStatus(action.type, action.filePath);
-                        agent.fileManager.writeFile(action.filePath, action.content);
-                        console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
+                            const confirm = new Select({
+                                message: `Apply ${action.type} to ${action.filePath}?`,
+                                choices: ['Yes', 'No', 'Skip All']
+                            });
+
+                            const choice = await confirm.run().catch(() => 'No');
+                            if (choice === 'Skip All') break;
+                            if (choice === 'No') continue;
+
+                            TerminalUI.showEditStatus(action.type, action.filePath);
+                            if (action.type === 'DELETE') {
+                                agent.fileManager.deleteFile(action.filePath);
+                            } else {
+                                agent.fileManager.writeFile(action.filePath, action.content);
+                            }
+                            console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
+                        }
                     }
                 }
             } catch (err) {
@@ -387,26 +446,48 @@ async function runProWorkflow(objective) {
             console.log(chalk.cyan.bold(`\n📝 PROPOSED IMPLEMENTATION (${actions.length} actions)\n`));
 
             for (const action of actions) {
-                let currentContent = '';
-                try {
-                    currentContent = agent.fileManager.readFile(action.filePath);
-                } catch { }
+                if (action.type === 'COMMAND') {
+                    TerminalUI.showCommand(action.description, action.content);
+                    const confirmAction = new Select({
+                        message: `Execute this bash command?`,
+                        choices: ['Yes', 'No', 'Cancel']
+                    });
 
-                TerminalUI.showDiff(action.filePath, currentContent, action.content);
+                    const actionChoice = await confirmAction.run().catch(() => 'Cancel');
+                    if (actionChoice === 'Cancel') break;
+                    if (actionChoice === 'No') continue;
 
-                const confirmAction = new Select({
-                    message: `Apply ${action.type} to ${action.filePath}?`,
-                    choices: ['Yes', 'No', 'Cancel']
-                });
+                    const result = executeCommand(action.content);
+                    if (result.success) {
+                        console.log(TerminalUI.formatSuccess(`Command executed.`));
+                    } else {
+                        console.log(TerminalUI.formatError(`Command failed.`));
+                    }
+                } else {
+                    let currentContent = '';
+                    try {
+                        currentContent = agent.fileManager.readFile(action.filePath);
+                    } catch { }
 
-                const actionChoice = await confirmAction.run().catch(() => 'Cancel');
-                if (actionChoice === 'Cancel') break;
-                if (actionChoice === 'No') continue;
+                    TerminalUI.showDiff(action.filePath, currentContent, action.content);
 
-                TerminalUI.showEditStatus(action.type, action.filePath);
+                    const confirmAction = new Select({
+                        message: `Apply ${action.type} to ${action.filePath}?`,
+                        choices: ['Yes', 'No', 'Cancel']
+                    });
 
-                if (action.type === 'CREATE' || action.type === 'UPDATE') {
-                    agent.fileManager.writeFile(action.filePath, action.content);
+                    const actionChoice = await confirmAction.run().catch(() => 'Cancel');
+                    if (actionChoice === 'Cancel') break;
+                    if (actionChoice === 'No') continue;
+
+                    TerminalUI.showEditStatus(action.type, action.filePath);
+
+                    if (action.type === 'DELETE') {
+                        agent.fileManager.deleteFile(action.filePath);
+                    } else if (action.type === 'CREATE' || action.type === 'UPDATE') {
+                        agent.fileManager.writeFile(action.filePath, action.content);
+                    }
+                    console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
                 }
             }
             console.log(TerminalUI.formatSuccess('Implementation steps completed.'));

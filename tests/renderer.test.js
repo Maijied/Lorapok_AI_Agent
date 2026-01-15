@@ -36,7 +36,7 @@ describe('Renderer (Markdown)', () => {
     test('should create styled code boxes', () => {
         const code = 'console.log("hello")';
         const output = createCodeBox(code, 'js');
-        expect(output).toContain('JavaScript');
+        expect(output).toContain('JAVASCRIPT');
         expect(output).toContain('1 │ ');
     });
 });

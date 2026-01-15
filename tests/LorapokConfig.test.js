@@ -34,6 +34,11 @@ describe('LorapokConfig', () => {
         expect(config2.getApiKey()).toBe('test-key');
     });
 
+    test('should clean dirty API keys (whitespace and quotes)', () => {
+        config.setApiKey('  "pplx-dirty-key"  ');
+        expect(config.getApiKey()).toBe('pplx-dirty-key');
+    });
+
     test('should save and load model', () => {
         config.setModel('sonar-pro');
         expect(config.getModel()).toBe('sonar-pro');

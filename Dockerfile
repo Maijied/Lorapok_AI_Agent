@@ -6,8 +6,14 @@ LABEL description="Lorapok AI Coding Agent"
 # Create app directory
 WORKDIR /app
 
-# Install git, bash, and other utilities
-RUN apk add --no-cache git bash curl
+# Install git, bash, curl, jq, docker and other utilities
+RUN apk add --no-cache git bash curl jq docker-cli
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Fix git safe directory issue for Docker mounts
+RUN git config --global --add safe.directory /project
 
 # Install all dependencies (required for testing)
 COPY package*.json ./

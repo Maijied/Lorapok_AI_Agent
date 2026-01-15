@@ -1324,42 +1324,80 @@ program
     .action(main);
 
 program.parse(process.argv);
+
 async function showAuthMenu() {
     const GithubAuth = require('./services/GithubAuth');
-    const ghAuth = new GithubAuth();
+    const clientId = process.env.GITHUB_CLIENT_ID || null;
+    const ghAuth = new GithubAuth(clientId);
 
     while (true) {
         const token = config.getGitHubToken();
-        const statusText = token
-            ? chalk.green('✅ Authenticated')
-            : chalk.red('❌ Not Authenticated');
+        const ghToken = ghAuth.getGhToken();
+        const isGhInstalled = ghAuth.isGhInstalled();
+
+        let statusText = '';
+        if (token || ghToken) {
+            statusText = chalk.green('✅ Authenticated');
+            if (ghToken && !token) statusText += chalk.gray(' (via GitHub CLI)');
+        } else {
+            statusText = chalk.red('❌ Not Authenticated');
+        }
 
         console.log(boxen(
             chalk.cyan.bold('🔐 GitHub Authentication\n\n') + statusText,
-            { padding: 1, borderStyle: 'round', borderColor: token ? 'green' : 'red' }
+            { padding: 1, borderStyle: 'round', borderColor: (token || ghToken) ? 'green' : 'red' }
         ));
+
+        // Build dynamic choices
+        const choices = [];
+
+        // Device Flow options
+        if (isGhInstalled) {
+            choices.push({ name: 'gh_login', message: '📱 Device Login (GitHub CLI) - Recommended' });
+        }
+        if (clientId) {
+            choices.push({ name: 'device_flow', message: '📲 Device Login (Custom OAuth)' });
+        }
+
+        // Manual options
+        choices.push({ name: 'generate', message: '🌐 Generate Token (Browser)' });
+        choices.push({ name: 'token', message: '🔑 Enter Access Token Manually' });
+        choices.push({ name: 'password', message: '🔒 Enter GitHub Password (Legacy)' });
+        choices.push({ name: 'clear', message: '🗑️  Clear Credentials' });
+        choices.push({ name: 'back', message: '⬅️  Back' });
 
         const select = new Select({
             message: 'Choose authentication method:',
-            choices: [
-                { name: 'generate', message: '🌐 Generate New Token (Opens URL)' },
-                { name: 'token', message: '🔑 Enter Personal Access Token' },
-                { name: 'password', message: '🔒 Enter GitHub Password (Legacy)' },
-                { name: 'clear', message: '🗑️  Clear Saved Credentials' },
-                { name: 'back', message: '⬅️  Back to Git Menu' }
-            ]
+            choices
         });
 
         const action = await select.run().catch(() => 'back');
         if (action === 'back') break;
 
-        if (action === 'generate') {
-            const url = ghAuth.getSmartAuthUrl();
+        if (action === 'gh_login') {
+            // GitHub CLI Device Login
+            const result = await ghAuth.runGhAuthLogin();
+            if (result.success && result.token) {
+                applyToken(result.token);
+                console.log(TerminalUI.formatSuccess('Logged in via GitHub CLI! Token synced.'));
+            } else {
+                console.log(TerminalUI.formatError(result.error || 'Login failed'));
+            }
 
-            // Try to open browser (won't work in Docker but try anyway)
+        } else if (action === 'device_flow') {
+            // Custom OAuth Device Flow
+            const result = await ghAuth.startDeviceFlow();
+            if (result.success && result.token) {
+                applyToken(result.token);
+                console.log(TerminalUI.formatSuccess('Device authentication successful! Token synced.'));
+            } else {
+                console.log(TerminalUI.formatError(result.error || 'Device flow failed'));
+            }
+
+        } else if (action === 'generate') {
+            const url = ghAuth.getSmartAuthUrl();
             const result = await ghAuth.openBrowser(url);
 
-            // Always show the URL prominently
             console.log('\n' + boxen(
                 ghAuth.getAuthInstructions(url),
                 { padding: 1, borderStyle: 'double', borderColor: 'yellow' }
@@ -1415,9 +1453,8 @@ async function showAuthMenu() {
             config.setGitHubToken(null);
             process.env.GH_TOKEN = '';
             process.env.GITHUB_TOKEN = '';
-            // Clear global git config
             agent.gitManager.executeGit('config --global --unset url."https://@github.com/".insteadOf', { silent: true });
-            console.log(TerminalUI.formatSuccess('Credentials cleared from config & Git.'));
+            console.log(TerminalUI.formatSuccess('Credentials cleared.'));
         }
 
         await new Input({ message: 'Press Enter to continue' }).run().catch(() => null);

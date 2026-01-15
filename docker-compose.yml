@@ -11,6 +11,7 @@ services:
       - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
       - LORAPOK_DOCKER=true
       - PROJECT_ROOT=${PROJECT_ROOT}
+      - GITHUB_CLIENT_ID=Ov23lijzKZbBGMmgHRP1
     volumes:
       - .:/app
       - /app/node_modules
@@ -18,7 +19,7 @@ services:
       - ${PROJECT_ROOT:-.}:/project
       - /var/run/docker.sock:/var/run/docker.sock
       # Mount host git config and ssh keys to clone host identity
-      - /home/maizied/.gitconfig:/root/.gitconfig:ro
+      - /home/maizied/.gitconfig:/root/.gitconfig
       - /home/maizied/.ssh:/root/.ssh:ro
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3847/health" ]

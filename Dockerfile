@@ -6,7 +6,7 @@ LABEL description="Lorapok AI Coding Agent"
 # Create app directory
 WORKDIR /app
 
-# Install git, bash, curl, jq, docker, openssh, and build tools
+# Install git, bash, curl, jq, docker, openssh, github-cli, and build tools
 RUN apk add --no-cache \
     git \
     bash \
@@ -15,6 +15,7 @@ RUN apk add --no-cache \
     docker-cli \
     docker-cli-compose \
     openssh-client \
+    github-cli \
     make \
     g++ \
     python3 \

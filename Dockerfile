@@ -6,8 +6,8 @@ LABEL description="Lorapok AI Coding Agent"
 # Create app directory
 WORKDIR /app
 
-# Install git, bash, curl, jq, docker and other utilities
-RUN apk add --no-cache git bash curl jq docker-cli
+# Install git, bash, curl, jq, docker, and docker-compose plugin
+RUN apk add --no-cache git bash curl jq docker-cli docker-cli-compose
 
 # Install pnpm
 RUN npm install -g pnpm

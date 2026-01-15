@@ -793,6 +793,7 @@ async function showSettings() {
             'Change Name',
             'Change Model',
             'Change Language',
+            '🎨 CLI Theme',
             'Update API Key',
             'Back'
         ]
@@ -822,6 +823,8 @@ async function showSettings() {
     } else if (choice === 'Update API Key') {
         const keyRes = await new Input({ message: 'New API Key:' }).run();
         config.setApiKey(keyRes);
+    } else if (choice === '🎨 CLI Theme') {
+        await TerminalUI.previewThemes(config);
     }
 
     console.log(TerminalUI.formatSuccess('Settings updated.'));
@@ -1331,7 +1334,11 @@ async function main() {
 
     const version = require('./package.json').version;
     const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
-    TerminalUI.showHeader(version, config.getModel(), displayPath);
+
+    // Animate Logo on startup
+    await TerminalUI.animateLogo(1500, config.getBrandingFont());
+
+    TerminalUI.showHeader(version, config.getModel(), displayPath, config);
     TerminalUI.showWelcome();
     await chatLoop();
 

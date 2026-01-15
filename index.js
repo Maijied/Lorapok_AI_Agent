@@ -23,9 +23,13 @@ function executeCommand(command) {
     try {
         console.log(chalk.gray('Executing...'));
 
+        // Detect best shell to use
+        const isWindows = process.platform === 'win32';
+        const shell = isWindows ? true : (fs.existsSync('/bin/bash') ? '/bin/bash' : true);
+
         // Timeout protection (60s)
         const result = spawnSync(command, {
-            shell: true,
+            shell: shell,
             encoding: 'utf8',
             cwd: currentCwd,
             timeout: 60000,
@@ -46,7 +50,7 @@ function executeCommand(command) {
         // Persistent CWD tracking: If command contains 'cd', we try to update currentCwd
         if (command.includes('cd ') || command.trim().startsWith('cd')) {
             const pwdResult = spawnSync('cd ' + command + ' && pwd', {
-                shell: true,
+                shell: shell,
                 encoding: 'utf8',
                 cwd: currentCwd
             });

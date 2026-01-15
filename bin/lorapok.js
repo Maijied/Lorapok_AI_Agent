@@ -10,9 +10,14 @@ const fs = require('fs');
  */
 
 const isDocker = process.env.LORAPOK_DOCKER === 'true';
+const useLocal = process.argv.includes('--local');
 
-if (isDocker) {
-    // Inside Docker: Run the main application
+if (isDocker || useLocal) {
+    // Inside Docker or specifically requested local execution
+    // Remove --local from args so it doesn't confuse commander in index.js
+    if (useLocal) {
+        process.argv = process.argv.filter(arg => arg !== '--local');
+    }
     require('../index.js');
 } else {
     // On Host: Redirect all lorapok commands to the Docker container

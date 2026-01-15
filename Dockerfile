@@ -6,8 +6,8 @@ LABEL description="Lorapok AI Coding Agent"
 # Create app directory
 WORKDIR /app
 
-# Install git and other utilities
-RUN apk add --no-cache git
+# Install git, bash, and other utilities
+RUN apk add --no-cache git bash curl
 
 # Install all dependencies (required for testing)
 COPY package*.json ./

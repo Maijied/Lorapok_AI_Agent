@@ -30,15 +30,21 @@ Run `lorapok` to enter the primary chat mode.
 2. **Expected**: The long code block should be replaced with: `[... 30 lines of code hidden ...]`
 3. **Check**: The explanation should still be visible.
 
-### D. Redirection Test
+### D. Redirection & Local Flag Test
 1. From your host terminal, run: `lorapok --help`
 2. **Expected**: `🐳 Lorapok: Redirecting to Docker container...` should appear before the help output.
+3. Run: `lorapok --version --local`
+4. **Expected**: The version should be displayed directly without Docker redirection.
 
-## 3. Automated Suite
+### E. Language Rendering Test
+1. Ask: `Show me a simple Hello World in Zig`
+2. **Expected**: The code should be rendered in a box labeled **ZIG**.
+
+### 3. Automated Suite
 ```bash
 npm test
 ```
-- **Goal**: 26/26 Passing.
+- **Goal**: 45/45 Passing.
 
 ---
 *Clean up your environment after testing:*

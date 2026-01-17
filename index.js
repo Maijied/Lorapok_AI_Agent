@@ -1336,7 +1336,7 @@ async function main() {
     const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
 
     // Animate Logo on startup
-    await TerminalUI.animateLogo(1500, config.getBrandingFont());
+    await TerminalUI.animateLogo(1500, config.getBrandingFont(), version);
 
     TerminalUI.showHeader(version, config.getModel(), displayPath, config);
     TerminalUI.showWelcome();

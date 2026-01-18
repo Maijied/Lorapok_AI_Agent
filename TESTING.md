@@ -34,7 +34,14 @@ Run `lorapok` to enter the primary chat mode.
 1. From your host terminal, run: `lorapok --help`
 2. **Expected**: `🐳 Lorapok: Redirecting to Docker container...` should appear before the help output.
 
-## 3. Automated Suite
+## 3. UI Polish Verification
+1. **Startup**: Run `lorapok`. Verify the animated "LORAPOK CLI 🐛" branding.
+2. **Identity**: Type `who are you`. Verify the instant "I'm 🐛 Lorapok" response.
+3. **Logs**: Type `/logs`. Verify the professional table view.
+4. **Navigation**: Type `@`. Verify the hierarchical file/folder navigator.
+5. **Exit**: Type `exit`. Verify the "SESSION RECAP" with token usage stats.
+
+## 4. Automated Suite
 ```bash
 npm test
 ```

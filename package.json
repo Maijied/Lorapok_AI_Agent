@@ -45,6 +45,7 @@
     "multer": "^1.4.5-lts.1",
     "node-cache": "^5.1.2",
     "ora": "^5.4.1",
+    "terminal-image": "^1.2.1",
     "uuid": "^9.0.1",
     "winston": "^3.11.0"
   },

@@ -21,8 +21,11 @@ The project follows a modular structure:
 - **`server.js`**: Express-based REST API server.
 - **`index.js`**: CLI entry point and menu system.
 
-## 📍 Current State (Updated: 2026-01-15)
-- **Beta 1.0.0-beta.1 Released**: Full Pro UI, Chat-First startup, Proactive File Operations, and Intelligent Code Hiding are implemented.
+## 📍 Current State (Updated: 2026-01-18)
+- **UI Polish**: Complete overhaul of the CLI branding with "LORAPOK CLI 🐛", table-based logs, and professional exit summaries.
+- **Identity**: Fixed identity intercept to robustly handle "who are you" queries locally.
+- **Token Tracking**: Implemented session-based token usage metrics.
+- **Navigation**: Added hierarchical file navigator for `@` mentions.
 - **Testing**: 100% pass rate on 26 automated tests.
 - **Infrastructure**: "Always Docker" redirection logic in `bin/lorapok.js` ensures platform consistency.
 

@@ -144,6 +144,38 @@ async function initialization() {
         TerminalUI.showGitProcess(cmd, out, success);
     });
 
+    // Connect Git processing logs
+    agent.gitManager.setLogger((cmd, out, success) => {
+        TerminalUI.showGitProcess(cmd, out, success);
+    });
+
+    // Unified Auth: Config global git credential if token exists
+    if (existingToken) {
+        agent.gitManager.configureTokenAuth(existingToken);
+    }
+
+    // Git Identity Check & Auto-setup
+    const identity = agent.gitManager.getUserConfig();
+    if (identity.name === 'Not set' || identity.email === 'Not set') {
+        process.stdout.write(chalk.yellow('\n⚠️  Git identity not found. '));
+        const setup = new Select({
+            message: 'Configure Git identity now?',
+            choices: ['Yes', 'No (Commits might fail)']
+        });
+        const choice = await setup.run().catch(() => 'No');
+        if (choice === 'Yes') {
+            const name = await new Input({ message: 'Git user.name:', initial: config.getUserName() || '' }).run();
+            const email = await new Input({ message: 'Git user.email:' }).run();
+            if (name && email) {
+                const globalSetup = new Select({ message: 'Config scope?', choices: ['Global', 'Local'] });
+                const scope = await globalSetup.run() === 'Global';
+                const res = agent.gitManager.configUser(name, email, scope);
+                if (res.success) console.log(TerminalUI.formatSuccess(`Git identity configured (${scope ? 'Global' : 'Local'}).`));
+                else console.log(TerminalUI.formatError(`Failed to set identity: ${res.error}`));
+            }
+        }
+    }
+
     // Log active workspace for clarity
     const displayPath = projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : projectRoot;
     console.log(chalk.gray(`\n  📂 Workspace: ${chalk.white.bold(displayPath)}`));
@@ -374,11 +406,11 @@ async function showActionsMenu() {
                 } else {
                     console.log(TerminalUI.formatError(rerunRes.error));
                 }
-                await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run();
+                await new Input({ message: 'Press Enter to continue' }).run();
             }
         } else {
             console.log(TerminalUI.formatError(jobsRes.error));
-            await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run();
+            await new Input({ message: 'Press Enter to continue' }).run();
         }
     }
 }
@@ -503,6 +535,53 @@ async function chatLoop() {
                     input = `Analyze @${selectedFile}`;
                 } else {
                     continue;
+                }
+            }
+
+            // Handle Slash Commands (Manual input)
+            if (input.startsWith('/')) {
+                const cmd = input.substring(1).toLowerCase();
+                if (cmd === 'exit' || cmd === 'quit' || cmd === 'q') break;
+                if (cmd === 'help' || cmd === '?') { TerminalUI.showHelp(); continue; }
+                if (cmd === 'logs') { await showLogs(); continue; }
+                if (cmd === 'clear') { console.clear(); continue; }
+                if (cmd === 'plan') {
+                    const obj = await new Input({ message: 'What is the objective?' }).run().catch(() => null);
+                    if (obj) await runProWorkflow(obj);
+                    continue;
+                }
+                if (cmd === 'git') {
+                    await showGitMenu();
+                    continue;
+                }
+                if (cmd === 'actions' || cmd === 'ci') {
+                    await showActionsMenu();
+                    continue;
+                }
+                if (cmd === 'files') {
+                    console.log(agent.showFileTree());
+                    await new Input({ message: 'Press Enter to continue' }).run();
+                    continue;
+                }
+
+                // If unknown slash command, or user just typed "/", show menu
+                input = '/';
+                continue;
+            }
+
+            // Handle @file Mentions
+            const mentionRegex = /(?<=^|\s)@(\S+)/g;
+            const fileMatches = input.match(mentionRegex);
+            let processedInput = input;
+            if (fileMatches) {
+                for (const match of fileMatches) {
+                    const filePath = match.substring(1);
+                    try {
+                        const content = agent.fileManager.readFile(filePath);
+                        processedInput = processedInput.replace(match, `\n--- File: ${filePath} ---\n${content}\n---\n`);
+                    } catch (e) {
+                        console.log(chalk.yellow(`\n⚠️  Warning: File ${filePath} not found.`));
+                    }
                 }
             }
 
@@ -706,7 +785,6 @@ async function runProWorkflow(objective) {
                     } else if (action.type === 'CREATE' || action.type === 'UPDATE') {
                         agent.fileManager.writeFile(action.filePath, action.content);
                     }
-                    console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
                 }
             }
 
@@ -1015,7 +1093,7 @@ async function showGitMenu() {
             console.log(TerminalUI.formatError(`Git operation failed: ${e.message}`));
         }
 
-        await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run().catch(() => null);
+        await new Input({ message: 'Press Enter to continue' }).run().catch(() => null);
     }
 }
 
@@ -1267,8 +1345,6 @@ async function showRemoteMenu() {
     }
 }
 
-
-
 async function showLogs() {
     const logPath = path.join(os.homedir(), '.lorapok', 'logs', 'combined.log');
     console.log(chalk.cyan.bold('\n📊 SYSTEM DIAGNOSTIC LOGS\n'));
@@ -1326,16 +1402,10 @@ async function main() {
     const version = require('./package.json').version;
     const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
 
-    // Show Image Logo first
-    await TerminalUI.showBranding();
-
     // Animate Logo on startup
     await TerminalUI.animateLogo(1500, config.getBrandingFont(), version);
 
-    const branchRes = agent.gitManager.getCurrentBranch();
-    const branch = branchRes.success ? branchRes.output : '';
-    
-    TerminalUI.showHeader(version, config.getModel(), displayPath, branch, config);
+    TerminalUI.showHeader(version, config.getModel(), displayPath, config);
     TerminalUI.showWelcome();
     
     await chatLoop();
@@ -1484,7 +1554,7 @@ async function showAuthMenu() {
             console.log(TerminalUI.formatSuccess('Credentials cleared.'));
         }
 
-        await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run().catch(() => null);
+        await new Input({ message: 'Press Enter to continue' }).run().catch(() => null);
     }
 }
 

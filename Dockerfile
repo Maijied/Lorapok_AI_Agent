@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 LABEL maintainer="Maizied"
 LABEL description="Lorapok AI Coding Agent"
@@ -7,8 +7,24 @@ LABEL version="1.0.0"
 # Create app directory
 WORKDIR /app
 
-# Install git, bash, curl, jq, docker, docker-compose plugin, and openssh-client
-RUN apk add --no-cache git bash curl jq docker-cli docker-cli-compose openssh-client
+# Install git, bash, curl, jq, docker, openssh, github-cli, and build tools
+RUN apk add --no-cache \
+    git \
+    bash \
+    curl \
+    jq \
+    docker-cli \
+    docker-cli-compose \
+    openssh-client \
+    github-cli \
+    make \
+    g++ \
+    python3 \
+    build-base
+
+# Set environment variables for better character support
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # Install pnpm
 RUN npm install -g pnpm

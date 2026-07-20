@@ -11,6 +11,7 @@ const sessions = new Map();
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use(express.static('public'));
 
 // Get or create agent session
 function getAgent(sessionId) {
@@ -218,6 +219,32 @@ app.post('/api/git/smart-commit', async (req, res) => {
         res.json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Compatibility routes for web UI
+app.post('/agent/single', async (req, res) => {
+    try {
+        const { query, sessionId = 'default' } = req.body;
+        if (!query) return res.status(400).json({ error: 'Query is required' });
+        const agent = getAgent(sessionId);
+        const response = await agent.chat(query);
+        res.json({ success: true, ...response });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/agent/multi', async (req, res) => {
+    try {
+        const { query, sessionId = 'default' } = req.body;
+        if (!query) return res.status(400).json({ error: 'Query is required' });
+        // For now, multi-agent is simulated by the same endpoint but different metadata
+        const agent = getAgent(sessionId);
+        const response = await agent.chat(`[MULTI-AGENT MODE] ${query}`);
+        res.json({ success: true, ...response });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

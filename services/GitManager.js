@@ -4,7 +4,7 @@ const path = require('path');
 class GitManager {
     constructor(projectRoot = process.cwd()) {
         this.projectRoot = path.resolve(projectRoot);
-        this.logger = null;
+        this.logger = null; // Callback for logging: (cmd, output, success) => {}
     }
 
     setLogger(logger) {
@@ -18,13 +18,16 @@ class GitManager {
                 cwd: this.projectRoot,
                 encoding: 'utf-8',
                 stdio: options.silent ? 'pipe' : undefined,
+                env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
                 ...options
             });
             const output = result.trim();
+            // Only log if logger is set AND verbose is not explicitly false
             if (this.logger && options.verbose !== false) this.logger(command, output, true);
             return { success: true, output };
         } catch (error) {
             const output = error.stdout?.trim() || error.stderr?.trim() || '';
+            // Only log if logger is set AND verbose is not explicitly false
             if (this.logger && options.verbose !== false) this.logger(command, output, false);
             return {
                 success: false,
@@ -85,15 +88,15 @@ class GitManager {
     }
 
     // Add files to staging
-    add(files = '.') {
+    add(files = '.', options = {}) {
         if (!this.isGitRepo()) {
             return { success: false, error: 'Not a git repository' };
         }
-        return this.executeGit(`add ${files}`);
+        return this.executeGit(`add ${files}`, options);
     }
 
     // Commit changes
-    commit(message) {
+    commit(message, options = {}) {
         if (!this.isGitRepo()) {
             return { success: false, error: 'Not a git repository' };
         }
@@ -101,7 +104,7 @@ class GitManager {
             return { success: false, error: 'Commit message required' };
         }
         const escapedMessage = message.replace(/"/g, '\\"');
-        return this.executeGit(`commit -m "${escapedMessage}"`);
+        return this.executeGit(`commit -m "${escapedMessage}"`, options);
     }
 
     // Push to remote
@@ -109,7 +112,21 @@ class GitManager {
         if (!this.isGitRepo()) {
             return { success: false, error: 'Not a git repository' };
         }
-        return this.executeGit(`push ${remote} ${branch}`);
+        const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+        const cmd = token
+            ? `push https://${token}@github.com/${this.getRepoPathFromRemote(remote)} ${branch}`
+            : `push ${remote} ${branch}`;
+
+        return this.executeGit(cmd);
+    }
+
+    // Helper to extract user/repo from remote URL
+    getRepoPathFromRemote(remoteName) {
+        const res = this.executeGit(`remote get-url ${remoteName}`, { silent: true });
+        if (!res.success) return '';
+        // Extract 'user/repo.git' or 'user/repo'
+        const match = res.output.match(/github\.com[:/](.+?)(\.git)?$/);
+        return match ? match[1] : '';
     }
 
     // Pull from remote
@@ -117,7 +134,11 @@ class GitManager {
         if (!this.isGitRepo()) {
             return { success: false, error: 'Not a git repository' };
         }
-        return this.executeGit(`pull ${remote} ${branch}`);
+        const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+        const cmd = token
+            ? `pull https://${token}@github.com/${this.getRepoPathFromRemote(remote)} ${branch}`
+            : `pull ${remote} ${branch}`;
+        return this.executeGit(cmd);
     }
 
     // Create new branch
@@ -177,7 +198,7 @@ class GitManager {
             .filter(l => l.trim())
             .map(line => {
                 const [hash, author, date, message] = line.split('|');
-                return { hash, author, date, message };
+                return { hash, author, date, message, subject: message };
             });
 
         return { success: true, commits };
@@ -243,6 +264,216 @@ class GitManager {
             return { success: false, error: 'Not a git repository' };
         }
         return this.executeGit(`reset ${mode} ${target}`);
+    }
+
+    // Amend last commit
+    amendCommit(message = '') {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        const cmd = message ? `commit --amend -m "${message.replace(/"/g, '\\"')}"` : 'commit --amend --no-edit';
+        return this.executeGit(cmd);
+    }
+
+    // Get tags
+    getTags() {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        const result = this.executeGit('tag');
+        if (!result.success) return result;
+        return {
+            success: true,
+            tags: result.output.split('\n').filter(t => t.trim())
+        };
+    }
+
+    // Create tag
+    createTag(name, message = '') {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        const cmd = message ? `tag -a ${name} -m "${message.replace(/"/g, '\\"')}"` : `tag ${name}`;
+        return this.executeGit(cmd);
+    }
+
+    // Clean untracked files
+    clean(dryRun = false) {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        const cmd = dryRun ? 'clean -nd' : 'clean -fd';
+        return this.executeGit(cmd);
+    }
+
+    // Get staged changes count
+    getStagedCount() {
+        const result = this.executeGit('diff --name-only --cached', { silent: true });
+        if (!result.success) return 0;
+        return result.output.split('\n').filter(l => l.trim()).length;
+    }
+
+    // Get merge conflicts
+    getConflicts() {
+        const result = this.executeGit('diff --name-only --diff-filter=U', { silent: true });
+        if (!result.success) return [];
+        return result.output.split('\n').filter(l => l.trim());
+    }
+
+    // Get remotes with URLs
+    getRemotesDetailed() {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        const result = this.executeGit('remote -v');
+        if (!result.success) return result;
+
+        const lines = result.output.split('\n').filter(l => l.trim());
+        const remotes = {};
+        lines.forEach(line => {
+            const [name, urlAndType] = line.split('\t');
+            if (!urlAndType) return;
+            const [url, type] = urlAndType.split(' ');
+            if (!remotes[name]) remotes[name] = { name, fetch: '', push: '', url: '' };
+            const typeKey = type.replace(/[()]/g, '');
+            remotes[name][typeKey] = url;
+            // Also set 'url' for simple access (prefers fetch)
+            if (typeKey === 'fetch' || !remotes[name].url) remotes[name].url = url;
+        });
+
+        return { success: true, remotes: Object.values(remotes) };
+    }
+
+    // Remove remote
+    removeRemote(name) {
+        return this.executeGit(`remote remove ${name}`);
+    }
+
+    // Rename remote
+    renameRemote(oldName, newName) {
+        return this.executeGit(`remote rename ${oldName} ${newName}`);
+    }
+
+    // Cherry pick
+    cherryPick(hash) {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        return this.executeGit(`cherry-pick ${hash}`);
+    }
+
+    // Check why a file is ignored
+    checkIgnore(filePath) {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        return this.executeGit(`check-ignore -v ${filePath}`);
+    }
+
+    // List all ignored files
+    listIgnored() {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        return this.executeGit('ls-files --others --ignored --exclude-standard');
+    }
+
+    // Get current user config
+    getUserConfig() {
+        const name = this.executeGit('config user.name', { silent: true });
+        const email = this.executeGit('config user.email', { silent: true });
+        return {
+            name: name.success ? name.output : 'Not set',
+            email: email.success ? email.output : 'Not set'
+        };
+    }
+
+    // List stashes
+    getStashes() {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        return this.executeGit('stash list');
+    }
+
+    // Clear all stashes
+    stashClear() {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        return this.executeGit('stash clear');
+    }
+
+    // Pop stash
+    stashPop() {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        return this.executeGit('stash pop');
+    }
+
+    // Configure user identity
+    configUser(name, email, global = false) {
+        const flag = global ? '--global' : '';
+        const resName = this.executeGit(`config ${flag} user.name "${name.replace(/"/g, '\\"')}"`);
+        if (!resName.success) return resName;
+        return this.executeGit(`config ${flag} user.email "${email.replace(/"/g, '\\"')}"`);
+    }
+
+    // Save stash (alias for tests)
+    stashSave(message = '') {
+        return this.stash(message);
+    }
+
+    // Apply stash
+    stashApply(index = 0) {
+        if (!this.isGitRepo()) {
+            return { success: false, error: 'Not a git repository' };
+        }
+        return this.executeGit(`stash apply stash@{${index}}`);
+    }
+
+    // Convert HTTPS remote to SSH
+    convertToSSH(remoteName = 'origin') {
+        const res = this.executeGit(`remote get-url ${remoteName}`, { silent: true });
+        if (!res.success) return res;
+
+        const currentUrl = res.output.trim();
+        if (currentUrl.startsWith('git@')) {
+            return { success: true, message: 'Already using SSH' };
+        }
+
+        const match = currentUrl.match(/github\.com[:/](.+?)(\.git)?$/);
+        if (!match) return { success: false, error: 'Could not parse GitHub URL' };
+
+        const newUrl = `git@github.com:${match[1]}.git`;
+        return this.setRemote(remoteName, newUrl);
+    }
+
+    // Test SSH Connection
+    testSSHConnection() {
+        // ssh -T returns 1 on success (welcome message) but prints to stderr/stdout
+        // We handle the specific exit code or output
+        try {
+            this.executeGit('ls-remote git@github.com:check/ssh_check', { timeout: 3000 });
+        } catch (e) {
+            // It might fail on the repo check, but if we get "Permission denied (publickey)", keys are missing.
+            // A better check is the simple ssh command but executeGit wraps git.
+            // Let's use a "blind" check: if we can fetch refs from a known public repo via SSH without password prompt, it works.
+            // Actually, best is just checking if ~/.ssh exists and has files.
+            const sshDirs = require('fs').existsSync('/root/.ssh') && require('fs').readdirSync('/root/.ssh').length > 0;
+            return { success: sshDirs };
+        }
+        return { success: true };
+    }
+
+    // Configure global token auth for unified credentials
+    configureTokenAuth(token) {
+        if (!token) return { success: false, error: 'Token required' };
+        // We use global config to ensure manual git commands also pick it up
+        // url."https://${token}@github.com/".insteadOf "https://github.com/"
+        const cleanToken = token.trim();
+        return this.executeGit(`config --global url."https://${cleanToken}@github.com/".insteadOf "https://github.com/"`);
     }
 }
 

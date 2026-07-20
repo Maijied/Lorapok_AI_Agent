@@ -22,6 +22,7 @@ services:
       - /app/node_modules               # Isolate container node_modules
       - lorapok-config:/root/.lorapok   # Persistent config & logs
       - ${PROJECT_ROOT:-.}:/project     # Mount user's project workspace
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3847/health"]
       interval: 30s

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -10,21 +10,30 @@ const fs = require('fs');
  */
 
 const isDocker = process.env.LORAPOK_DOCKER === 'true';
+const useLocal = process.argv.includes('--local');
 
-if (isDocker) {
-    // Inside Docker: Run the main application
+if (isDocker || useLocal) {
+    // Inside Docker or specifically requested local execution
+    // Remove --local from args so it doesn't confuse commander in index.js
+    if (useLocal) {
+        process.argv = process.argv.filter(arg => arg !== '--local');
+    }
     require('../index.js');
 } else {
     // On Host: Redirect all lorapok commands to the Docker container
     const projectRoot = process.cwd();
 
-    // Check if we are in a directory that should be mounted
-    // Default to mounting current directory to /project
+    // 1. Ensure the persistent container is up and matches current directory
+    // This will create or update the single 'lorapok-ai-agent' container
+    spawnSync('docker', ['compose', 'up', '-d', 'lorapok'], {
+        cwd: path.join(__dirname, '..'),
+        env: { ...process.env, PROJECT_ROOT: projectRoot }
+    });
 
+    // 2. Execute the CLI inside the existing container
     const args = [
         'compose',
-        'run',
-        '--rm',
+        'exec',
         'lorapok',
         'node', 'index.js',
         ...process.argv.slice(2)

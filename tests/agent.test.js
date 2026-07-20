@@ -13,6 +13,7 @@ describe('LorapokCodingAgent', () => {
     beforeEach(() => {
         testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'lorapok-agent-test-'));
         jest.spyOn(os, 'homedir').mockReturnValue(testHome);
+        jest.clearAllMocks();
         agent = new LorapokCodingAgent('fake-api-key');
     });
 
@@ -29,14 +30,14 @@ describe('LorapokCodingAgent', () => {
             }
         });
 
-        const response = await agent.chat('Run a test query');
+        const response = await agent.chat('Explain recursion');
         expect(response.success).toBe(true);
         expect(response.content).toBe('This is a test response');
         expect(axios.post).toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({
                 messages: expect.arrayContaining([
-                    expect.objectContaining({ role: 'user', content: 'Run a test query' })
+                    expect.objectContaining({ role: 'user', content: 'Explain recursion' })
                 ])
             }),
             expect.any(Object)
@@ -51,7 +52,7 @@ describe('LorapokCodingAgent', () => {
             }
         });
 
-        await expect(agent.chat('Run a failure test')).rejects.toThrow('Invalid API key');
+        await expect(agent.chat('Make a web app')).rejects.toThrow('Invalid API key');
     });
 
     test('should probe models correctly', async () => {
@@ -82,5 +83,19 @@ describe('LorapokCodingAgent', () => {
         expect(history.length).toBe(4); // 2 pairs of user/assistant
         expect(history[0].content).toBe('First');
         expect(history[1].content).toBe('Response');
+    });
+
+    test('should intercept identity queries locally', async () => {
+        const response1 = await agent.chat('Hi Lorapok');
+        expect(response1.success).toBe(true);
+        expect(response1.content).toContain('all programming languages');
+
+        const response2 = await agent.chat('who created you');
+        expect(response2.content).toContain('expert AI coding agent');
+
+        const response3 = await agent.chat('what is your name');
+        expect(response3.content).toContain('Lorapok');
+
+        expect(axios.post).not.toHaveBeenCalled();
     });
 });

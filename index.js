@@ -17,7 +17,6 @@ const { spawnSync } = require('child_process');
 const readline = require('readline');
 
 let agent, config, currentCwd;
-
 /**
  * Execute a bash command and return the result
  */
@@ -79,13 +78,13 @@ function executeCommand(command) {
 }
 
 // Global Session Data
-    const sessionData = {
-        id: Math.random().toString(36).substring(2, 10).toUpperCase(),
-        count: 0,
-        successRate: 100,
-        tokens: { prompt: 0, completion: 0, total: 0 }
-    };
-
+const sessionData = {
+    id: Math.random().toString(36).substring(2, 10).toUpperCase(),
+    count: 0,
+    successRate: 100,
+    startTime: Date.now(),
+    tokens: { prompt: 0, completion: 0, total: 0 }
+};
 // ==================== KEYBOARD HANDLING ====================
 let ctrlCCount = 0;
 const setupExitHandlers = () => {
@@ -140,38 +139,10 @@ async function initialization() {
 
     agent = new LorapokEnhancedAgent(config.getApiKey(), projectRoot);
     currentCwd = projectRoot;
-
     // Connect Git processing logs
     agent.gitManager.setLogger((cmd, out, success) => {
         TerminalUI.showGitProcess(cmd, out, success);
     });
-
-    // Unified Auth: Config global git credential if token exists
-    // if (existingToken) {
-    //     agent.gitManager.configureTokenAuth(existingToken);
-    // }
-
-    // Git Identity Check & Auto-setup
-    // const identity = agent.gitManager.getUserConfig();
-    // if (identity.name === 'Not set' || identity.email === 'Not set') {
-    //     process.stdout.write(chalk.yellow('\n⚠️  Git identity not found. '));
-    //     const setup = new Select({
-    //         message: 'Configure Git identity now?',
-    //         choices: ['Yes', 'No (Commits might fail)']
-    //     });
-    //     const choice = await setup.run().catch(() => 'No');
-    //     if (choice === 'Yes') {
-    //         const name = await new Input({ message: 'Git user.name:', initial: config.getUserName() || '' }).run();
-    //         const email = await new Input({ message: 'Git user.email:' }).run();
-    //         if (name && email) {
-    //             const globalSetup = new Select({ message: 'Config scope?', choices: ['Global', 'Local'] });
-    //             const scope = await globalSetup.run() === 'Global';
-    //             const res = agent.gitManager.configUser(name, email, scope);
-    //             if (res.success) console.log(TerminalUI.formatSuccess(`Git identity configured (${scope ? 'Global' : 'Local'}).`));
-    //             else console.log(TerminalUI.formatError(`Failed to set identity: ${res.error}`));
-    //         }
-    //     }
-    // }
 
     // Log active workspace for clarity
     const displayPath = projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : projectRoot;
@@ -735,6 +706,7 @@ async function runProWorkflow(objective) {
                     } else if (action.type === 'CREATE' || action.type === 'UPDATE') {
                         agent.fileManager.writeFile(action.filePath, action.content);
                     }
+                    console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
                 }
             }
 

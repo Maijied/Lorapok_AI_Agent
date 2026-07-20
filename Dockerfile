@@ -7,8 +7,14 @@ LABEL version="1.0.0"
 # Create app directory
 WORKDIR /app
 
-# Install git, bash, curl and other utilities needed for bash command execution
-RUN apk add --no-cache git bash curl openssh-client
+# Install git, bash, curl, jq, docker, docker-compose plugin, and openssh-client
+RUN apk add --no-cache git bash curl jq docker-cli docker-cli-compose openssh-client
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Fix git safe directory issue for Docker mounts
+RUN git config --global --add safe.directory /project
 
 # Install dependencies first (better layer caching)
 COPY package*.json ./

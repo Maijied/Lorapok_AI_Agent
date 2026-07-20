@@ -15,7 +15,9 @@
     "docker:build": "docker compose build",
     "docker:run": "docker compose run --rm lorapok",
     "setup": "npm install && docker compose build && npm link --force",
-    "update": "docker compose build",
+    "update": "docker compose up -d --build",
+    "docker:stop": "docker compose stop",
+    "docker:down": "docker compose down",
     "server": "node server.js"
   },
   "keywords": [

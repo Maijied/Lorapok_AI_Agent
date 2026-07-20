@@ -66,7 +66,7 @@ Run the test suite to ensure your environment is configured correctly:
 ```bash
 npm test
 ```
-*Current tests: 26 (File Ops, Git Ops, Config, API, Agent Logic)*
+*Current tests: 45 (File Ops, Git Ops, Action Parsing, Config, API, Agent Logic)*
 
 ---
 *Lorapok Beta - Built for speed, precision, and developer happiness.*

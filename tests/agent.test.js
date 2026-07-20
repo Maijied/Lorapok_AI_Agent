@@ -29,14 +29,14 @@ describe('LorapokCodingAgent', () => {
             }
         });
 
-        const response = await agent.chat('Hello');
+        const response = await agent.chat('Run a test query');
         expect(response.success).toBe(true);
         expect(response.content).toBe('This is a test response');
         expect(axios.post).toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({
                 messages: expect.arrayContaining([
-                    expect.objectContaining({ role: 'user', content: 'Hello' })
+                    expect.objectContaining({ role: 'user', content: 'Run a test query' })
                 ])
             }),
             expect.any(Object)
@@ -51,7 +51,7 @@ describe('LorapokCodingAgent', () => {
             }
         });
 
-        await expect(agent.chat('Hi')).rejects.toThrow('Invalid API key');
+        await expect(agent.chat('Run a failure test')).rejects.toThrow('Invalid API key');
     });
 
     test('should probe models correctly', async () => {

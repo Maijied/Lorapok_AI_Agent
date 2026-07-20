@@ -4,6 +4,11 @@ const path = require('path');
 class GitManager {
     constructor(projectRoot = process.cwd()) {
         this.projectRoot = path.resolve(projectRoot);
+        this.logger = null;
+    }
+
+    setLogger(logger) {
+        this.logger = logger;
     }
 
     // Execute git command
@@ -15,12 +20,16 @@ class GitManager {
                 stdio: options.silent ? 'pipe' : undefined,
                 ...options
             });
-            return { success: true, output: result.trim() };
+            const output = result.trim();
+            if (this.logger && options.verbose !== false) this.logger(command, output, true);
+            return { success: true, output };
         } catch (error) {
+            const output = error.stdout?.trim() || error.stderr?.trim() || '';
+            if (this.logger && options.verbose !== false) this.logger(command, output, false);
             return {
                 success: false,
                 error: error.message,
-                output: error.stdout?.trim() || error.stderr?.trim() || ''
+                output
             };
         }
     }

@@ -147,31 +147,31 @@ async function initialization() {
     });
 
     // Unified Auth: Config global git credential if token exists
-    if (existingToken) {
-        agent.gitManager.configureTokenAuth(existingToken);
-    }
+    // if (existingToken) {
+    //     agent.gitManager.configureTokenAuth(existingToken);
+    // }
 
     // Git Identity Check & Auto-setup
-    const identity = agent.gitManager.getUserConfig();
-    if (identity.name === 'Not set' || identity.email === 'Not set') {
-        process.stdout.write(chalk.yellow('\n⚠️  Git identity not found. '));
-        const setup = new Select({
-            message: 'Configure Git identity now?',
-            choices: ['Yes', 'No (Commits might fail)']
-        });
-        const choice = await setup.run().catch(() => 'No');
-        if (choice === 'Yes') {
-            const name = await new Input({ message: 'Git user.name:', initial: config.getUserName() || '' }).run();
-            const email = await new Input({ message: 'Git user.email:' }).run();
-            if (name && email) {
-                const globalSetup = new Select({ message: 'Config scope?', choices: ['Global', 'Local'] });
-                const scope = await globalSetup.run() === 'Global';
-                const res = agent.gitManager.configUser(name, email, scope);
-                if (res.success) console.log(TerminalUI.formatSuccess(`Git identity configured (${scope ? 'Global' : 'Local'}).`));
-                else console.log(TerminalUI.formatError(`Failed to set identity: ${res.error}`));
-            }
-        }
-    }
+    // const identity = agent.gitManager.getUserConfig();
+    // if (identity.name === 'Not set' || identity.email === 'Not set') {
+    //     process.stdout.write(chalk.yellow('\n⚠️  Git identity not found. '));
+    //     const setup = new Select({
+    //         message: 'Configure Git identity now?',
+    //         choices: ['Yes', 'No (Commits might fail)']
+    //     });
+    //     const choice = await setup.run().catch(() => 'No');
+    //     if (choice === 'Yes') {
+    //         const name = await new Input({ message: 'Git user.name:', initial: config.getUserName() || '' }).run();
+    //         const email = await new Input({ message: 'Git user.email:' }).run();
+    //         if (name && email) {
+    //             const globalSetup = new Select({ message: 'Config scope?', choices: ['Global', 'Local'] });
+    //             const scope = await globalSetup.run() === 'Global';
+    //             const res = agent.gitManager.configUser(name, email, scope);
+    //             if (res.success) console.log(TerminalUI.formatSuccess(`Git identity configured (${scope ? 'Global' : 'Local'}).`));
+    //             else console.log(TerminalUI.formatError(`Failed to set identity: ${res.error}`));
+    //         }
+    //     }
+    // }
 
     // Log active workspace for clarity
     const displayPath = projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : projectRoot;
@@ -543,7 +543,7 @@ async function chatLoop() {
             try {
                 sessionData.count++;
                 const response = await withCancellation('Thinking...', (signal) =>
-                    agent.chat(processedInput, null, { signal })
+                    agent.chat(input, null, { signal })
                 );
 
                 if (!response || response.aborted) continue;

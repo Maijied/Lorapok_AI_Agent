@@ -1,27 +1,33 @@
 services:
   lorapok:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lorapok-ai-agent:latest
     container_name: lorapok-ai-agent
     restart: unless-stopped
     ports:
       - "3847:3847"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=3847
       - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+      - PERPLEXITY_API_URL=${PERPLEXITY_API_URL:-https://api.perplexity.ai/chat/completions}
       - LORAPOK_DOCKER=true
-      - PROJECT_ROOT=${PROJECT_ROOT}
+      - PROJECT_ROOT=${PROJECT_ROOT:-.}
+      - GH_TOKEN=${GH_TOKEN:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     volumes:
-      - .:/app
-      - /app/node_modules
-      - lorapok-config:/root/.lorapok
-      - ${PROJECT_ROOT:-.}:/project
+      - .:/app                          # Mount app source for live dev
+      - /app/node_modules               # Isolate container node_modules
+      - lorapok-config:/root/.lorapok   # Persistent config & logs
+      - ${PROJECT_ROOT:-.}:/project     # Mount user's project workspace
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3847/health" ]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3847/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     dns:
       - 8.8.8.8
       - 8.8.4.4

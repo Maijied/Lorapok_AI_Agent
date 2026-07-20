@@ -2,16 +2,17 @@ FROM node:18-alpine
 
 LABEL maintainer="Maizied"
 LABEL description="Lorapok AI Coding Agent"
+LABEL version="1.0.0"
 
 # Create app directory
 WORKDIR /app
 
-# Install git and other utilities
-RUN apk add --no-cache git
+# Install git, bash, curl and other utilities needed for bash command execution
+RUN apk add --no-cache git bash curl openssh-client
 
-# Install all dependencies (required for testing)
+# Install dependencies first (better layer caching)
 COPY package*.json ./
-RUN npm install
+RUN npm install --production=false
 
 # Copy source code
 COPY . .
@@ -19,12 +20,15 @@ COPY . .
 # Create config directory and logs directory
 RUN mkdir -p /root/.lorapok/logs
 
-# Expose port
+# Create /project directory for workspace mounting
+RUN mkdir -p /project
+
+# Expose port for REST API server
 EXPOSE 3847
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check for the REST API server
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3847/health || exit 1
 
-# Run server
+# Default: Run the REST API server
 CMD ["node", "server.js"]

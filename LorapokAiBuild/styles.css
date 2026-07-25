@@ -1,0 +1,90 @@
+:root {
+  --lp-bg: #050816;
+  --lp-bg-alt: #0b1120;
+  --lp-primary: #22c55e;
+  --lp-primary-soft: rgba(34, 197, 94, 0.12);
+  --lp-text: #e5e7eb;
+  --lp-text-muted: #9ca3af;
+  --lp-border: #1f2937;
+  --lp-card-bg: #111827;
+  --lp-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top, #1f2937 0, var(--lp-bg) 40%, #020617 100%);
+  color: var(--lp-text);
+  font-family: var(--lp-font);
+}
+
+/* Layout */
+
+.lp-header {
+  border-bottom: 1px solid var(--lp-border);
+  background: linear-gradient(to right, rgba(17, 24, 39, 0.9), rgba(30, 64, 175, 0.2));
+  backdrop-filter: blur(12px);
+}
+
+.lp-header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lp-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lp-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top left, #4ade80, #22c55e 40%, #14532d 100%);
+  font-size: 1.4rem;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+.lp-tagline {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--lp-text-muted);
+}
+
+.lp-nav {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.lp-nav a {
+  color: var(--lp-text-muted);
+  text-decoration: none;
+  position: relative;
+  padding-bottom: 0.1rem;
+}
+
+.lp-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  background: var(--lp-primary);
+  transition

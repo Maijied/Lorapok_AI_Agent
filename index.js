@@ -13,6 +13,17 @@ const chalk = require('chalk');
 const { program } = require('commander');
 const { Select, Input } = require('enquirer');
 
+// Fix for Node 24+ and Enquirer interaction (prevents ERR_USE_AFTER_CLOSE crash on Ctrl+C)
+const readline = require('readline');
+const originalPause = readline.Interface.prototype.pause;
+readline.Interface.prototype.pause = function() {
+    try {
+        originalPause.call(this);
+    } catch (e) {
+        if (e.code !== 'ERR_USE_AFTER_CLOSE') throw e;
+    }
+};
+
 const { LorapokEnhancedAgent } = require('./lib/agent-enhanced');
 const { LorapokConfig } = require('./lib/config');
 const TerminalUI = require('./lib/ui');
@@ -172,7 +183,6 @@ async function promptSlashAutoComplete() {
 
             { role: 'heading', message: chalk.cyan.bold('\n  🚀 CONTROLS') },
             { name: '/bypass', message: `    🚀 ${chalk.bold('/bypass')}    ${chalk.gray('‣ Toggle Auto-Approve mode')}` },
-            { name: '/model', message: `    🧠 ${chalk.bold('/model')}     ${chalk.gray('‣ Switch LLM model')}` },
             { name: '/settings', message: `    🎨 ${chalk.bold('/settings')}  ${chalk.gray('‣ Customize themes & preferences')}` },
 
             { role: 'heading', message: chalk.cyan.bold('\n  🔗 DEVOPS & GIT') },
@@ -209,6 +219,16 @@ async function promptFileAutoComplete(agent) {
         return null;
     }
 
+    rawFileList.sort((a, b) => {
+        const aIsDir = typeof a === 'object' && (a.type === 'directory' || a.isDirectory);
+        const bIsDir = typeof b === 'object' && (b.type === 'directory' || b.isDirectory);
+        if (aIsDir && !bIsDir) return -1;
+        if (!aIsDir && bIsDir) return 1;
+        const aPath = typeof a === 'string' ? a : (a.path || a.name || String(a));
+        const bPath = typeof b === 'string' ? b : (b.path || b.name || String(b));
+        return aPath.localeCompare(bPath);
+    });
+
     const choices = [
         { name: 'cancel', message: '❌ Return to Chat (Cancel)' }
     ];
@@ -218,7 +238,19 @@ async function promptFileAutoComplete(agent) {
         if (!filePath) return;
         const isDir = typeof f === 'object' && (f.type === 'directory' || f.isDirectory);
         const icon = TerminalUI.getFileIcon(filePath, isDir);
-        choices.push({ name: `@${filePath}`, message: `${icon} @${filePath}` });
+        
+        const path = require('path');
+        const basename = path.basename(filePath);
+        const dirname = path.dirname(filePath);
+        
+        const displayPath = dirname === '.' 
+            ? chalk.bold(basename) 
+            : `${chalk.bold(basename)}  ${chalk.gray(dirname + '/')}`;
+
+        choices.push({ 
+            name: `@${filePath}`, 
+            message: `  ${icon} ${displayPath}` 
+        });
     });
 
     const prompt = new AutoComplete({
@@ -262,8 +294,17 @@ async function chatLoop() {
             let input = await inputPrompt.run().catch(() => null);
 
             if (input === null) {
-                if (ctrlCCount >= 2) break;
+                ctrlCCount++;
+                if (ctrlCCount >= 2) {
+                    console.log(chalk.gray('\nExiting Lorapok AI...'));
+                    break;
+                }
+                console.log(chalk.yellow('\n(Press Ctrl+C again to exit)'));
+                if (ctrlCTimer) clearTimeout(ctrlCTimer);
+                ctrlCTimer = setTimeout(() => { ctrlCCount = 0; }, 2000);
                 continue;
+            } else {
+                ctrlCCount = 0;
             }
             input = input.trim();
             if (!input) continue;

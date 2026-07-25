@@ -1,71 +1,127 @@
-import { motion } from "framer-motion";
+import React from "react";
 
-const features = [
-  {
-    title: "Autonomous workflows",
-    body: "Design, launch, and monitor agentic tasks with a polished interface built for clarity and speed."
-  },
-  {
-    title: "Machine-readable structure",
-    body: "Semantic sections, clear labels, and accessible controls make the site friendlier to humans and agents."
-  },
-  {
-    title: "Future-grade visuals",
-    body: "Neon lighting, glass panels, and cinematic motion create a premium product experience."
-  }
-];
-
-const stats = [
-  { value: "99.9%", label: "workflow visibility" },
-  { value: "24/7", label: "agent readiness" },
-  { value: "∞", label: "scalable prompts" }
-];
-
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-radial-glow text-slate-100">
-      <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-6 py-16 lg:px-10">
-        <div className="mb-8 inline-flex w-fit rounded-full border border-cyan-400/20 bg-white/5 px-4 py-2 text-sm text-cyan-200 backdrop-blur">
-          Agent-ready website · cinematic motion · GitHub Pages deployable
-        </div>
-
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div>
-            <h1 className="max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl">
-              The futuristic AI agent website for modern automation.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              Lorapok AI combines premium design, structured content, and
-              machine-friendly presentation to showcase an advanced AI product
-              with world-class polish.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <a
-                href="#features"
-                className="rounded-full bg-cyan-400 px-6 py-3 font-medium text-slate-950 transition hover:bg-cyan-300"
-              >
-                Explore features
-              </a>
-              <a
-                href="#contact"
-                className="rounded-full border border-white/15 bg-white/5 px-6 py-3 font-medium text-white backdrop-blur transition hover:bg-white/10"
-              >
-                Request a demo
-              </a>
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-glow backdrop-blur-xl"
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        background: "#050816",
+        color: "#f9fafb",
+        padding: "2rem"
+      }}
+    >
+      <section
+        style={{
+          maxWidth: "640px",
+          width: "100%",
+          borderRadius: "1rem",
+          border: "1px solid #1f2937",
+          padding: "2rem",
+          background:
+            "radial-gradient(circle at top left, rgba(59,130,246,0.2), transparent 50%), radial-gradient(circle at bottom right, rgba(16,185,129,0.2), transparent 50%)"
+        }}
+      >
+        <header style={{ marginBottom: "1.5rem", textAlign: "center" }}>
+          <h1
+            style={{
+              fontSize: "2rem",
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              marginBottom: "0.5rem"
+            }}
           >
-            <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-5">
-              <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-                live agent status
-              </p>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl bg-white/5 p-4">
-                  <p className="text
+            🐛 Lorapok Coding Agent
+          </h1>
+          <p style={{ fontSize: "0.95rem", color: "#9ca3af" }}>
+            Node.js CLI & web agent for automated coding, file operations, and workflows.
+          </p>
+        </header>
+
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.5rem" }}>
+            Status
+          </h2>
+          <p style={{ fontSize: "0.95rem", color: "#d1d5db" }}>
+            The website stack is initialized and responding. If you reached this page while fixing
+            “website doesn&apos;t work”, the base Next.js app is now online.
+          </p>
+        </section>
+
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.5rem" }}>
+            How to run the website locally
+          </h2>
+          <ol style={{ paddingLeft: "1.25rem", fontSize: "0.95rem", color: "#e5e7eb" }}>
+            <li style={{ marginBottom: "0.4rem" }}>Change directory to the website folder:</li>
+            <li
+              style={{
+                marginBottom: "0.8rem",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas",
+                fontSize: "0.85rem",
+                backgroundColor: "#030712",
+                padding: "0.5rem 0.75rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #111827"
+              }}
+            >
+              cd website
+            </li>
+            <li style={{ marginBottom: "0.4rem" }}>Install dependencies:</li>
+            <li
+              style={{
+                marginBottom: "0.8rem",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas",
+                fontSize: "0.85rem",
+                backgroundColor: "#030712",
+                padding: "0.5rem 0.75rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #111827"
+              }}
+            >
+              npm install
+            </li>
+            <li style={{ marginBottom: "0.4rem" }}>Start the development server:</li>
+            <li
+              style={{
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas",
+                fontSize: "0.85rem",
+                backgroundColor: "#030712",
+                padding: "0.5rem 0.75rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #111827"
+              }}
+            >
+              npm run dev
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.5rem" }}>
+            Integration notes
+          </h2>
+          <p style={{ fontSize: "0.95rem", color: "#d1d5db", marginBottom: "0.25rem" }}>
+            This website directory is a separate Next.js app living alongside the existing Node.js
+            CLI and server stack.
+          </p>
+          <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
+            You can now wire this frontend to your existing API in{" "}
+            <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas" }}>
+              server.js
+            </code>{" "}
+            or expose endpoints from{" "}
+            <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas" }}>
+              index.js
+            </code>{" "}
+            and consume them via fetch in this app.
+          </p>
+        </section>
+      </section>
+    </main>
+  );
+}

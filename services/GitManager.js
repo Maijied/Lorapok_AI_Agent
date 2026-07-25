@@ -26,6 +26,17 @@ function redactTokens(text) {
  */
 class GitManager {
     /**
+     * Static helper to add remote without explicit instantiation.
+     * @param {string} name - Remote name
+     * @param {string} url - Remote URL
+     * @returns {{ success: boolean, data?: string, output?: string, error?: string }} Result of addRemote operation
+     */
+    static addRemote(name, url) {
+        const manager = new GitManager();
+        return manager.addRemote(name, url);
+    }
+
+    /**
      * @param {string} [projectRoot=process.cwd()] - Project root directory path
      */
     constructor(projectRoot = process.cwd()) {

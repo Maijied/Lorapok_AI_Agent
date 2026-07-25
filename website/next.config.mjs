@@ -1,13 +1,7 @@
-const repoName = process.env.GITHUB_REPOSITORY?.split("/") || "";
-
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
-  trailingSlash: true,
-  images: {
-    unoptimized: true
-  },
-  basePath: repoName ? `/${repoName}` : "",
-  assetPrefix: repoName ? `/${repoName}/` : ""
+  reactStrictMode: true,
+  poweredByHeader: false
 };
 
 export default nextConfig;

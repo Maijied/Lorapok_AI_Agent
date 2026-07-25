@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const GitManager = require('../services/GitManager');
 const path = require('path');
 const fs = require('fs');
@@ -61,7 +66,7 @@ describe('GitManager Comprehensive Suite', () => {
         const remotes = gitManager.getRemotesDetailed();
         expect(remotes.success).toBe(true);
         expect(remotes.remotes[0].name).toBe('origin');
-        expect(remotes.remotes[0].url).toBe(remoteUrl);
+        expect(remotes.remotes[0].url).toContain('github.com/example/repo.git');
 
         gitManager.renameRemote('origin', 'upstream');
         const renamed = gitManager.getRemotesDetailed();
@@ -87,5 +92,25 @@ describe('GitManager Comprehensive Suite', () => {
         expect(res.success).toBe(true);
         expect(res.output).toContain('untracked.tmp');
         expect(fs.existsSync(path.join(testDir, 'untracked.tmp'))).toBe(true);
+    });
+
+    test('Security: should redact embedded tokens in executeGit log, output, and error', () => {
+        let loggedCmd = '';
+        let loggedOut = '';
+        gitManager.setLogger((cmd, out, success) => {
+            loggedCmd = cmd;
+            loggedOut = out;
+        });
+
+        const sensitiveToken = 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ012345';
+        const sensitiveCmd = `ls-remote https://${sensitiveToken}@github.com/nonexistent/repo.git`;
+        const res = gitManager.executeGit(sensitiveCmd, { silent: true });
+
+        expect(res.success).toBe(false);
+        expect(res.error).not.toContain(sensitiveToken);
+        expect(res.error).toContain('***');
+        expect(loggedCmd).not.toContain(sensitiveToken);
+        expect(loggedCmd).toContain('***');
+        expect(loggedOut).not.toContain(sensitiveToken);
     });
 });

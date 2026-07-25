@@ -1,3 +1,10 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
+'use strict';
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -7,39 +14,72 @@ const { LorapokConfig } = require('./lib/config');
 
 const app = express();
 const sessions = new Map();
+const connections = new Set();
+const SESSION_TTL = 3600000; // 1 hour
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
-// Get or create agent session
+/**
+ * Get or instantiate agent session by ID.
+ * @param {string} sessionId - Session identifier string
+ * @returns {LorapokEnhancedAgent} Agent instance
+ */
 function getAgent(sessionId) {
     if (!sessions.has(sessionId)) {
         const config = new LorapokConfig();
         const agent = new LorapokEnhancedAgent(config.getApiKey());
-        sessions.set(sessionId, agent);
+        sessions.set(sessionId, { agent, lastAccessed: Date.now() });
     }
-    return sessions.get(sessionId);
+    
+    const session = sessions.get(sessionId);
+    session.lastAccessed = Date.now();
+    
+    // Cleanup old sessions
+    for (const [id, s] of sessions.entries()) {
+        if (Date.now() - s.lastAccessed > SESSION_TTL) {
+            if (s.agent && typeof s.agent.clearHistory === 'function') {
+                s.agent.clearHistory();
+            }
+            sessions.delete(id);
+        }
+    }
+    
+    return session.agent;
 }
 
 // ==================== ENDPOINTS ====================
 
-// Health check
+/**
+ * Health check endpoint.
+ * @route GET /health
+ */
 app.get('/health', (req, res) => {
+    const pkg = require('./package.json');
     res.json({
         status: 'ok',
-        version: '1.0.0',
+        name: pkg.name,
+        version: pkg.version,
+        credit: 'Built with 🐛 by Lorapok Labs (https://lorapok.tech)',
+        author: 'Lorapok Labs (https://lorapok.tech)',
         timestamp: new Date().toISOString()
     });
 });
 
-// Get available models
+/**
+ * Retrieve available LLM models.
+ * @route GET /api/models
+ */
 app.get('/api/models', (req, res) => {
     res.json({ models: MODELS });
 });
 
-// Chat endpoint
+/**
+ * Chat execution endpoint.
+ * @route POST /api/chat
+ */
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, model, sessionId = 'default' } = req.body;
@@ -57,7 +97,10 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Generate code endpoint
+/**
+ * Code generation endpoint.
+ * @route POST /api/generate
+ */
 app.post('/api/generate', async (req, res) => {
     try {
         const { requirements, language, framework, sessionId = 'default' } = req.body;
@@ -75,7 +118,10 @@ app.post('/api/generate', async (req, res) => {
     }
 });
 
-// Analyze code endpoint
+/**
+ * Code analysis endpoint.
+ * @route POST /api/analyze
+ */
 app.post('/api/analyze', async (req, res) => {
     try {
         const { code, language, sessionId = 'default' } = req.body;
@@ -93,7 +139,10 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// Debug code endpoint
+/**
+ * Debug code endpoint.
+ * @route POST /api/debug
+ */
 app.post('/api/debug', async (req, res) => {
     try {
         const { code, error: errorMsg, language, sessionId = 'default' } = req.body;
@@ -111,7 +160,10 @@ app.post('/api/debug', async (req, res) => {
     }
 });
 
-// File operations
+/**
+ * List project files.
+ * @route GET /api/files
+ */
 app.get('/api/files', (req, res) => {
     try {
         const agent = getAgent('default');
@@ -122,6 +174,10 @@ app.get('/api/files', (req, res) => {
     }
 });
 
+/**
+ * Show project file tree.
+ * @route GET /api/files/tree
+ */
 app.get('/api/files/tree', (req, res) => {
     try {
         const agent = getAgent('default');
@@ -132,6 +188,10 @@ app.get('/api/files/tree', (req, res) => {
     }
 });
 
+/**
+ * Read specific file content.
+ * @route GET /api/files/read
+ */
 app.get('/api/files/read', (req, res) => {
     try {
         const filePath = req.query.path;
@@ -139,13 +199,20 @@ app.get('/api/files/read', (req, res) => {
             return res.status(400).json({ error: 'Path query parameter is required' });
         }
         const agent = getAgent('default');
-        const content = agent.fileManager.readFile(filePath);
-        res.json({ path: filePath, content });
+        const fileRes = agent.fileManager.readFile(filePath);
+        if (!fileRes.success) {
+            return res.status(404).json({ error: fileRes.error });
+        }
+        res.json({ path: filePath, content: fileRes.data });
     } catch (error) {
         res.status(404).json({ error: error.message });
     }
 });
 
+/**
+ * Generate specific target file.
+ * @route POST /api/files/generate
+ */
 app.post('/api/files/generate', async (req, res) => {
     try {
         const { path, description, sessionId = 'default' } = req.body;
@@ -163,7 +230,10 @@ app.post('/api/files/generate', async (req, res) => {
     }
 });
 
-// Git operations
+/**
+ * Get formatted Git status.
+ * @route GET /api/git/status
+ */
 app.get('/api/git/status', (req, res) => {
     try {
         const agent = getAgent('default');
@@ -174,6 +244,10 @@ app.get('/api/git/status', (req, res) => {
     }
 });
 
+/**
+ * Get repository branches.
+ * @route GET /api/git/branches
+ */
 app.get('/api/git/branches', (req, res) => {
     try {
         const agent = getAgent('default');
@@ -184,6 +258,10 @@ app.get('/api/git/branches', (req, res) => {
     }
 });
 
+/**
+ * Get commit log history.
+ * @route GET /api/git/log
+ */
 app.get('/api/git/log', (req, res) => {
     try {
         const count = parseInt(req.query.count) || 10;
@@ -195,6 +273,10 @@ app.get('/api/git/log', (req, res) => {
     }
 });
 
+/**
+ * Commit changes.
+ * @route POST /api/git/commit
+ */
 app.post('/api/git/commit', async (req, res) => {
     try {
         const { message, files = '.' } = req.body;
@@ -212,6 +294,10 @@ app.post('/api/git/commit', async (req, res) => {
     }
 });
 
+/**
+ * Trigger AI smart commit.
+ * @route POST /api/git/smart-commit
+ */
 app.post('/api/git/smart-commit', async (req, res) => {
     try {
         const agent = getAgent('default');
@@ -222,7 +308,10 @@ app.post('/api/git/smart-commit', async (req, res) => {
     }
 });
 
-// Compatibility routes for web UI
+/**
+ * Single agent chat compatibility route.
+ * @route POST /agent/single
+ */
 app.post('/agent/single', async (req, res) => {
     try {
         const { query, sessionId = 'default' } = req.body;
@@ -235,11 +324,14 @@ app.post('/agent/single', async (req, res) => {
     }
 });
 
+/**
+ * Multi agent chat compatibility route.
+ * @route POST /agent/multi
+ */
 app.post('/agent/multi', async (req, res) => {
     try {
         const { query, sessionId = 'default' } = req.body;
         if (!query) return res.status(400).json({ error: 'Query is required' });
-        // For now, multi-agent is simulated by the same endpoint but different metadata
         const agent = getAgent(sessionId);
         const response = await agent.chat(`[MULTI-AGENT MODE] ${query}`);
         res.json({ success: true, ...response });
@@ -248,7 +340,10 @@ app.post('/agent/multi', async (req, res) => {
     }
 });
 
-// Settings
+/**
+ * Retrieve system settings.
+ * @route GET /api/settings
+ */
 app.get('/api/settings', (req, res) => {
     const config = new LorapokConfig();
     res.json({
@@ -258,6 +353,10 @@ app.get('/api/settings', (req, res) => {
     });
 });
 
+/**
+ * Update system settings.
+ * @route PUT /api/settings
+ */
 app.put('/api/settings', (req, res) => {
     try {
         const { model, language, apiKey } = req.body;
@@ -273,43 +372,104 @@ app.put('/api/settings', (req, res) => {
     }
 });
 
-// Clear session
+/**
+ * Terminate and clear active session.
+ * @route DELETE /api/sessions/:sessionId
+ */
 app.delete('/api/sessions/:sessionId', (req, res) => {
-    sessions.delete(req.params.sessionId);
-    res.json({ success: true });
+    try {
+        const { sessionId } = req.params;
+        if (!sessions.has(sessionId)) {
+            return res.status(404).json({ success: false, error: 'Session not found' });
+        }
+        const session = sessions.get(sessionId);
+        if (session && session.agent && typeof session.agent.clearHistory === 'function') {
+            session.agent.clearHistory();
+        }
+        sessions.delete(sessionId);
+        res.json({ success: true, deleted: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
-// Error handler
+/**
+ * Global Express error handling middleware.
+ */
 app.use((err, req, res, next) => {
     console.error('Error:', err);
     res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
+// Server Lifecycle & Graceful Shutdown
 const PORT = process.env.PORT || 3847;
-if (require.main === module) {
-    app.listen(PORT, () => {
+let server;
+
+/**
+ * Perform graceful server shutdown and socket cleanup.
+ * @param {string} signal - Triggering signal (SIGINT or SIGTERM)
+ * @returns {void}
+ */
+function gracefulShutdown(signal) {
+    console.log(`\n🐛 Received ${signal}. Shutting down gracefully...`);
+
+    if (server) {
+        server.close(() => {
+            console.log('HTTP server closed.');
+            for (const [id, s] of sessions.entries()) {
+                if (s && s.agent && typeof s.agent.clearHistory === 'function') {
+                    s.agent.clearHistory();
+                }
+            }
+            sessions.clear();
+            console.log('Sessions cleared. Goodbye! 🐛');
+            process.exit(0);
+        });
+
+        for (const socket of connections) {
+            socket.destroy();
+        }
+
+        setTimeout(() => {
+            console.error('Forced shutdown due to timeout.');
+            process.exit(1);
+        }, 5000);
+    }
+}
+
+/**
+ * Start Express HTTP server with socket tracking.
+ * @param {number} [port=PORT] - Target port
+ * @returns {Object} HTTP Server instance
+ */
+function startServer(port = PORT) {
+    server = app.listen(port, () => {
+        const pkg = require('./package.json');
         console.log(`
     🐛 ════════════════════════════════════
-       LORAPOK API SERVER v1.0.0
+       LORAPOK API SERVER v${pkg.version}
+       Built with 🐛 by Lorapok Labs
     ════════════════════════════════════
     
-       Server running on port ${PORT}
-       
-       Endpoints:
-       - GET  /health
-       - GET  /api/models
-       - POST /api/chat
-       - POST /api/generate
-       - POST /api/analyze
-       - POST /api/debug
-       - GET  /api/files
-       - GET  /api/git/status
-       - GET  /api/settings
-    
+       Server running on port ${port}
     ════════════════════════════════════
       `);
     });
+
+    server.on('connection', (socket) => {
+        connections.add(socket);
+        socket.on('close', () => connections.delete(socket));
+    });
+
+    return server;
+}
+
+if (require.main === module) {
+    startServer(PORT);
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 module.exports = app;
+module.exports.startServer = startServer;
+module.exports.gracefulShutdown = gracefulShutdown;

@@ -1,83 +1,30 @@
 #!/usr/bin/env node
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
+'use strict';
 
 require('dotenv').config();
-const { Select, Input, Autocomplete } = require('enquirer');
-const chalk = require('chalk');
-const boxen = require('boxen');
-const { program } = require('commander');
-const { LorapokEnhancedAgent, MODELS: DEFAULT_MODELS } = require('./lib/agent-enhanced');
-const { LorapokConfig } = require('./lib/config');
-const TerminalUI = require('./lib/ui');
-const { renderMarkdown } = require('./lib/renderer');
-const ActionsManager = require('./services/ActionsManager');
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
-const { spawnSync } = require('child_process');
-const readline = require('readline');
+const chalk = require('chalk');
+const { program } = require('commander');
+const { Select, Input } = require('enquirer');
 
-let agent, config, currentCwd;
+const { LorapokEnhancedAgent } = require('./lib/agent-enhanced');
+const { LorapokConfig } = require('./lib/config');
+const TerminalUI = require('./lib/ui');
+const { setCwd, handleError } = require('./commands/utils');
+const { handleChat } = require('./commands/chat');
+const { dispatchSlashCommand } = require('./commands/system');
+
+let agent, config;
+
 /**
- * Execute a bash command and return the result
+ * Session usage and metrics state.
  */
-function executeCommand(command) {
-    try {
-        console.log(chalk.gray('Executing...'));
-
-        // Detect best shell to use
-        const isWindows = process.platform === 'win32';
-        const shell = isWindows ? true : (fs.existsSync('/bin/bash') ? '/bin/bash' : true);
-
-        // Timeout protection (60s)
-        const result = spawnSync(command, {
-            shell: shell,
-            encoding: 'utf8',
-            cwd: currentCwd,
-            timeout: 60000,
-            stdio: ['inherit', 'pipe', 'pipe']
-        });
-
-        if (result.stdout) {
-            console.log(chalk.gray('\nCommand Output:'));
-            console.log(result.stdout);
-        }
-
-        if (result.stderr && (result.status !== 0 || result.stderr.length > 0)) {
-            const isWarning = result.status === 0;
-            console.error(isWarning ? chalk.yellow('\nCommand Warning:') : chalk.red('\nCommand Error:'));
-            console.error(result.stderr);
-        }
-
-        // Persistent CWD tracking: If command contains 'cd', we try to update currentCwd
-        if (command.includes('cd ') || command.trim().startsWith('cd')) {
-            const pwdResult = spawnSync('cd ' + command + ' && pwd', {
-                shell: shell,
-                encoding: 'utf8',
-                cwd: currentCwd
-            });
-            if (pwdResult.status === 0 && pwdResult.stdout) {
-                const newPath = pwdResult.stdout.trim();
-                if (fs.existsSync(newPath)) {
-                    currentCwd = newPath;
-                }
-            }
-        }
-
-        return {
-            success: result.status === 0,
-            stdout: result.stdout,
-            stderr: result.stderr,
-            timedOut: result.error?.code === 'ETIMEDOUT'
-        };
-    } catch (error) {
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-// Global Session Data
 const sessionData = {
     id: Math.random().toString(36).substring(2, 10).toUpperCase(),
     count: 0,
@@ -85,33 +32,58 @@ const sessionData = {
     startTime: Date.now(),
     tokens: { prompt: 0, completion: 0, total: 0 }
 };
-// ==================== KEYBOARD HANDLING ====================
+
 let ctrlCCount = 0;
+let ctrlCTimer = null;
 const setupExitHandlers = () => {
     process.on('SIGINT', () => {
-        console.log('');
-        TerminalUI.showInteractionSummary(sessionData);
-        process.exit(0);
+        ctrlCCount++;
+        if (ctrlCCount >= 2) {
+            if (ctrlCTimer) clearTimeout(ctrlCTimer);
+            if (sessionData) {
+                TerminalUI.showInteractionSummary(sessionData);
+            }
+            process.exit(0);
+        }
+
+        // Single Ctrl+C does nothing silently
+        if (ctrlCTimer) clearTimeout(ctrlCTimer);
+        ctrlCTimer = setTimeout(() => {
+            ctrlCCount = 0;
+        }, 1200);
     });
 
     process.on('uncaughtException', (err) => {
-        console.error(chalk.red('\n❌ Uncaught Exception:'), err);
+        const msg = String(err && err.message ? err.message : err);
+        if (!msg || msg.includes('cancelled') || msg.includes('readline was closed')) {
+            return;
+        }
+        console.error(chalk.red('\n❌ Uncaught Exception:'), msg);
         process.exit(1);
+    });
+
+    process.on('unhandledRejection', (reason) => {
+        const msg = String(reason && reason.message ? reason.message : reason);
+        if (!msg || msg.includes('cancelled') || msg.includes('readline was closed')) {
+            return;
+        }
+        console.error(chalk.red('\n❌ Unhandled Rejection:'), msg);
     });
 };
 
-// ==================== CORE FUNCTIONS ====================
-
+/**
+ * Initialize agent configuration, API keys, Git credentials, and active workspace.
+ * @returns {Promise<void>}
+ */
 async function initialization() {
-    // Initialize Config
     config = new LorapokConfig();
     const existingToken = config.getGitHubToken();
     if (existingToken) {
         process.env.GH_TOKEN = existingToken;
         process.env.GITHUB_TOKEN = existingToken;
     }
-    const apiKey = config.getApiKey();
 
+    const apiKey = config.getApiKey();
     if (!apiKey) {
         console.log(TerminalUI.formatError('No API key found.'));
         const prompt = new Input({ message: 'Enter your Perplexity API Key:' });
@@ -120,7 +92,6 @@ async function initialization() {
         config.setApiKey(newKey.trim());
     }
 
-    // First-run: Ask for username
     if (config.isFirstRun()) {
         console.log(chalk.cyan.bold('\n🐛 Welcome to Lorapok!'));
         const namePrompt = new Input({
@@ -132,30 +103,23 @@ async function initialization() {
         console.log(chalk.green(`\nNice to meet you, ${config.getUserName()}! 🚀\n`));
     }
 
-    // If running in Docker (and not specifically developing Lorapok itself), use /project
     const projectRoot = process.env.LORAPOK_DOCKER === 'true' && fs.existsSync('/project')
         ? '/project'
         : process.cwd();
 
     agent = new LorapokEnhancedAgent(config.getApiKey(), projectRoot);
-    currentCwd = projectRoot;
-    // Connect Git processing logs
+    setCwd(projectRoot);
+
     agent.gitManager.setLogger((cmd, out, success) => {
         TerminalUI.showGitProcess(cmd, out, success);
     });
 
-    // Connect Git processing logs
-    agent.gitManager.setLogger((cmd, out, success) => {
-        TerminalUI.showGitProcess(cmd, out, success);
-    });
-
-    // Unified Auth: Config global git credential if token exists
     if (existingToken) {
         agent.gitManager.configureTokenAuth(existingToken);
     }
 
-    // Git Identity Check & Auto-setup
-    const identity = agent.gitManager.getUserConfig();
+    const identityRes = agent.gitManager.getUserConfig();
+    const identity = identityRes.data || identityRes;
     if (identity.name === 'Not set' || identity.email === 'Not set') {
         process.stdout.write(chalk.yellow('\n⚠️  Git identity not found. '));
         const setup = new Select({
@@ -168,7 +132,7 @@ async function initialization() {
             const email = await new Input({ message: 'Git user.email:' }).run();
             if (name && email) {
                 const globalSetup = new Select({ message: 'Config scope?', choices: ['Global', 'Local'] });
-                const scope = await globalSetup.run() === 'Global';
+                const scope = (await globalSetup.run()) === 'Global';
                 const res = agent.gitManager.configUser(name, email, scope);
                 if (res.success) console.log(TerminalUI.formatSuccess(`Git identity configured (${scope ? 'Global' : 'Local'}).`));
                 else console.log(TerminalUI.formatError(`Failed to set identity: ${res.error}`));
@@ -176,1220 +140,185 @@ async function initialization() {
         }
     }
 
-    // Log active workspace for clarity
     const displayPath = projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : projectRoot;
     console.log(chalk.gray(`\n  📂 Workspace: ${chalk.white.bold(displayPath)}`));
 }
 
 /**
- * Runs a long-running task with a spinner and ESC-to-cancel support
+ * Interactive fuzzy slash command autocomplete palette prompt.
+ * @returns {Promise<string|null>} Selected command string or null
  */
-async function withCancellation(spinnerMessage, taskFn) {
-    const spinner = TerminalUI.createSpinner(spinnerMessage).start();
-    const controller = new AbortController();
-
-    const handleKey = (str, key) => {
-        if (key && key.name === 'escape') {
-            controller.abort();
-        }
-    };
-
-    readline.emitKeypressEvents(process.stdin);
-    if (process.stdin.isTTY) process.stdin.setRawMode(true);
-    process.stdin.on('keypress', handleKey);
-
-    try {
-        const result = await taskFn(controller.signal);
-        return result;
-    } catch (err) {
-        if (err.message === 'ABORTED' || err.name === 'AbortError') {
-            console.log(chalk.yellow('\n🛑 Action cancelled by user.'));
-            return { aborted: true };
-        }
-        throw err;
-    } finally {
-        process.stdin.removeListener('keypress', handleKey);
-        if (process.stdin.isTTY) process.stdin.setRawMode(false);
-        spinner.stop();
-    }
-}
-
-/**
- * Central Error Handler - Detects 401s and offers a fix
- */
-async function handleError(err) {
-    if (!err || (typeof err === 'object' && !err.message)) return;
-
-    const msg = err.message || String(err);
-    if (msg === 'ABORTED') return;
-
-    console.log(TerminalUI.formatError(msg));
-
-    // If the key is invalid, offer to update it immediately
-    if (msg.includes('Invalid API key') || msg.includes('401')) {
-        const updateKey = new Select({
-            message: 'Your API key seems invalid. Update it now?',
-            choices: ['Yes, enter new key', 'No, I will check my .env']
-        });
-
-        const updateChoice = await updateKey.run().catch(() => 'No');
-        if (updateChoice === 'Yes, enter new key') {
-            const newKey = await new Input({ message: 'Paste new Perplexity API Key:' }).run().catch(() => null);
-            if (newKey && newKey.trim()) {
-                const cleanedKey = newKey.trim().replace(/^["'](.+)["']$/, '$1');
-
-                // Verify the new key before setting it
-                console.log(chalk.gray('  Verify new key...'));
-                try {
-                    const probeAgent = new (require('./lib/agent').LorapokCodingAgent)(cleanedKey);
-                    await probeAgent.callPerplexityAPI([{ role: 'user', content: 'hi' }], 'sonar', { maxTokens: 1 });
-
-                    // If we get here, the key is valid
-                    config.setApiKey(cleanedKey);
-                    agent.apiKey = cleanedKey;
-                    console.log(TerminalUI.formatSuccess('API Key verified and updated! You can try your request again.'));
-                } catch (verifyErr) {
-                    console.log(TerminalUI.formatError(`The new key is also invalid: ${verifyErr.message}`));
-                    console.log(chalk.gray('  Please check your Perplexity account balance and API settings.'));
-                }
-            }
-        }
-    }
-}
-
-/**
- * Interactive GitHub Actions Menu
- */
-async function showActionsMenu() {
-    const actionsManager = new ActionsManager(agent.gitManager);
-
-    // Check Auth
-    if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
-        console.log(chalk.red('\n🚫 No GitHub Token found.'));
-
-        const authSelect = new Select({
-            message: 'Authentication required. How would you like to login?',
-            choices: [
-                { name: 'browser', message: '🌐 Login via Browser (Recommended)' },
-                { name: 'token', message: '🔑 Enter Token Manually' },
-                { name: 'cancel', message: '❌ Cancel' }
-            ]
-        });
-
-        const authChoice = await authSelect.run().catch(() => 'cancel');
-
-        if (authChoice === 'cancel') return;
-
-        if (authChoice === 'browser') {
-            const GithubAuth = require('./services/GithubAuth');
-            const ghAuth = new GithubAuth();
-            const url = ghAuth.getSmartAuthUrl();
-            const opened = await ghAuth.openBrowser(url);
-
-            const msg = '1. Browser should open... or click: ' + chalk.underline.bold(url);
-            console.log(boxen(chalk.cyan(`${msg}\n2. Scroll down and click "Generate token"\n3. Copy the token and paste it below.`), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
-
-            const token = await new Input({ message: 'Paste Token:' }).run();
-            if (token) {
-                process.env.GH_TOKEN = token;
-                config.setGitHubToken(token);
-                agent.gitManager.configureTokenAuth(token);
-            }
-            else return;
-        } else if (authChoice === 'token') {
-            const token = await new Input({ message: 'GitHub Token:' }).run();
-            if (token) {
-                process.env.GH_TOKEN = token;
-                config.setGitHubToken(token);
-                agent.gitManager.configureTokenAuth(token);
-            }
-            else return;
-        }
-    }
-
-    while (true) {
-        console.clear();
-        console.log(chalk.magenta.bold('\n⚡ GitHub Actions Explorer\n'));
-
-        const spinner = TerminalUI.createSpinner('Fetching workflows...');
-        spinner.start();
-        const wfRes = await actionsManager.getWorkflows();
-        spinner.stop();
-
-        if (!wfRes.success) {
-            console.log(TerminalUI.formatError(wfRes.error));
-            await new Input({ message: 'Press Enter to return' }).run();
-            return;
-        }
-
-        if (wfRes.total === 0) {
-            console.log(chalk.yellow('\nNo workflows found in this repository.'));
-            await new Input({ message: 'Press Enter to return' }).run();
-            return;
-        }
-
-        const choices = wfRes.workflows.map(w => ({
-            name: w.id.toString(),
-            message: `${chalk.bold(w.name)} ${chalk.gray('(' + w.path + ')')}`,
-            value: w
-        }));
-
-        choices.push({ name: 'exit', message: '❌ Exit' });
-
-        const wfSelect = new Select({
-            message: 'Select Workflow:',
-            choices: choices,
-            result(name) { return this.map(name)[name]; }
-        });
-
-        const selectedWf = await wfSelect.run().catch(() => 'exit');
-        if (selectedWf === 'exit' || !selectedWf.id) break;
-
-        // Fetch Runs
-        const runSpinner = TerminalUI.createSpinner(`Fetching runs for ${selectedWf.name}...`);
-        runSpinner.start();
-        const runsRes = await actionsManager.getWorkflowRuns(selectedWf.id);
-        runSpinner.stop();
-
-        if (!runsRes.success) {
-            console.log(TerminalUI.formatError(runsRes.error));
-            await new Input({ message: 'Press Enter manually' }).run(); // wait
-            continue;
-        }
-
-        // Show Runs Table
-        TerminalUI.showWorkflowRuns(runsRes.runs);
-
-        const runChoices = runsRes.runs.slice(0, 5).map(r => ({
-            name: r.id.toString(),
-            message: `${r.status === 'completed' ? (r.conclusion === 'success' ? '✔' : '✖') : '⏳'} ${r.name} #${r.run_number} (${r.event})`,
-            value: r
-        }));
-        runChoices.push({ name: 'back', message: '⬅ Back to Workflows' });
-
-        const runSelect = new Select({
-            message: 'Select Run to view details:',
-            choices: runChoices,
-            result(name) { return this.map(name)[name]; }
-        });
-
-        const selectedRun = await runSelect.run().catch(() => 'back');
-        if (selectedRun === 'back' || !selectedRun.id) continue;
-
-        // Fetch Jobs
-        const jobSpinner = TerminalUI.createSpinner('Fetching job logs...');
-        jobSpinner.start();
-        const jobsRes = await actionsManager.getRunJobs(selectedRun.id);
-        jobSpinner.stop();
-
-        if (jobsRes.success) {
-            TerminalUI.showRunDetails(selectedRun, jobsRes.jobs);
-
-            // Offer Rerun if failed or completed
-            const afterRunSelect = new Select({
-                message: 'Actions:',
-                choices: [
-                    { name: 'continue', message: '⬅ Back to Runs' },
-                    { name: 'rerun', message: `${chalk.blue('🔄')} Rerun this workflow` }
-                ]
-            });
-
-            const afterAction = await afterRunSelect.run().catch(() => 'continue');
-            if (afterAction === 'rerun') {
-                const rerunSpinner = TerminalUI.createSpinner('Requesting rerun...');
-                rerunSpinner.start();
-                const rerunRes = await actionsManager.rerunWorkflowRun(selectedRun.id);
-                rerunSpinner.stop();
-
-                if (rerunRes.success) {
-                    console.log(TerminalUI.formatSuccess('Workflow rerun requested!'));
-                } else {
-                    console.log(TerminalUI.formatError(rerunRes.error));
-                }
-                await new Input({ message: 'Press Enter to continue' }).run();
-            }
-        } else {
-            console.log(TerminalUI.formatError(jobsRes.error));
-            await new Input({ message: 'Press Enter to continue' }).run();
-        }
-    }
-}
-
-async function chatLoop() {
-    const userName = config.getUserName() || 'MaJHi_BHai';
-    while (true) {
-        try {
-            const inputPrompt = new Input({
-                message: chalk.cyan.bold(`╭─ 🧑‍💻 ${userName}`) + '\n' + chalk.cyan.bold('╰─➤ ‣')
-            });
-
-            let input = await inputPrompt.run();
-
-            // Handle Trigger Keys: / or empty input
-            if (input === '/' || input === '') {
-                const select = new Select({
-                    message: 'Select Command',
-                    choices: [
-                        { name: 'chat', message: '💬 Chat' },
-                        { name: 'plan', message: '📝 Plan & Execute' },
-                        { name: 'analyze', message: '🔍 Analyze Project' },
-                        { name: 'files', message: '📁 Files' },
-                        { name: 'git', message: '🔗 Git Ops' },
-                        { name: 'actions', message: '⚡ GitHub Actions' },
-                        { name: 'logs', message: '📊 Logs' },
-                        { name: 'settings', message: '⚙️  Settings' },
-                        { name: 'help', message: '❓ Help' },
-                        { name: 'clear', message: '🧹 Clear' },
-                        { name: 'exit', message: '❌ Exit' }
-                    ]
-                });
-                const cmd = await select.run().catch(() => 'chat');
-
-                if (cmd === 'exit') break;
-                if (cmd === 'chat') continue;
-                if (cmd === 'help') { TerminalUI.showHelp(); continue; }
-                if (cmd === 'logs') { await showLogs(); continue; }
-                if (cmd === 'clear') { console.clear(); continue; }
-                if (cmd === 'analyze') {
-                    const result = await withCancellation('Analyzing project...', (signal) =>
-                        agent.analyzeProject({ signal })
-                    );
-                    if (result && !result.aborted) {
-                        console.log(await renderMarkdown(result.content));
-                    }
-                    continue;
-                }
-                if (cmd === 'plan') {
-                    const obj = await new Input({ message: 'What is the objective?' }).run().catch(() => null);
-                    if (obj) await runProWorkflow(obj);
-                    continue;
-                }
-                if (cmd === 'files') {
-                    const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
-                    console.log(chalk.cyan(`\n📁 Project Files in ${chalk.white.bold(displayPath)}:\n`));
-
-                    // Diagnostic: Check if directory actually has files via fs
-                    try {
-                        const directFiles = fs.readdirSync(agent.projectRoot);
-                        if (directFiles.length === 0) {
-                            console.log(chalk.yellow(`  ⚠️  The directory is empty inside the container (${agent.projectRoot}).`));
-                            console.log(chalk.gray(`  If this is unexpected, check your Docker volume mounts.\n`));
-                        }
-                    } catch (e) { }
-
-                    console.log(agent.showFileTree());
-                    await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run();
-                    continue;
-                }
-                if (cmd === 'git') {
-                    await showGitMenu();
-                    continue;
-                }
-                if (cmd === "actions") { await showActionsMenu(); continue; }
-                if (cmd === 'settings') {
-                    await showSettings();
-                    continue;
-                }
-            }
-
-            if (input === '@') {
-                let currentPath = '.';
-                let selectedFile = null;
-
-                while (!selectedFile) {
-                    const items = agent.fileManager.listFiles(currentPath);
-                    const choices = items.map(item => ({
-                        name: item.path,
-                        message: item.type === 'directory' ? chalk.blue(`📁 ${path.basename(item.path)}/`) : chalk.white(`📄 ${path.basename(item.path)}`),
-                        type: item.type
-                    }));
-
-                    if (currentPath !== '.') {
-                        choices.unshift({ name: '..', message: chalk.yellow('⬅ Back'), type: 'back' });
-                    }
-                    choices.push({ name: 'cancel', message: chalk.red('❌ Cancel'), type: 'cancel' });
-
-                    const select = new Select({
-                        name: 'file',
-                        message: `Select from ${chalk.cyan(currentPath)}:`,
-                        choices: choices
-                    });
-
-                    const choice = await select.run().catch(() => 'cancel');
-                    const selected = choices.find(c => c.name === choice);
-
-                    if (!selected || selected.type === 'cancel') break;
-                    if (selected.type === 'back') {
-                        currentPath = path.dirname(currentPath);
-                        continue;
-                    }
-
-                    if (selected.type === 'directory') {
-                        currentPath = selected.name;
-                    } else {
-                        selectedFile = selected.name;
-                    }
-                }
-
-                if (selectedFile) {
-                    input = `Analyze @${selectedFile}`;
-                } else {
-                    continue;
-                }
-            }
-
-            // Handle Slash Commands (Manual input)
-            if (input.startsWith('/')) {
-                const cmd = input.substring(1).toLowerCase();
-                if (cmd === 'exit' || cmd === 'quit' || cmd === 'q') break;
-                if (cmd === 'help' || cmd === '?') { TerminalUI.showHelp(); continue; }
-                if (cmd === 'logs') { await showLogs(); continue; }
-                if (cmd === 'clear') { console.clear(); continue; }
-                if (cmd === 'plan') {
-                    const obj = await new Input({ message: 'What is the objective?' }).run().catch(() => null);
-                    if (obj) await runProWorkflow(obj);
-                    continue;
-                }
-                if (cmd === 'git') {
-                    await showGitMenu();
-                    continue;
-                }
-                if (cmd === 'actions' || cmd === 'ci') {
-                    await showActionsMenu();
-                    continue;
-                }
-                if (cmd === 'files') {
-                    console.log(agent.showFileTree());
-                    await new Input({ message: 'Press Enter to continue' }).run();
-                    continue;
-                }
-
-                // If unknown slash command, or user just typed "/", show menu
-                input = '/';
-                continue;
-            }
-
-            // Handle @file Mentions
-            const mentionRegex = /(?<=^|\s)@(\S+)/g;
-            const fileMatches = input.match(mentionRegex);
-            let processedInput = input;
-            if (fileMatches) {
-                for (const match of fileMatches) {
-                    const filePath = match.substring(1);
-                    try {
-                        const content = agent.fileManager.readFile(filePath);
-                        processedInput = processedInput.replace(match, `\n--- File: ${filePath} ---\n${content}\n---\n`);
-                    } catch (e) {
-                        console.log(chalk.yellow(`\n⚠️  Warning: File ${filePath} not found.`));
-                    }
-                }
-            }
-
-            if (!input.trim()) continue;
-
-            const lowerInput = input.trim().toLowerCase();
-            if (lowerInput === 'exit' || lowerInput === 'quit' || lowerInput === '/q') break;
-
-            try {
-                sessionData.count++;
-                const response = await withCancellation('Thinking...', (signal) =>
-                    agent.chat(input, null, { signal })
-                );
-
-                if (!response || response.aborted) continue;
-
-                // Update token usage
-                if (response.usage) {
-                    sessionData.tokens.prompt += response.usage.prompt_tokens || 0;
-                    sessionData.tokens.completion += response.usage.completion_tokens || 0;
-                    sessionData.tokens.total += response.usage.total_tokens || 0;
-                }
-
-                console.log(chalk.cyan.bold('\n🐛 LORAPOK:'));
-
-                // Code Hiding & Formatting
-                const cleanContent = TerminalUI.hideLongCodeBlocks(response.content);
-                console.log(await renderMarkdown(cleanContent));
-                
-                // Show Model Name at the bottom right
-                const modelName = config.getModel();
-                const termWidth = process.stdout.columns || 80;
-                const modelLabel = chalk.gray(`🧠 Using ${modelName}`);
-                const padLen = Math.max(0, termWidth - modelLabel.replace(/\u001b\[\d+m/g, '').length - 2);
-                console.log(' '.repeat(padLen) + modelLabel + '\n');
-
-                // Action Parsing & Implementation Loop
-                const actions = agent.parseActions(response.content);
-                if (actions.length > 0) {
-                    console.log(chalk.cyan.bold(`📝 AGENT PROPOSES ${actions.length} ACTIONS`));
-                    for (const action of actions) {
-                        if (action.type === 'COMMAND') {
-                            TerminalUI.showCommand(action.description, action.content);
-                            const confirm = new Select({
-                                message: `Execute this bash command?`,
-                                choices: ['Yes', 'No', 'Skip All']
-                            });
-
-                            const choice = await confirm.run().catch(() => 'No');
-                            if (choice === 'Skip All') break;
-                            if (choice === 'No') continue;
-
-                            const result = executeCommand(action.content);
-                            if (result.success) {
-                                console.log(TerminalUI.formatSuccess(`Command executed.`));
-                            } else {
-                                console.log(TerminalUI.formatError(`Command failed.`));
-                            }
-                        } else {
-                            let current = '';
-                            try { current = agent.fileManager.readFile(action.filePath); } catch { }
-
-                            TerminalUI.showDiff(action.filePath, current, action.content);
-
-                            const confirm = new Select({
-                                message: `Apply ${action.type} to ${action.filePath}?`,
-                                choices: ['Yes', 'No', 'Skip All']
-                            });
-
-                            const choice = await confirm.run().catch(() => 'No');
-                            if (choice === 'Skip All') break;
-                            if (choice === 'No') continue;
-
-                            TerminalUI.showEditStatus(action.type, action.filePath);
-                            if (action.type === 'DELETE') {
-                                agent.fileManager.deleteFile(action.filePath);
-                            } else {
-                                agent.fileManager.writeFile(action.filePath, action.content);
-                            }
-                            console.log(TerminalUI.formatSuccess(`${action.type} applied.`));
-                        }
-                    }
-
-                    // Proactive commit suggestion
-                    const status = agent.getGitStatus();
-                    if (status.success && status.total > 0) {
-                        const commitConfirm = new Select({
-                            message: `Implementation complete. Commit these ${status.total} changes now?`,
-                            choices: ['Yes (AI Message)', 'Yes (Manual Message)', 'No']
-                        });
-                        const commitChoice = await commitConfirm.run().catch(() => 'No');
-                        if (commitChoice !== 'No') {
-                            if (commitChoice === 'Yes (AI Message)') {
-                                const res = await withCancellation('Generating commit message...', (signal) => agent.smartCommit('.', { signal }));
-                                if (res?.success) console.log(TerminalUI.formatSuccess(`Changes committed: ${res.output || 'Commit successful'}`));
-                            } else {
-                                const msg = await new Input({ message: 'Commit message:' }).run();
-                                if (msg) {
-                                    const res = agent.commitChanges(msg);
-                                    if (res.success) console.log(TerminalUI.formatSuccess('Changes committed.'));
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (err) {
-                await handleError(err);
-                sessionData.successRate = Math.max(0, sessionData.successRate - 5);
-            }
-        } catch (err) {
-            await handleError(err);
-            continue;
-        }
-    }
-
-    console.log(chalk.yellow('Returning to hangar...'));
-}
-
-async function runProWorkflow(objective) {
-    try {
-        const planRes = await withCancellation('Planning...', (signal) =>
-            agent.plan(objective, { signal })
-        );
-        if (!planRes || planRes.aborted) return;
-
-        await TerminalUI.showPlanning(planRes.content);
-
-        const confirmPlan = new Select({
-            message: 'Approve plan?',
-            choices: ['Yes, proceed with tasks', 'No, revise objective', 'Cancel']
-        });
-        const planChoice = await confirmPlan.run().catch(() => 'Cancel');
-        if (planChoice !== 'Yes, proceed with tasks') return;
-
-        const taskRes = await withCancellation('Generating Tasks...', (signal) =>
-            agent.tasks(planRes.content, { signal })
-        );
-        if (!taskRes || taskRes.aborted) return;
-
-        await TerminalUI.showTasks(taskRes.content);
-
-        const confirmTasks = new Select({
-            message: 'Start implementation?',
-            choices: ['Yes, generate code', 'Cancel']
-        });
-        const taskChoice = await confirmTasks.run().catch(() => 'Cancel');
-        if (taskChoice !== 'Yes, generate code') return;
-
-        const implRes = await withCancellation('Generating Implementation...', (signal) =>
-            agent.generateCode(objective, { signal })
-        );
-        if (!implRes || implRes.aborted) return;
-
-        const actions = agent.parseActions(implRes.content);
-
-        if (actions.length === 0) {
-            console.log(chalk.yellow('\n⚠️  No specific file actions identified. Showing general response:'));
-            console.log(implRes.content);
-        } else {
-            console.log(chalk.cyan.bold(`\n📝 PROPOSED IMPLEMENTATION (${actions.length} actions)\n`));
-
-            for (const action of actions) {
-                if (action.type === 'COMMAND') {
-                    TerminalUI.showCommand(action.description, action.content);
-                    const confirmAction = new Select({
-                        message: `Execute this bash command?`,
-                        choices: ['Yes', 'No', 'Cancel']
-                    });
-
-                    const actionChoice = await confirmAction.run().catch(() => 'Cancel');
-                    if (actionChoice === 'Cancel') break;
-                    if (actionChoice === 'No') continue;
-
-                    const result = executeCommand(action.content);
-                    if (result.success) {
-                        console.log(TerminalUI.formatSuccess(`Command executed.`));
-                    } else {
-                        console.log(TerminalUI.formatError(`Command failed.`));
-                    }
-                } else {
-                    let currentContent = '';
-                    try {
-                        currentContent = agent.fileManager.readFile(action.filePath);
-                    } catch { }
-
-                    TerminalUI.showDiff(action.filePath, currentContent, action.content);
-
-                    const confirmAction = new Select({
-                        message: `Apply ${action.type} to ${action.filePath}?`,
-                        choices: ['Yes', 'No', 'Cancel']
-                    });
-
-                    const actionChoice = await confirmAction.run().catch(() => 'Cancel');
-                    if (actionChoice === 'Cancel') break;
-                    if (actionChoice === 'No') continue;
-
-                    TerminalUI.showEditStatus(action.type, action.filePath);
-
-                    if (action.type === 'DELETE') {
-                        agent.fileManager.deleteFile(action.filePath);
-                    } else if (action.type === 'CREATE' || action.type === 'UPDATE') {
-                        agent.fileManager.writeFile(action.filePath, action.content);
-                    }
-                }
-            }
-
-            // Proactive commit suggestion
-            const status = agent.getGitStatus();
-            if (status.success && status.total > 0) {
-                const commitConfirm = new Select({
-                    message: `Implementation complete. Commit these ${status.total} changes now?`,
-                    choices: ['Yes (AI Message)', 'Yes (Manual Message)', 'No']
-                });
-                const commitChoice = await commitConfirm.run().catch(() => 'No');
-                if (commitChoice !== 'No') {
-                    if (commitChoice === 'Yes (AI Message)') {
-                        const res = await withCancellation('Generating commit message...', (signal) => agent.smartCommit('.', { signal }));
-                        if (res?.success) console.log(TerminalUI.formatSuccess(`Changes committed: ${res.output || 'Commit successful'}`));
-                    } else {
-                        const msg = await new Input({ message: 'Commit message:' }).run();
-                        if (msg) {
-                            const res = agent.commitChanges(msg);
-                            if (res.success) console.log(TerminalUI.formatSuccess('Changes committed.'));
-                        }
-                    }
-                }
-            }
-
-            console.log(TerminalUI.formatSuccess('Implementation steps completed.'));
-        }
-
-        const walkRes = await withCancellation('Finalizing Walkthrough...', (signal) =>
-            agent.summarize({ objective, plan: planRes.content, actions: actions.length }, { signal })
-        );
-        if (walkRes && !walkRes.aborted) {
-            await TerminalUI.showWalkthrough(walkRes.content);
-        }
-
-    } catch (err) {
-        await handleError(err);
-    }
-}
-
-async function showSettings() {
-    const select = new Select({
-        name: 'setting',
-        message: 'Settings',
+async function promptSlashAutoComplete() {
+    const { AutoComplete } = require('enquirer');
+    const prompt = new AutoComplete({
+        name: 'command',
+        message: 'Select Slash Command:',
+        limit: 12,
+        styles: {
+            underline: str => str,
+            em: chalk.cyan.bold
+        },
+        pointer(choice, i) {
+            return this.state.index === i ? chalk.cyan.bold('❯ ') : '  ';
+        },
+        suggest(input, choices) {
+            return choices.filter(c => c.message.toLowerCase().includes(input.toLowerCase()));
+        },
         choices: [
-            'Change Name',
-            'Change Model',
-            'Change Language',
-            '🎨 CLI Theme',
-            'Update API Key',
-            'Back'
-        ]
+            { role: 'heading', message: chalk.cyan.bold('  🤖 CORE AI') },
+            { name: '/chat', message: `    💬 ${chalk.bold('/chat')}      ${chalk.gray('‣ Interactive AI chat')}` },
+            { name: '/plan', message: `    📝 ${chalk.bold('/plan')}      ${chalk.gray('‣ Plan & execute multi-step objective')}` },
+            { name: '/analyze', message: `    🔍 ${chalk.bold('/analyze')}   ${chalk.gray('‣ Deep repository audit')}` },
+
+            { role: 'heading', message: chalk.cyan.bold('\n  🚀 CONTROLS') },
+            { name: '/bypass', message: `    🚀 ${chalk.bold('/bypass')}    ${chalk.gray('‣ Toggle Auto-Approve mode')}` },
+            { name: '/model', message: `    🧠 ${chalk.bold('/model')}     ${chalk.gray('‣ Switch LLM model')}` },
+            { name: '/settings', message: `    🎨 ${chalk.bold('/settings')}  ${chalk.gray('‣ Customize themes & preferences')}` },
+
+            { role: 'heading', message: chalk.cyan.bold('\n  🔗 DEVOPS & GIT') },
+            { name: '/git', message: `    🔗 ${chalk.bold('/git')}       ${chalk.gray('‣ Git operations manager')}` },
+            { name: '/status', message: `    📊 ${chalk.bold('/status')}    ${chalk.gray('‣ View git working tree status')}` },
+            { name: '/commit', message: `    💾 ${chalk.bold('/commit')}    ${chalk.gray('‣ Smart AI git commit')}` },
+            { name: '/diff', message: `    🔍 ${chalk.bold('/diff')}      ${chalk.gray('‣ View git diff changes')}` },
+            { name: '/actions', message: `    ⚡ ${chalk.bold('/actions')}   ${chalk.gray('‣ GitHub Actions explorer')}` },
+            { name: '/files', message: `    📁 ${chalk.bold('/files')}     ${chalk.gray('‣ Workspace files browser')}` },
+
+            { role: 'heading', message: chalk.cyan.bold('\n  📊 SYSTEM') },
+            { name: '/logs', message: `    📊 ${chalk.bold('/logs')}      ${chalk.gray('‣ View application & error logs')}` },
+            { name: '/help', message: `    ❓ ${chalk.bold('/help')}      ${chalk.gray('‣ Show CLI command guide')}` },
+            { name: '/clear', message: `    🧹 ${chalk.bold('/clear')}     ${chalk.gray('‣ Clear terminal screen')}` },
+            { name: '/exit', message: `    ❌ ${chalk.bold('/exit')}      ${chalk.gray('‣ Exit Lorapok')}` }
+        ],
+        result(name) { return this.map(name)[name]; }
+    });
+    return await prompt.run().catch(() => null);
+}
+
+/**
+ * Interactive fuzzy file autocomplete selector prompt.
+ * @param {Object} agent - Lorapok agent instance
+ * @returns {Promise<string|null>} Selected file path string or null
+ */
+async function promptFileAutoComplete(agent) {
+    const { AutoComplete } = require('enquirer');
+    const filesRes = agent.fileManager.listFiles('.', { recursive: true });
+    const rawFileList = Array.isArray(filesRes) ? filesRes : (filesRes && filesRes.data ? filesRes.data : []);
+
+    if (rawFileList.length === 0) {
+        console.log(chalk.yellow('\nNo files found in workspace.'));
+        return null;
+    }
+
+    const choices = [
+        { name: 'cancel', message: '❌ Return to Chat (Cancel)' }
+    ];
+
+    rawFileList.forEach(f => {
+        const filePath = typeof f === 'string' ? f : (f.path || f.name || String(f));
+        if (!filePath) return;
+        const isDir = typeof f === 'object' && (f.type === 'directory' || f.isDirectory);
+        const icon = TerminalUI.getFileIcon(filePath, isDir);
+        choices.push({ name: `@${filePath}`, message: `${icon} @${filePath}` });
     });
 
-    const choice = await select.run();
-    if (choice === 'Back') return;
+    const prompt = new AutoComplete({
+        name: 'file',
+        message: 'Select File/Folder to attach:',
+        limit: 15,
+        styles: { underline: str => str, em: chalk.cyan.bold },
+        pointer(choice, i) { return this.state.index === i ? chalk.cyan.bold('❯ ') : '  '; },
+        suggest(input, choices) {
+            return choices.filter(c => c.message.toLowerCase().includes(input.toLowerCase()));
+        },
+        choices: choices
+    });
 
-    if (choice === 'Change Name') {
-        const currentName = config.getUserName() || 'Developer';
-        const nameRes = await new Input({
-            message: 'Your Name:',
-            initial: currentName
-        }).run();
-        config.setUserName(nameRes);
-    } else if (choice === 'Change Model') {
-        const models = await agent.checkAvailableModels();
-        const modelSelect = new Select({
-            message: 'Select Model',
-            choices: Object.keys(models).map(id => ({ name: id, message: models[id].name }))
-        });
-        const model = await modelSelect.run();
-        config.setModel(model);
-    } else if (choice === 'Change Language') {
-        const langRes = await new Input({ message: 'Default Language:' }).run();
-        config.setLanguage(langRes);
-    } else if (choice === 'Update API Key') {
-        const keyRes = await new Input({ message: 'New API Key:' }).run();
-        config.setApiKey(keyRes);
-    } else if (choice === '🎨 CLI Theme') {
-        await TerminalUI.previewThemes(config);
+    const selected = await prompt.run().catch(() => 'cancel');
+    if (selected === 'cancel' || selected === '❌ Return to Chat (Cancel)' || !selected) {
+        return null;
     }
-
-    console.log(TerminalUI.formatSuccess('Settings updated.'));
+    return selected;
 }
 
-async function showGitMenu() {
+/**
+ * Main interactive REPL chat loop handling user prompts and command dispatch.
+ * @returns {Promise<void>}
+ */
+async function chatLoop() {
+    const userName = config.getUserName() || 'Developer';
+    const context = { agent, config, sessionData, ui: TerminalUI };
+    let currentMode = 'chat';
+
     while (true) {
-        const select = new Select({
-            name: 'gitAction',
-            message: '🔗 Git Operations',
-            choices: [
-                { name: 'status', message: '🔍 Status' },
-                { name: 'diff', message: '📝 View Diff' },
-                { name: 'commit_ai', message: '🤖 Smart Commit (AI)' },
-                { name: 'commit_manual', message: '📝 Manual Commit' },
-                { name: 'branches', message: '🌿 Branches' },
-                { name: 'log', message: '📜 Commit Log' },
-                { name: 'sync', message: '🔄 Push/Pull' },
-                { name: 'stash', message: '📥 Stash Management' },
-                { name: 'remotes', message: '🌐 Manage Remotes' },
-                { name: 'auth', message: '🔑 Authentication' },
-                { name: 'advanced', message: '⚙️  Advanced...' },
-                { name: 'back', message: '⬅️  Back' }
-            ]
-        });
-
-        const action = await select.run().catch(() => 'back');
-        if (action === 'back') break;
-
         try {
-            if (action === 'status') {
-                const status = agent.getGitStatus();
-                if (status.success) {
-                    TerminalUI.showGitStatus(status);
-                } else {
-                    console.log(TerminalUI.formatError(status.error));
-                }
-            } else if (action === 'diff') {
-                const res = agent.gitManager.getDiff();
-                if (res.success) {
-                    if (!res.output) {
-                        console.log(chalk.gray('\nNo changes to show.'));
-                    } else {
-                        console.log(chalk.cyan('\nGit Diff:'));
-                        console.log(await renderMarkdown(`\`\`\`diff\n${res.output.substring(0, 2000)}${res.output.length > 2000 ? '\n... (truncated)' : ''}\n\`\`\``));
-                    }
-                } else {
-                    console.log(TerminalUI.formatError(res.error));
-                }
-            } else if (action === 'commit_ai') {
-                const res = await withCancellation('Generating smart commit...', (signal) =>
-                    agent.smartCommit('.', { signal })
-                );
-                if (res && res.success) {
-                    console.log(TerminalUI.formatSuccess(`Changes committed: ${res.message}`));
-                } else if (res && !res.aborted) {
-                    console.log(TerminalUI.formatError(res.error || 'Commit failed.'));
-                }
-            } else if (action === 'commit_manual') {
-                const status = agent.getGitStatus();
-                if (status.success && status.total > 0) {
-                    const msg = await new Input({ message: 'Commit message:' }).run();
-                    if (msg) {
-                        const res = await agent.commitChanges(msg);
-                        if (res.success) {
-                            console.log(TerminalUI.formatSuccess('Changes committed successfully.'));
-                        } else {
-                            console.log(TerminalUI.formatError(res.error));
-                        }
-                    }
-                } else {
-                    console.log(chalk.yellow('\nNothing to commit.'));
-                }
-            } else if (action === 'branches') {
-                const res = agent.gitManager.getBranches();
-                if (res.success) {
-                    TerminalUI.showGitBranches(res.branches);
-                    const branchAction = new Select({
-                        message: 'Branch Operations',
-                        choices: ['Create New Branch', 'Switch Branch', 'Back']
-                    });
-                    const bCmd = await branchAction.run();
-                    if (bCmd === 'Create New Branch') {
-                        const name = await new Input({ message: 'New branch name:' }).run();
-                        if (name) {
-                            const createRes = agent.createGitBranch(name);
-                            if (createRes.success) console.log(TerminalUI.formatSuccess(`Switched to new branch: ${name}`));
-                            else console.log(TerminalUI.formatError(createRes.error));
-                        }
-                    } else if (bCmd === 'Switch Branch') {
-                        const swRes = new Select({
-                            message: 'Select branch to switch to:',
-                            choices: res.branches.map(b => b.name)
-                        });
-                        const target = await swRes.run();
-                        const switchRes = agent.switchGitBranch(target);
-                        if (switchRes.success) console.log(TerminalUI.formatSuccess(`Switched to branch: ${target}`));
-                        else console.log(TerminalUI.formatError(switchRes.error));
-                    }
-                }
-            } else if (action === 'log') {
-                const res = agent.getGitLog(15);
-                if (res.success) {
-                    TerminalUI.showGitLog(res.commits);
-                } else {
-                    console.log(TerminalUI.formatError(res.error));
-                }
-            } else if (action === 'sync') {
-                const remotesRes = agent.gitManager.getRemotesDetailed();
-                if (!remotesRes.success) {
-                    console.log(TerminalUI.formatError(remotesRes.error));
-                    continue;
-                }
+            const bypassActive = config.getAutoApprove();
+            const statusTag = bypassActive ? chalk.green(' [BYPASS ON]') : '';
+            const modeTag = chalk.cyan.bold(` (${currentMode})`);
 
-                if (remotesRes.remotes.length === 0) {
-                    console.log(chalk.yellow('\n⚠️  No remotes configured.'));
-                    const addRemote = await new Select({
-                        message: 'Add a remote now?',
-                        choices: ['Yes', 'No']
-                    }).run();
-                    if (addRemote === 'Yes') {
-                        await showRemoteMenu();
-                    }
-                    continue;
-                }
+            const inputPrompt = new Input({
+                message: chalk.cyan.bold(`🧑‍💻 ${userName}`) + modeTag + statusTag + chalk.cyan.bold(' › ')
+            });
 
-                const sSelect = new Select({
-                    message: 'Sync Operation',
-                    choices: ['Pull', 'Push', 'Back']
-                });
-                const sCmd = await sSelect.run();
-                if (sCmd === 'Back') continue;
+            let input = await inputPrompt.run().catch(() => null);
 
-                const remote = remotesRes.remotes.length === 1
-                    ? remotesRes.remotes[0].name
-                    : await new Select({ message: 'Select remote:', choices: remotesRes.remotes.map(r => r.name) }).run();
-
-                const branchRes = agent.gitManager.getCurrentBranch();
-                const branch = branchRes.success ? branchRes.output : 'main';
-
-                // Smart Auth Retry Wrapper
-                const performGitAction = async (actionFn, actionName) => {
-                    let res = await withCancellation(`${actionName}ing ${remote}/${branch}...`, () =>
-                        Promise.resolve(actionFn(branch, remote))
-                    );
-
-                    // If auth failed, offer professional fix
-                    if (res && !res.success && (res.output.includes('Authentication failed') || res.output.includes('403') || res.output.includes('could not read Username') || res.output.includes('terminal prompts disabled'))) {
-                        console.log(chalk.yellow(`\n⚠️  Authentication failed for ${remote}.`));
-
-                        // Detect available options
-                        const sshAvailable = agent.gitManager.testSSHConnection().success;
-                        const choices = [
-                            { name: 'browser', message: '🌐 Login via Browser (Recommended)' },
-                            { name: 'token', message: '🔑 Enter Token or Password' }
-                        ];
-                        if (sshAvailable) choices.push({ name: 'ssh', message: '🗝️  Switch to SSH' });
-                        choices.push({ name: 'cancel', message: '❌ Cancel' });
-
-                        const fixSelect = new Select({
-                            message: 'Select Authentication Method:',
-                            choices: choices
-                        });
-
-                        const fix = await fixSelect.run().catch(() => 'cancel');
-
-                        if (fix === 'browser') {
-                            const GithubAuth = require('./services/GithubAuth');
-                            const ghAuth = new GithubAuth();
-                            const url = ghAuth.getSmartAuthUrl();
-
-                            // Attempt to open browser
-                            await ghAuth.openBrowser(url);
-
-                            console.log(boxen(chalk.cyan(`1. Browser should open... or click: ${chalk.underline.bold(url)}\n2. Scroll down and click "Generate token"\n3. Copy the token and paste it below.`), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
-
-                            const token = await new Input({ message: 'Paste Token:' }).run();
-                            if (token) {
-                                process.env.GH_TOKEN = token;
-                                config.setGitHubToken(token);
-                                agent.gitManager.configureTokenAuth(token);
-                                res = await withCancellation(`Retrying with new token...`, () => Promise.resolve(actionFn(branch, remote)));
-                            }
-                        } else if (fix === 'token') {
-                            const token = await new Input({ message: 'GitHub Token or Password:' }).run();
-                            if (token) {
-                                process.env.GH_TOKEN = token;
-                                config.setGitHubToken(token);
-                                agent.gitManager.configureTokenAuth(token);
-                                res = await withCancellation(`Retrying with token...`, () => Promise.resolve(actionFn(branch, remote)));
-                            }
-                        } else if (fix === 'ssh') {
-                            const sshRes = agent.gitManager.convertToSSH(remote);
-                            if (sshRes.success) {
-                                console.log(TerminalUI.formatSuccess('Switched remote to SSH.'));
-                                res = await withCancellation(`Retrying via SSH...`, () => Promise.resolve(actionFn(branch, remote)));
-                            } else {
-                                console.log(TerminalUI.formatError(sshRes.error));
-                            }
-                        }
-                    }
-                    return res;
-                };
-
-                if (sCmd === 'Pull') {
-                    const res = await performGitAction((b, r) => agent.gitManager.pull(b, r), 'Pull');
-                    if (res) TerminalUI.showGitSync('Pull', remote, branch, res.success, res.output || res.error);
-                } else {
-                    const res = await performGitAction((b, r) => agent.gitManager.push(b, r), 'Push');
-                    if (res) TerminalUI.showGitSync('Push', remote, branch, res.success, res.output || res.error);
-                }
-            } else if (action === 'stash') {
-                await showStashMenu();
-                continue;
-            } else if (action === 'remotes') {
-                await showRemoteMenu();
-                continue;
-            } else if (action === 'auth') {
-                await showAuthMenu();
-                continue;
-            } else if (action === 'advanced') {
-                await showAdvancedGitMenu();
+            if (input === null) {
+                if (ctrlCCount >= 2) break;
                 continue;
             }
-        } catch (e) {
-            console.log(TerminalUI.formatError(`Git operation failed: ${e.message}`));
-        }
+            input = input.trim();
+            if (!input) continue;
 
-        await new Input({ message: 'Press Enter to continue' }).run().catch(() => null);
-    }
-}
+            if (input === '/' || input.startsWith('/')) {
+                let targetCmd = input;
+                if (input === '/') {
+                    const selected = await promptSlashAutoComplete();
+                    if (!selected) continue;
+                    targetCmd = selected;
+                }
 
-async function showStashMenu() {
-    while (true) {
-        const select = new Select({
-            message: '📥 Git Stash Management',
-            choices: [
-                { name: 'push', message: '📥 Push Stash' },
-                { name: 'pop', message: '📤 Pop Stash (Apply & Remove)' },
-                { name: 'list', message: '📋 List Stashes' },
-                { name: 'clear', message: '🔥 Clear All Stashes' },
-                { name: 'back', message: '⬅️  Back' }
-            ]
-        });
+                const rawCmd = targetCmd.replace(/^\//, '').trim().split(/\s+/)[0].toLowerCase();
+                if (['chat', 'plan', 'analyze', 'git', 'actions', 'files', 'status', 'commit', 'diff'].includes(rawCmd)) {
+                    currentMode = rawCmd;
+                }
 
-        const action = await select.run().catch(() => 'back');
-        if (action === 'back') break;
-
-        try {
-            if (action === 'push') {
-                const msg = await new Input({ message: 'Stash message (optional):' }).run();
-                const res = agent.gitManager.stash(msg);
-                if (res.success) console.log(TerminalUI.formatSuccess('Changes stashed.'));
-                else console.log(TerminalUI.formatError(res.error));
-            } else if (action === 'pop') {
-                const res = agent.gitManager.stashPop();
-                if (res.success) console.log(TerminalUI.formatSuccess('Stash popped successfully.'));
-                else console.log(TerminalUI.formatError(res.error));
-            } else if (action === 'list') {
-                const res = agent.gitManager.getStashes();
-                if (res.success) {
-                    console.log(chalk.cyan('\nStash List:'));
-                    console.log(res.output || chalk.gray('No stashes found.'));
-                } else console.log(TerminalUI.formatError(res.error));
-            } else if (action === 'clear') {
-                const res = agent.gitManager.stashClear();
-                if (res.success) console.log(TerminalUI.formatSuccess('All stashes cleared.'));
-                else console.log(TerminalUI.formatError(res.error));
+                const result = await dispatchSlashCommand(targetCmd, context);
+                if (result && result.mode) currentMode = result.mode;
+                if (result && result.exit) break;
+                continue;
             }
-        } catch (e) {
-            console.log(TerminalUI.formatError(e.message));
-        }
-        await new Input({ message: 'Press Enter' }).run().catch(() => null);
-    }
-}
 
-async function showAdvancedGitMenu() {
-    while (true) {
-        const select = new Select({
-            message: '⚙️  Advanced Git Operations',
-            choices: [
-                { name: 'amend', message: '⚒️  Amend Last Commit' },
-                { name: 'tags', message: '🏷️  Manage Tags' },
-                { name: 'merge', message: '🤝 Merge Branch' },
-                { name: 'cherry', message: '🍒 Cherry-pick Commit' },
-                { name: 'diag', message: '🔍 Repo Diagnostics' },
-                { name: 'clean', message: '🧹 Clean Untracked Files' },
-                { name: 'reset', message: '⚠️  Hard Reset (to HEAD)' },
-                { name: 'init', message: '🏁 Initialize Repository' },
-                { name: 'back', message: '⬅️  Back' }
-            ]
-        });
+            if (input === '@' || input.startsWith('@')) {
+                let selectedFile = null;
+                if (input === '@') {
+                    selectedFile = await promptFileAutoComplete(agent);
+                    if (!selectedFile) continue;
+                } else {
+                    selectedFile = input.split(/\s+/)[0];
+                }
 
-        const action = await select.run().catch(() => 'back');
-        if (action === 'back') break;
-
-        try {
-            if (action === 'amend') {
-                const confirm = new Select({
-                    message: 'Amend last commit?',
-                    choices: ['Yes (Keep Message)', 'Yes (Change Message)', 'No']
+                const msgPrompt = new Input({
+                    message: chalk.cyan.bold(`💬 Question about ${selectedFile}: `)
                 });
-                const choice = await confirm.run();
-                if (choice === 'No') continue;
-
-                let msg = '';
-                if (choice === 'Yes (Change Message)') {
-                    msg = await new Input({ message: 'New commit message:' }).run();
-                }
-
-                const res = agent.gitManager.amendCommit(msg);
-                if (res.success) console.log(TerminalUI.formatSuccess('Last commit amended.'));
-                else console.log(TerminalUI.formatError(res.error));
-
-            } else if (action === 'tags') {
-                const tagRes = agent.gitManager.getTags();
-                if (tagRes.success) {
-                    console.log(chalk.cyan('\nTags: ') + (tagRes.tags.join(', ') || chalk.gray('None')));
-                    const tagAction = new Select({
-                        message: 'Tag Operations',
-                        choices: ['Create Tag', 'Back']
-                    });
-                    if (await tagAction.run() === 'Create Tag') {
-                        const name = await new Input({ message: 'Tag name (v1.0):' }).run();
-                        const msg = await new Input({ message: 'Tag message (optional):' }).run();
-                        if (name) {
-                            const res = agent.gitManager.createTag(name, msg);
-                            if (res.success) console.log(TerminalUI.formatSuccess(`Tag ${name} created.`));
-                            else console.log(TerminalUI.formatError(res.error));
-                        }
-                    }
-                }
-            } else if (action === 'merge') {
-                const branchRes = agent.gitManager.getBranches();
-                if (branchRes.success) {
-                    const otherBranches = branchRes.branches.filter(b => !b.current).map(b => b.name);
-                    if (otherBranches.length === 0) {
-                        console.log(chalk.yellow('\nNo other branches to merge from.'));
-                    } else {
-                        const target = await new Select({ message: 'Select branch to merge INTO current branch:', choices: otherBranches }).run();
-                        const res = agent.gitManager.merge(target);
-                        if (res.success) console.log(TerminalUI.formatSuccess(`Merged ${target} into current branch.`));
-                        else console.log(TerminalUI.formatError(res.error));
-                    }
-                }
-            } else if (action === 'cherry') {
-                const hash = await new Input({ message: 'Enter commit hash to cherry-pick:' }).run();
-                if (hash) {
-                    const res = agent.gitManager.cherryPick(hash);
-                    if (res.success) console.log(TerminalUI.formatSuccess(`Successfully cherry-picked ${hash}`));
-                    else console.log(TerminalUI.formatError(res.error));
-                }
-            } else if (action === 'diag') {
-                const userRes = agent.gitManager.getUserConfig();
-                const branchRes = agent.gitManager.getCurrentBranch();
-                const stagedCount = agent.gitManager.getStagedCount();
-                const ignoredRes = agent.gitManager.listIgnored();
-
-                TerminalUI.showGitDiagnostics({
-                    user: userRes,
-                    branch: branchRes.success ? branchRes.output : 'Unknown',
-                    stagedCount,
-                    ignored: ignoredRes.success ? ignoredRes.output.split('\n').filter(l => l.trim()) : []
-                });
-
-                const checkIgnored = new Select({
-                    message: 'Diagnostic Actions',
-                    choices: ['Check if file is ignored', 'Back']
-                });
-                if (await checkIgnored.run() === 'Check if file is ignored') {
-                    const file = await new Input({ message: 'Enter file path:' }).run();
-                    if (file) {
-                        const res = agent.gitManager.checkIgnore(file);
-                        if (res.success) console.log(chalk.cyan(`\nIgnore Rule: `) + chalk.yellow(res.output));
-                        else console.log(chalk.green('\nFile is NOT ignored.'));
-                    }
-                }
-            } else if (action === 'clean') {
-                const dry = agent.gitManager.clean(true);
-                console.log(chalk.cyan('\nFiles to be removed:'));
-                console.log(dry.output || chalk.gray('None.'));
-                if (dry.output) {
-                    const confirm = await new Select({ message: 'Remove these files forever?', choices: ['Yes', 'No'] }).run();
-                    if (confirm === 'Yes') {
-                        const res = agent.gitManager.clean(false);
-                        if (res.success) console.log(TerminalUI.formatSuccess('Cleanup complete.'));
-                        else console.log(TerminalUI.formatError(res.error));
-                    }
-                }
-            } else if (action === 'reset') {
-                const confirm = await new Select({ message: '⚠️ HARD RESET will discard all unstaged changes. Continue?', choices: ['Yes', 'No'] }).run();
-                if (confirm === 'Yes') {
-                    const res = agent.gitManager.reset('HEAD', '--hard');
-                    if (res.success) console.log(TerminalUI.formatSuccess('Hard reset complete.'));
-                    else console.log(TerminalUI.formatError(res.error));
-                }
-            } else if (action === 'init') {
-                const res = agent.gitManager.initRepo();
-                if (res.success) console.log(TerminalUI.formatSuccess('Git repository initialized.'));
-                else console.log(TerminalUI.formatError(res.error));
+                const userMsg = await msgPrompt.run().catch(() => null);
+                if (!userMsg) continue;
+                input = `${selectedFile} ${userMsg}`;
             }
-        } catch (e) {
-            console.log(TerminalUI.formatError(e.message));
+
+            const lowerInput = input.toLowerCase();
+            if (lowerInput === 'exit' || lowerInput === 'quit' || lowerInput === '/q') break;
+
+            await handleChat(input, context);
+
+        } catch (err) {
+            await handleError(err, agent, config);
         }
-        await new Input({ message: 'Press Enter' }).run().catch(() => null);
     }
 }
 
-async function showRemoteMenu() {
-    while (true) {
-        const res = agent.gitManager.getRemotesDetailed();
-        if (res.success) TerminalUI.showGitRemotes(res.remotes);
-
-        const select = new Select({
-            message: '🌐 Git Remote Management',
-            choices: [
-                { name: 'add', message: '➕ Add Remote' },
-                { name: 'remove', message: '❌ Remove Remote' },
-                { name: 'rename', message: '✏️  Rename Remote' },
-                { name: 'url', message: '🔗 Update Remote URL' },
-                { name: 'back', message: '⬅️  Back' }
-            ]
-        });
-
-        const action = await select.run().catch(() => 'back');
-        if (action === 'back') break;
-
-        try {
-            if (action === 'add') {
-                const name = await new Input({ message: 'Remote name (e.g., origin):' }).run();
-                const url = await new Input({ message: 'URL:' }).run();
-                if (name && url) {
-                    const addRes = agent.gitManager.setRemote(name, url);
-                    if (addRes.success) console.log(TerminalUI.formatSuccess(`Remote ${name} added.`));
-                    else console.log(TerminalUI.formatError(addRes.error));
-                }
-            } else if (action === 'remove') {
-                if (res.remotes.length === 0) {
-                    console.log(chalk.yellow('\nNo remotes to remove.'));
-                    continue;
-                }
-                const name = await new Select({ message: 'Select remote to remove:', choices: res.remotes.map(r => r.name) }).run();
-                const confirm = await new Select({ message: `Remove remote ${name}?`, choices: ['Yes', 'No'] }).run();
-                if (confirm === 'Yes') {
-                    const remRes = agent.gitManager.removeRemote(name);
-                    if (remRes.success) console.log(TerminalUI.formatSuccess(`Remote ${name} removed.`));
-                    else console.log(TerminalUI.formatError(remRes.error));
-                }
-            } else if (action === 'rename') {
-                if (res.remotes.length === 0) {
-                    console.log(chalk.yellow('\nNo remotes to rename.'));
-                    continue;
-                }
-                const oldName = await new Select({ message: 'Select remote to rename:', choices: res.remotes.map(r => r.name) }).run();
-                const newName = await new Input({ message: 'New name:' }).run();
-                if (oldName && newName) {
-                    const renRes = agent.gitManager.renameRemote(oldName, newName);
-                    if (renRes.success) console.log(TerminalUI.formatSuccess(`Remote renamed to ${newName}.`));
-                    else console.log(TerminalUI.formatError(renRes.error));
-                }
-            } else if (action === 'url') {
-                if (res.remotes.length === 0) {
-                    console.log(chalk.yellow('\nNo remotes to update.'));
-                    continue;
-                }
-                const name = await new Select({ message: 'Select remote:', choices: res.remotes.map(r => r.name) }).run();
-                const url = await new Input({ message: 'New URL:' }).run();
-                if (name && url) {
-                    const setRes = agent.gitManager.setRemote(name, url);
-                    if (setRes.success) console.log(TerminalUI.formatSuccess(`Remote ${name} URL updated.`));
-                    else console.log(TerminalUI.formatError(setRes.error));
-                }
-            }
-        } catch (e) {
-            console.log(TerminalUI.formatError(e.message));
-        }
-        await new Input({ message: 'Press Enter' }).run().catch(() => null);
-    }
-}
-
-async function showLogs() {
-    const logPath = path.join(os.homedir(), '.lorapok', 'logs', 'combined.log');
-    console.log(chalk.cyan.bold('\n📊 SYSTEM DIAGNOSTIC LOGS\n'));
-    
-    try {
-        if (!fs.existsSync(logPath)) {
-            console.log(chalk.yellow('  No log file found yet.'));
-            await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run().catch(() => null);
-            return;
-        }
-        
-        const rawLogs = fs.readFileSync(logPath, 'utf8').trim().split('\n').slice(-15);
-        const table = new Table({
-            head: [chalk.cyan('Time'), chalk.cyan('Level'), chalk.cyan('Message')],
-            style: { head: [], border: ['gray'] },
-            colWidths: [12, 10, 50]
-        });
-
-        rawLogs.forEach(line => {
-            try {
-                const log = JSON.parse(line);
-                const time = new Date(log.timestamp).toLocaleTimeString([], { hour12: false });
-                let level = log.level.toUpperCase();
-                
-                if (level === 'ERROR') level = chalk.red.bold(level);
-                else if (level === 'WARN') level = chalk.yellow.bold(level);
-                else level = chalk.blue(level);
-
-                table.push([chalk.gray(time), level, chalk.white(log.message)]);
-            } catch (e) {
-                // If not JSON, just show raw line
-                if (line.trim()) table.push(['-', '-', line.trim()]);
-            }
-        });
-
-        console.log(table.toString());
-    } catch (e) {
-        console.log(TerminalUI.formatError(`Could not read logs: ${e.message}`));
-    }
-    console.log('');
-    await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run().catch(() => null);
-}
-
-// ==================== MAIN ENTRY ====================
-
+/**
+ * Application entry point for CLI command parsing and initialization.
+ * @returns {Promise<void>}
+ */
 async function main() {
     setupExitHandlers();
     await initialization();
@@ -1399,169 +328,30 @@ async function main() {
         return;
     }
 
-    const version = require('./package.json').version;
+    const pkg = require('./package.json');
     const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
 
-    // Animate Logo on startup
-    await TerminalUI.animateLogo(1500, config.getBrandingFont(), version);
-
-    TerminalUI.showHeader(version, config.getModel(), displayPath, config);
+    await TerminalUI.animateLogo(1500, config.getBrandingFont(), pkg.version);
+    TerminalUI.showHeader(pkg.version, config.getModel(), displayPath, config);
     TerminalUI.showWelcome();
-    
+
     await chatLoop();
 
     TerminalUI.showInteractionSummary(sessionData);
     process.exit(0);
 }
 
-// CLI Integration
+const pkg = require('./package.json');
+
 program
     .name('lorapok')
-    .version('1.0.0')
-    .action(main);
+    .version(`${pkg.name} v${pkg.version}\nBuilt with 🐛 by Lorapok Labs (https://lorapok.tech)`, '-v, --version', 'output the current version')
+    .option('-y, --yes, --bypass, --yolo', 'Enable Auto-Approve bypass mode (auto-applies file actions & shell commands)')
+    .action((options) => {
+        if (options.yes || options.bypass || options.yolo) {
+            process.env.LORAPOK_AUTO_APPROVE = 'true';
+        }
+        main();
+    });
 
 program.parse(process.argv);
-
-async function showAuthMenu() {
-    const GithubAuth = require('./services/GithubAuth');
-    const clientId = process.env.GITHUB_CLIENT_ID || null;
-    const ghAuth = new GithubAuth(clientId);
-
-    while (true) {
-        const token = config.getGitHubToken();
-        const ghToken = ghAuth.getGhToken();
-        const isGhInstalled = ghAuth.isGhInstalled();
-
-        let statusText = '';
-        if (token || ghToken) {
-            statusText = chalk.green('✅ Authenticated');
-            if (ghToken && !token) statusText += chalk.gray(' (via GitHub CLI)');
-        } else {
-            statusText = chalk.red('❌ Not Authenticated');
-        }
-
-        console.log(boxen(
-            chalk.cyan.bold('🔐 GitHub Authentication\n\n') + statusText,
-            { padding: 1, borderStyle: 'round', borderColor: (token || ghToken) ? 'green' : 'red' }
-        ));
-
-        // Build dynamic choices
-        const choices = [];
-
-        // Device Flow options
-        if (isGhInstalled) {
-            choices.push({ name: 'gh_login', message: '📱 Device Login (GitHub CLI) - Recommended' });
-        }
-        if (clientId) {
-            choices.push({ name: 'device_flow', message: '📲 Device Login (Custom OAuth)' });
-        }
-
-        // Manual options
-        choices.push({ name: 'generate', message: '🌐 Generate Token (Browser)' });
-        choices.push({ name: 'token', message: '🔑 Enter Access Token Manually' });
-        choices.push({ name: 'password', message: '🔒 Enter GitHub Password (Legacy)' });
-        choices.push({ name: 'clear', message: '🗑️  Clear Credentials' });
-        choices.push({ name: 'back', message: '⬅️  Back' });
-
-        const select = new Select({
-            message: 'Choose authentication method:',
-            choices
-        });
-
-        const action = await select.run().catch(() => 'back');
-        if (action === 'back') break;
-
-        if (action === 'gh_login') {
-            // GitHub CLI Device Login
-            const result = await ghAuth.runGhAuthLogin();
-            if (result.success && result.token) {
-                applyToken(result.token);
-                console.log(TerminalUI.formatSuccess('Logged in via GitHub CLI! Token synced.'));
-            } else {
-                console.log(TerminalUI.formatError(result.error || 'Login failed'));
-            }
-
-        } else if (action === 'device_flow') {
-            // Custom OAuth Device Flow
-            const result = await ghAuth.startDeviceFlow();
-            if (result.success && result.token) {
-                applyToken(result.token);
-                console.log(TerminalUI.formatSuccess('Device authentication successful! Token synced.'));
-            } else {
-                console.log(TerminalUI.formatError(result.error || 'Device flow failed'));
-            }
-
-        } else if (action === 'generate') {
-            const url = ghAuth.getSmartAuthUrl();
-            const result = await ghAuth.openBrowser(url);
-
-            console.log('\n' + boxen(
-                ghAuth.getAuthInstructions(url),
-                { padding: 1, borderStyle: 'double', borderColor: 'yellow' }
-            ));
-
-            if (!result.opened) {
-                console.log(chalk.yellow('\n⚠️  Browser could not be opened (Docker environment).'));
-                console.log(chalk.white('   Please manually copy the URL above.\n'));
-            }
-
-            const newToken = await new Input({ message: 'Paste your new token:' }).run();
-            if (newToken && newToken.trim()) {
-                applyToken(newToken.trim());
-                console.log(TerminalUI.formatSuccess('Token saved! Git & Actions are now synced.'));
-            }
-
-        } else if (action === 'token') {
-            console.log(chalk.cyan('\n📋 Enter your GitHub Personal Access Token'));
-            console.log(chalk.gray('   (Get one at: https://github.com/settings/tokens)\n'));
-
-            const newToken = await new Input({ message: 'Token:' }).run();
-            if (newToken && newToken.trim()) {
-                applyToken(newToken.trim());
-                console.log(TerminalUI.formatSuccess('Token saved! Git & Actions are now synced.'));
-            }
-
-        } else if (action === 'password') {
-            console.log(chalk.yellow('\n⚠️  GitHub no longer supports password authentication for Git.'));
-            console.log(chalk.white('   You must use a Personal Access Token instead.'));
-            console.log(chalk.gray('   Generate one at: https://github.com/settings/tokens\n'));
-
-            const confirm = await new Select({
-                message: 'Would you like to generate a token instead?',
-                choices: ['Yes, open token page', 'No, go back']
-            }).run();
-
-            if (confirm === 'Yes, open token page') {
-                const url = ghAuth.getSmartAuthUrl();
-                await ghAuth.openBrowser(url);
-                console.log('\n' + boxen(
-                    ghAuth.getAuthInstructions(url),
-                    { padding: 1, borderStyle: 'double', borderColor: 'yellow' }
-                ));
-
-                const newToken = await new Input({ message: 'Paste your new token:' }).run();
-                if (newToken && newToken.trim()) {
-                    applyToken(newToken.trim());
-                    console.log(TerminalUI.formatSuccess('Token saved! Git & Actions are now synced.'));
-                }
-            }
-
-        } else if (action === 'clear') {
-            config.setGitHubToken(null);
-            process.env.GH_TOKEN = '';
-            process.env.GITHUB_TOKEN = '';
-            agent.gitManager.executeGit('config --global --unset url."https://@github.com/".insteadOf', { silent: true });
-            console.log(TerminalUI.formatSuccess('Credentials cleared.'));
-        }
-
-        await new Input({ message: 'Press Enter to continue' }).run().catch(() => null);
-    }
-}
-
-// Helper function to apply token everywhere
-function applyToken(token) {
-    process.env.GH_TOKEN = token;
-    process.env.GITHUB_TOKEN = token;
-    config.setGitHubToken(token);
-    agent.gitManager.configureTokenAuth(token);
-}

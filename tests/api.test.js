@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const request = require('supertest');
 const app = require('../server');
 const { LorapokConfig } = require('../lib/config');
@@ -15,7 +20,8 @@ jest.mock('../lib/agent-enhanced', () => {
             showFileTree: jest.fn().mockReturnValue('tree'),
             fileManager: {
                 readFile: jest.fn().mockReturnValue('content')
-            }
+            },
+            clearHistory: jest.fn()
         })),
         MODELS: {
             sonar: { name: 'Sonar', tier: 'free', available: true }
@@ -24,10 +30,11 @@ jest.mock('../lib/agent-enhanced', () => {
 });
 
 describe('API Server', () => {
-    test('GET /health should return status ok', async () => {
+    test('GET /health should return status ok and branding credit', async () => {
         const response = await request(app).get('/health');
         expect(response.status).toBe(200);
         expect(response.body.status).toBe('ok');
+        expect(response.body.credit).toBe('Built with 🐛 by Lorapok Labs (https://lorapok.tech)');
     });
 
     test('POST /api/chat should return AI response', async () => {
@@ -51,5 +58,25 @@ describe('API Server', () => {
         expect(response.status).toBe(200);
         // Server returns { models: ... }
         expect(response.body.models.sonar).toBeDefined();
+    });
+
+    test('DELETE /api/sessions/:sessionId should handle non-existent session with 404', async () => {
+        const response = await request(app).delete('/api/sessions/non_existent_session_999');
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+    });
+
+    test('DELETE /api/sessions/:sessionId should clear existing session history and delete session', async () => {
+        // Create session via chat request
+        await request(app).post('/api/chat').send({ message: 'test', sessionId: 'active_sess_1' });
+        
+        const deleteRes = await request(app).delete('/api/sessions/active_sess_1');
+        expect(deleteRes.status).toBe(200);
+        expect(deleteRes.body.success).toBe(true);
+        expect(deleteRes.body.deleted).toBe(true);
+
+        // Deleting again should return 404
+        const deleteRes2 = await request(app).delete('/api/sessions/active_sess_1');
+        expect(deleteRes2.status).toBe(404);
     });
 });

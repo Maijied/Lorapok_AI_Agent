@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const { LorapokEnhancedAgent } = require('../lib/agent-enhanced');
 const path = require('path');
 const fs = require('fs');
@@ -46,6 +51,8 @@ describe('LorapokEnhancedAgent', () => {
         expect(agent.detectLanguage('file.js')).toBe('javascript');
         expect(agent.detectLanguage('file.py')).toBe('python');
         expect(agent.detectLanguage('Dockerfile')).toBe('dockerfile');
+        expect(agent.detectLanguage('script.pl')).toBe('perl');
+        expect(agent.detectLanguage('logic.pro')).toBe('prolog');
     });
 
     test('should NOT be greedy with code blocks (ignore examples after action)', () => {

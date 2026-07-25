@@ -1,10 +1,11 @@
 {
-  "name": "lorapok-coding-agent",
+  "name": "lorapok-ai",
   "version": "1.0.0",
   "description": "🐛 Expert AI Coding Agent - Action-Oriented CLI & API",
   "main": "index.js",
   "bin": {
-    "lorapok": "./bin/lorapok.js"
+    "lorapok": "./bin/lorapok.js",
+    "lorapok-ai": "./bin/lorapok.js"
   },
   "scripts": {
     "start": "node index.js",
@@ -18,7 +19,9 @@
     "update": "docker compose up -d --build",
     "docker:stop": "docker compose stop",
     "docker:down": "docker compose down",
-    "server": "node server.js"
+    "server": "node server.js",
+    "uninstall": "bash scripts/uninstall.sh",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "ai",
@@ -27,9 +30,14 @@
     "agent",
     "cli",
     "code-generation",
-    "debugging"
+    "debugging",
+    "llm",
+    "openai",
+    "lorapok",
+    "automation",
+    "devops"
   ],
-  "author": "Your Name",
+  "author": "Lorapok Labs <https://lorapok.tech>",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.0",
@@ -58,6 +66,28 @@
     "supertest": "^6.3.3"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
+  },
+  "homepage": "https://ai.lorapok.tech",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Maijied/Lorapok_AI_Agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Maijied/Lorapok_AI_Agent/issues"
+  },
+  "files": [
+    "bin/",
+    "commands/",
+    "lib/",
+    "services/",
+    "index.js",
+    "server.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

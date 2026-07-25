@@ -1,58 +1,78 @@
 #!/usr/bin/env node
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
+'use strict';
 
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 
 /**
  * Lorapok CLI Entry Point
- * Redirects to Docker unless LORAPOK_DOCKER=true or specifically requested local execution
+ * Runs natively on Node.js by default.
+ * Preserves Docker mode if --docker is passed or LORAPOK_USE_DOCKER=true is set.
  */
 
-const isDocker = process.env.LORAPOK_DOCKER === 'true';
-const useLocal = process.argv.includes('--local');
+const isInsideContainer = process.env.LORAPOK_DOCKER === 'true';
+const forceDocker = process.argv.includes('--docker') || process.env.LORAPOK_USE_DOCKER === 'true';
+const forceLocal = process.argv.includes('--local');
 
-if (isDocker || useLocal) {
-    // Inside Docker or specifically requested local execution
-    // Remove --local from args so it doesn't confuse commander in index.js
-    if (useLocal) {
-        process.argv = process.argv.filter(arg => arg !== '--local');
+/**
+ * Check if Docker daemon is running and responsive.
+ * @returns {boolean} True if docker daemon is active
+ */
+function isDockerRunning() {
+    try {
+        const res = spawnSync('docker', ['info'], { stdio: 'ignore', timeout: 2000 });
+        return res.status === 0;
+    } catch (e) {
+        return false;
     }
-    require('../index.js');
-} else {
-    // On Host: Redirect all lorapok commands to the Docker container
+}
+
+const shouldRunDocker = !isInsideContainer && !forceLocal && forceDocker && isDockerRunning();
+
+if (shouldRunDocker) {
     const projectRoot = process.cwd();
 
-    // 1. Ensure the persistent container is up and matches current directory
-    // This will create or update the single 'lorapok-ai-agent' container
-    spawnSync('docker', ['compose', 'up', '-d', 'lorapok'], {
+    const upRes = spawnSync('docker', ['compose', 'up', '-d', 'lorapok'], {
         cwd: path.join(__dirname, '..'),
         env: { ...process.env, PROJECT_ROOT: projectRoot }
     });
 
-    // 2. Execute the CLI inside the existing container
-    const args = [
-        'compose',
-        'exec',
-        'lorapok',
-        'node', 'index.js',
-        ...process.argv.slice(2)
-    ];
+    if (upRes.status !== 0) {
+        console.warn('⚠️  Docker Compose container start failed. Falling back to local Node.js execution...');
+        process.argv = process.argv.filter(arg => arg !== '--docker' && arg !== '--local');
+        require('../index.js');
+    } else {
+        const args = [
+            'compose',
+            'exec',
+            'lorapok',
+            'node', 'index.js',
+            ...process.argv.slice(2).filter(arg => arg !== '--docker')
+        ];
 
-    const docker = spawn('docker', args, {
-        stdio: 'inherit',
-        cwd: path.join(__dirname, '..'),
-        env: { ...process.env, PROJECT_ROOT: projectRoot }
-    });
+        const docker = spawn('docker', args, {
+            stdio: 'inherit',
+            cwd: path.join(__dirname, '..'),
+            env: { ...process.env, PROJECT_ROOT: projectRoot }
+        });
 
-    docker.on('exit', (code) => {
-        process.exit(code || 0);
-    });
+        docker.on('exit', (code) => {
+            process.exit(code || 0);
+        });
 
-    docker.on('error', (err) => {
-        console.error('❌ Failed to start Lorapok via Docker.');
-        console.error('Ensure Docker and Docker Compose are installed and running.');
-        console.error(err.message);
-        process.exit(1);
-    });
+        docker.on('error', () => {
+            console.warn('⚠️  Docker execution error. Falling back to local Node.js execution...');
+            process.argv = process.argv.filter(arg => arg !== '--docker' && arg !== '--local');
+            require('../index.js');
+        });
+    }
+} else {
+    // Standard native Node.js execution
+    process.argv = process.argv.filter(arg => arg !== '--local' && arg !== '--docker');
+    require('../index.js');
 }

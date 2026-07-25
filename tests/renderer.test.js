@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const { renderMarkdownSync, createCodeBox } = require('../lib/renderer');
 const chalk = require('chalk');
 
@@ -38,5 +43,8 @@ describe('Renderer (Markdown)', () => {
         const output = createCodeBox(code, 'js');
         expect(output).toContain('JAVASCRIPT');
         expect(output).toContain('1 │ ');
+
+        const proOutput = createCodeBox('member(X, [1, 2]).', 'pro');
+        expect(proOutput).toContain('PROLOG');
     });
 });

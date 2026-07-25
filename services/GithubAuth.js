@@ -1,33 +1,65 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
+'use strict';
+
 const open = require('open');
 const chalk = require('chalk');
 const { execSync, spawn } = require('child_process');
 
+/**
+ * Service handling GitHub authentication via CLI, Web Token, and Device Flow.
+ */
 class GithubAuth {
+    /**
+     * @param {string|null} [clientId=null] - Optional OAuth Client ID for custom device flow
+     */
     constructor(clientId = null) {
         this.scopes = ['repo', 'read:org', 'workflow'];
         this.description = 'Lorapok AI Agent';
-        this.clientId = clientId; // For custom device flow (requires OAuth App)
+        this.clientId = clientId;
     }
 
+    /**
+     * Generate personal access token creation URL with pre-filled scopes.
+     * @returns {string} URL string
+     */
     getSmartAuthUrl() {
         const baseUrl = 'https://github.com/settings/tokens/new';
         const scopes = this.scopes.join(',');
         return `${baseUrl}?scopes=${scopes}&description=${encodeURIComponent(this.description)}`;
     }
 
+    /**
+     * Attempt to launch default browser opening target URL.
+     * @param {string} url - Target URL to open
+     * @returns {Promise<{ success: boolean, data: { url: string, opened: boolean }, opened: boolean, url: string }>} Result status
+     */
     async openBrowser(url) {
         try {
             await open(url);
-            return { opened: true, url };
+            return { success: true, data: { url, opened: true }, opened: true, url };
         } catch (e) {
-            return { opened: false, url };
+            return { success: false, data: { url, opened: false }, opened: false, url, error: e.message };
         }
     }
 
+    /**
+     * Check if running inside Docker environment.
+     * @returns {{ success: boolean, data: boolean }} Status object with boolean
+     */
     isDocker() {
-        return process.env.LORAPOK_DOCKER === 'true';
+        const isDock = process.env.LORAPOK_DOCKER === 'true';
+        return { success: true, data: isDock };
     }
 
+    /**
+     * Format CLI instructions banner for manual token creation.
+     * @param {string} url - Token generation URL
+     * @returns {string} Formatted instruction text
+     */
     getAuthInstructions(url) {
         const lines = [
             chalk.bold.cyan('🔐 GitHub Authentication Required'),
@@ -41,43 +73,56 @@ class GithubAuth {
         return lines.join('\n');
     }
 
-    // Check if GitHub CLI is installed
+    /**
+     * Check if GitHub CLI (`gh`) is available in System PATH.
+     * @returns {{ success: boolean, data: boolean }} Status object with boolean
+     */
     isGhInstalled() {
         try {
             execSync('gh --version', { stdio: 'pipe' });
-            return true;
+            return { success: true, data: true };
         } catch (e) {
-            return false;
+            return { success: true, data: false };
         }
     }
 
-    // Check if already authenticated with gh
+    /**
+     * Check if GitHub CLI is currently authenticated.
+     * @returns {{ success: boolean, data: boolean }} Status object with boolean
+     */
     isGhAuthenticated() {
         try {
             const result = execSync('gh auth status', { stdio: 'pipe', encoding: 'utf-8' });
-            return result.includes('Logged in');
+            return { success: true, data: result.includes('Logged in') };
         } catch (e) {
-            return false;
+            return { success: true, data: false };
         }
     }
 
-    // Get token from gh cli
+    /**
+     * Retrieve active token from GitHub CLI.
+     * @returns {{ success: boolean, data?: string, error?: string }} Result object with token
+     */
     getGhToken() {
         try {
             const token = execSync('gh auth token', { stdio: 'pipe', encoding: 'utf-8' }).trim();
-            return token || null;
+            if (token) {
+                return { success: true, data: token };
+            }
+            return { success: false, error: 'No GitHub CLI token found.' };
         } catch (e) {
-            return null;
+            return { success: false, error: e.message };
         }
     }
 
-    // Run gh auth login with device flow (interactive)
+    /**
+     * Launch interactive `gh auth login` process.
+     * @returns {Promise<{ success: boolean, data?: { token: string }, token?: string, error?: string }>} Login result
+     */
     async runGhAuthLogin() {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             console.log(chalk.cyan('\n🔐 Starting GitHub CLI Device Login...\n'));
 
-            // Strip ALL potential tokens from environment for this process 
-            // otherwise gh refuses to do interactive login
             const env = { ...process.env };
             Object.keys(env).forEach(key => {
                 const upperKey = key.toUpperCase();
@@ -87,17 +132,15 @@ class GithubAuth {
             });
 
             const child = spawn('gh', ['auth', 'login', '--web', '-h', 'github.com'], {
-                stdio: 'inherit', // Interactive - show prompts to user
+                stdio: 'inherit',
                 shell: true,
                 env
             });
 
             child.on('close', (code) => {
-                const token = this.getGhToken();
-                if (token) {
-                    // Even if code is non-zero (e.g. failed to write git config),
-                    // if we got a token, the login was successful.
-                    resolve({ success: true, token });
+                const tokenRes = this.getGhToken();
+                if (tokenRes.success) {
+                    resolve({ success: true, data: { token: tokenRes.data }, token: tokenRes.data });
                 } else {
                     resolve({ success: false, error: `gh auth login failed (Exit code: ${code})` });
                 }
@@ -109,7 +152,10 @@ class GithubAuth {
         });
     }
 
-    // Custom OAuth Device Flow (requires clientId)
+    /**
+     * Start custom OAuth device code flow.
+     * @returns {Promise<{ success: boolean, data?: { token: string, tokenType?: string }, token?: string, error?: string }>} Authentication result
+     */
     async startDeviceFlow() {
         if (!this.clientId) {
             return {
@@ -121,13 +167,11 @@ class GithubAuth {
         console.log(chalk.cyan('\n🔐 Starting GitHub Device Flow...\n'));
 
         try {
-            // Step 1: Request device code
             const deviceCodeRes = await this.requestDeviceCode();
             if (!deviceCodeRes.success) return deviceCodeRes;
 
             const { device_code, user_code, verification_uri, interval, expires_in } = deviceCodeRes.data;
 
-            // Step 2: Show code to user
             console.log(chalk.bold.yellow('\n╔════════════════════════════════════════════╗'));
             console.log(chalk.bold.yellow('║') + chalk.bold.white('       GITHUB DEVICE AUTHENTICATION        ') + chalk.bold.yellow('║'));
             console.log(chalk.bold.yellow('╠════════════════════════════════════════════╣'));
@@ -135,10 +179,8 @@ class GithubAuth {
             console.log(chalk.bold.yellow('║') + chalk.white(' 2. Enter code: ') + chalk.bold.green(user_code) + chalk.white('              ') + chalk.bold.yellow('║'));
             console.log(chalk.bold.yellow('╚════════════════════════════════════════════╝\n'));
 
-            // Try to open browser
             await this.openBrowser(verification_uri);
 
-            // Step 3: Poll for token
             console.log(chalk.gray('Waiting for authorization (expires in ' + Math.floor(expires_in / 60) + ' min)...'));
             const tokenRes = await this.pollForToken(device_code, interval);
 
@@ -149,6 +191,10 @@ class GithubAuth {
         }
     }
 
+    /**
+     * Request initial device and user authorization codes from GitHub.
+     * @returns {Promise<{ success: boolean, data?: Object, error?: string }>} Device code response
+     */
     async requestDeviceCode() {
         try {
             const body = new URLSearchParams({
@@ -180,8 +226,14 @@ class GithubAuth {
         }
     }
 
+    /**
+     * Poll GitHub OAuth API until user approves device flow.
+     * @param {string} deviceCode - Device code string
+     * @param {number} interval - Polling interval in seconds
+     * @returns {Promise<{ success: boolean, data?: { token: string, tokenType?: string }, token?: string, error?: string }>} Token result
+     */
     async pollForToken(deviceCode, interval) {
-        const maxAttempts = 60; // ~5 minutes
+        const maxAttempts = 60;
         let currentInterval = interval || 5;
         let attempts = 0;
 
@@ -212,7 +264,6 @@ class GithubAuth {
                 return { success: false, error: result.error };
             }
 
-            // Other errors
             console.log(chalk.red(`\n❌ Error: ${result.errorDescription || result.error}`));
             return { success: false, error: result.error };
         }
@@ -220,6 +271,11 @@ class GithubAuth {
         return { success: false, error: 'Timeout waiting for authorization' };
     }
 
+    /**
+     * Query GitHub API to check status of device code token.
+     * @param {string} deviceCode - Active device code
+     * @returns {Promise<{ success: boolean, data?: { token: string, tokenType?: string }, token?: string, tokenType?: string, error?: string, errorDescription?: string }>} Check response
+     */
     async checkToken(deviceCode) {
         try {
             const body = new URLSearchParams({
@@ -243,7 +299,12 @@ class GithubAuth {
 
             const data = await res.json();
             if (data.access_token) {
-                return { success: true, token: data.access_token, tokenType: data.token_type };
+                return {
+                    success: true,
+                    data: { token: data.access_token, tokenType: data.token_type },
+                    token: data.access_token,
+                    tokenType: data.token_type
+                };
             } else {
                 return { success: false, error: data.error, errorDescription: data.error_description };
             }
@@ -252,6 +313,11 @@ class GithubAuth {
         }
     }
 
+    /**
+     * Asynchronous sleep helper.
+     * @param {number} ms - Sleep duration in milliseconds
+     * @returns {Promise<void>}
+     */
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }

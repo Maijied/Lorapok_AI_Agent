@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const GitManager = require('../services/GitManager');
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +23,7 @@ describe('GitManager', () => {
     });
 
     test('should detect if not a git repo', () => {
-        expect(gm.isGitRepo()).toBe(false);
+        expect(gm.isGitRepo().data).toBe(false);
     });
 
     test('should initialize git repo', () => {

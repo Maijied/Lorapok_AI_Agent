@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const { LorapokCodingAgent } = require('../lib/agent');
 const axios = require('axios');
 const fs = require('fs');

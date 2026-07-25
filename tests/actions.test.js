@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const { LorapokEnhancedAgent } = require('../lib/agent-enhanced');
 const path = require('path');
 

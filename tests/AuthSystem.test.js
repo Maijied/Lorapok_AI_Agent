@@ -1,3 +1,8 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
 const GitManager = require('../services/GitManager');
 const GithubAuth = require('../services/GithubAuth');
 const path = require('path');

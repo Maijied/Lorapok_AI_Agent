@@ -89,15 +89,30 @@ function executeCommand(command) {
             stdio: ['inherit', 'pipe', 'pipe']
         });
 
+        const boxen = require('boxen');
+
         if (result.stdout) {
-            console.log(chalk.gray('\nCommand Output:'));
-            console.log(result.stdout);
+            console.log(boxen(result.stdout.trim(), {
+                padding: 1,
+                title: chalk.cyan(' 📄 COMMAND OUTPUT '),
+                titleAlignment: 'left',
+                borderColor: 'cyan',
+                borderStyle: 'round'
+            }));
         }
 
         if (result.stderr && (result.status !== 0 || result.stderr.length > 0)) {
             const isWarning = result.status === 0;
-            console.error(isWarning ? chalk.yellow('\nCommand Warning:') : chalk.red('\nCommand Error:'));
-            console.error(result.stderr);
+            const borderColor = isWarning ? 'yellow' : 'red';
+            const title = isWarning ? chalk.yellow(' ⚠️ COMMAND WARNING ') : chalk.red(' ❌ COMMAND ERROR ');
+            
+            console.error(boxen(result.stderr.trim(), {
+                padding: 1,
+                title: title,
+                titleAlignment: 'left',
+                borderColor: borderColor,
+                borderStyle: 'round'
+            }));
         }
 
         if (result.status === 0 && (command.includes('cd ') || command.trim().startsWith('cd') || command.trim() === 'cd')) {

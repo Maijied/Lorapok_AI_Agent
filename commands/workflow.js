@@ -167,8 +167,13 @@ async function runProWorkflow(agent, config, objective) {
                 let commitChoice = 'Yes (AI Message)';
                 if (!bypassMode) {
                     const commitConfirm = new Select({
-                        message: `Implementation complete. Commit these ${total} changes now?`,
-                        choices: ['Yes (AI Message)', 'Yes (Manual Message)', 'No']
+                        message: chalk.cyan.bold(`Implementation complete. Commit these ${total} changes now?`),
+                        choices: [
+                            { name: 'Yes (AI Message)', message: '✨ Yes (Generate AI Message)' },
+                            { name: 'Yes (Manual Message)', message: '✏️ Yes (Write Manual Message)' },
+                            { name: 'No', message: '❌ No (Do not commit)' }
+                        ],
+                        result(name) { return this.map(name)[name]; }
                     });
                     commitChoice = await commitConfirm.run().catch(() => 'No');
                 } else {

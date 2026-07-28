@@ -165,12 +165,18 @@ class ModelManager {
                     const icon = this.getModelIcon(modelId, item.displayName || '');
                     const displayName = item.displayName || modelId;
 
+                    const inputLimit = item.inputTokenLimit ? (item.inputTokenLimit >= 1000000 ? `${(item.inputTokenLimit / 1000000).toFixed(1)}M` : `${Math.round(item.inputTokenLimit / 1000)}k`) : null;
+                    const outputLimit = item.outputTokenLimit ? `${Math.round(item.outputTokenLimit / 1000)}k` : null;
+                    const dynamicLimit = inputLimit ? `${inputLimit} in${outputLimit ? ` | ${outputLimit} out` : ''}` : null;
+
                     dynamicGoogleModels[modelId] = {
                         name: `${icon} ${displayName} (Google AI Studio)`,
                         category: cat,
                         icon: icon,
                         provider: 'google-ai-studio',
                         contextLength: item.inputTokenLimit || null,
+                        outputTokenLimit: item.outputTokenLimit || null,
+                        rateLimit: dynamicLimit,
                         description: item.description || '',
                         tier: (modelId.includes('flash') || modelId.includes('lite') || modelId.includes('nano')) ? 'free' : 'pro'
                     };
@@ -208,15 +214,24 @@ class ModelManager {
                     const cat = this.categorizeModel(item.id, item.name, item.description);
                     const icon = this.getModelIcon(item.id, item.name);
                     const displayName = item.name || item.id;
+
+                    const ctx = item.context_length ? (item.context_length >= 1000000 ? `${(item.context_length / 1000000).toFixed(1)}M` : `${Math.round(item.context_length / 1000)}k`) : null;
+                    const pPrice = item.pricing?.prompt ? (parseFloat(item.pricing.prompt) * 1000000) : 0;
+                    const cPrice = item.pricing?.completion ? (parseFloat(item.pricing.completion) * 1000000) : 0;
+                    const isFree = (pPrice === 0 && cPrice === 0) || item.id.endsWith(':free');
+                    const priceTag = isFree ? 'Free' : `$${pPrice.toFixed(2)}/M in`;
+                    const dynamicLimit = ctx ? `${ctx} ctx | ${priceTag}` : priceTag;
+
                     models[item.id] = {
                         name: `${icon} ${displayName}`,
                         category: cat,
                         icon: icon,
                         provider: 'openrouter',
                         contextLength: item.context_length || null,
+                        rateLimit: dynamicLimit,
                         description: item.description || '',
                         pricing: item.pricing || null,
-                        tier: (item.pricing && parseFloat(item.pricing.prompt) === 0 && parseFloat(item.pricing.completion) === 0) ? 'free' : 'pro'
+                        tier: isFree ? 'free' : 'pro'
                     };
                 }
             }

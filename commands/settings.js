@@ -141,67 +141,121 @@ async function handleModelSelection(agent, config) {
     const availableCount = Object.values(models).filter(m => m.available).length;
     console.log(chalk.cyan(`\n🧠 Loaded ${totalCount} dynamic models from API (${availableCount} available with active keys).\n`));
 
-    // Category selection menu
-    const categoryMenu = new Select({
-        message: '📁 Select Model Category / Expertise Domain:',
-        choices: [
-            { name: 'coding', message: '💻 Coding & Engineering (Claude 3.5, DeepSeek, Qwen, GPT-4o)' },
-            { name: 'reasoning', message: '🔬 Complex Logic & Reasoning (DeepSeek R1, Sonar Reasoning Pro)' },
-            { name: 'research', message: '🔍 Web Research & Search (Sonar Deep Research, Sonar Pro)' },
-            { name: 'fast', message: '⚡ Fast & Lightweight (Gemini Flash, Sonar, Haiku)' },
-            { name: 'all', message: '🌐 Browse & Search All Models (Full List)' },
-            { name: 'back', message: '🔙 Back' }
-        ],
-        result(name) { return this.map(name)[name]; }
-    });
-
-    const selectedCategory = await categoryMenu.run().catch(() => 'back');
-    if (selectedCategory === 'back') return;
-
-    let filteredModelKeys = Object.keys(models);
-    if (selectedCategory !== 'all') {
-        filteredModelKeys = filteredModelKeys.filter(id => {
-            const item = models[id];
-            return item.category === selectedCategory;
-        });
-        if (filteredModelKeys.length === 0) {
-            console.log(chalk.yellow(`No models found for category '${selectedCategory}'. Showing all models.`));
-            filteredModelKeys = Object.keys(models);
-        }
-    }
-
-    const choices = filteredModelKeys.map(id => {
-        const item = models[id];
-        const statusIcon = item.available ? chalk.green('🟢') : chalk.gray('🔒');
-        const providerTag = item.provider === 'openrouter' ? chalk.cyan('[OpenRouter]') : chalk.magenta('[Perplexity]');
-        return {
-            name: id,
-            message: `${statusIcon} ${item.name} ${providerTag}`
-        };
-    });
-
-    const modelSelect = new Select({
-        message: `🧠 Select LLM Model from ${selectedCategory.toUpperCase()} (Type to search):`,
-        choices
-    });
-
-    const model = await modelSelect.run().catch(() => null);
-    if (model) {
-        const selectedModel = models[model];
-        const confirm = new Select({
-            message: `Switch active AI model to '${selectedModel?.name || model}'?`,
+    while (true) {
+        const mainMenu = new Select({
+            message: '🧠 Model Selection & Configuration',
             choices: [
-                { name: 'save', message: '🟢 Switch & Save Model' },
-                { name: 'reject', message: '❌ Reject / Cancel' }
+                { name: 'ready', message: '🟢 View Ready Models (Available Without Credit Errors)' },
+                { name: 'category', message: '📁 Browse by Domain / Category' },
+                { name: 'provider', message: '🏢 Browse by AI Provider (Perplexity, OpenRouter)' },
+                { name: 'tier', message: '💰 Browse by Pricing Tier (Free, Pro)' },
+                { name: 'all', message: '🌐 View All Supported Models' },
+                { name: 'back', message: '🔙 Back to Settings' }
             ],
             result(name) { return this.map(name)[name]; }
         });
-        const ans = await confirm.run().catch(() => 'reject');
-        if (ans === 'save') {
-            config.setModel(model);
-            console.log(TerminalUI.formatSuccess(`AI Model updated to ${selectedModel?.name || model}.`));
+
+        const filterMode = await mainMenu.run().catch(() => 'back');
+        if (filterMode === 'back') return;
+
+        let filteredModelKeys = Object.keys(models);
+        let menuTitle = '';
+
+        if (filterMode === 'ready') {
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].available);
+            menuTitle = 'Ready Models';
+        } else if (filterMode === 'category') {
+            const categoryMenu = new Select({
+                message: '📁 Select Category:',
+                choices: [
+                    { name: 'coding', message: '💻 Coding & Engineering' },
+                    { name: 'reasoning', message: '🔬 Complex Logic & Reasoning' },
+                    { name: 'research', message: '🔍 Web Research & Search' },
+                    { name: 'fast', message: '⚡ Fast & Lightweight' },
+                    { name: 'back', message: '🔙 Back' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const cat = await categoryMenu.run().catch(() => 'back');
+            if (cat === 'back') continue;
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].category === cat);
+            menuTitle = `Category: ${cat}`;
+        } else if (filterMode === 'provider') {
+            const provMenu = new Select({
+                message: '🏢 Select Provider:',
+                choices: [
+                    { name: 'perplexity', message: '🟣 Perplexity AI' },
+                    { name: 'openrouter', message: '🔵 OpenRouter' },
+                    { name: 'back', message: '🔙 Back' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const prov = await provMenu.run().catch(() => 'back');
+            if (prov === 'back') continue;
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].provider === prov);
+            menuTitle = `Provider: ${prov}`;
+        } else if (filterMode === 'tier') {
+            const tierMenu = new Select({
+                message: '💰 Select Pricing Tier:',
+                choices: [
+                    { name: 'free', message: '🆓 Free Models' },
+                    { name: 'pro', message: '💎 Pro / Paid Models' },
+                    { name: 'back', message: '🔙 Back' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const tier = await tierMenu.run().catch(() => 'back');
+            if (tier === 'back') continue;
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].tier === tier);
+            menuTitle = `Tier: ${tier}`;
         } else {
-            console.log(chalk.yellow('\n⚠️ Model change rejected. Kept current model.'));
+            menuTitle = 'All Models';
+        }
+
+        if (filteredModelKeys.length === 0) {
+            console.log(chalk.yellow(`\n⚠️ No models found for ${menuTitle}.\n`));
+            continue;
+        }
+
+        const choices = filteredModelKeys.map(id => {
+            const item = models[id];
+            const statusIcon = item.available ? chalk.green('🟢') : chalk.gray('🔒');
+            const providerTag = item.provider === 'openrouter' ? chalk.cyan('[OpenRouter]') : chalk.magenta('[Perplexity]');
+            const tierTag = item.tier === 'free' ? chalk.green('(Free)') : chalk.yellow('(Pro)');
+            return {
+                name: id,
+                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}`
+            };
+        });
+        
+        choices.push({ name: 'back', message: '🔙 Back to Filter Menu' });
+
+        const modelSelect = new Select({
+            message: `🧠 Select from ${menuTitle} (${filteredModelKeys.length} found):`,
+            choices
+        });
+
+        const model = await modelSelect.run().catch(() => 'back');
+        if (model === 'back') continue;
+
+        if (model) {
+            const selectedModel = models[model];
+            const confirm = new Select({
+                message: `Switch active AI model to '${selectedModel?.name || model}'?`,
+                choices: [
+                    { name: 'save', message: '🟢 Switch & Save Model' },
+                    { name: 'reject', message: '❌ Reject / Cancel' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const ans = await confirm.run().catch(() => 'reject');
+            if (ans === 'save') {
+                config.setModel(model);
+                console.log(TerminalUI.formatSuccess(`AI Model updated to ${selectedModel?.name || model}.`));
+                return;
+            } else {
+                console.log(chalk.yellow('\n⚠️ Model change rejected. Kept current model.\n'));
+            }
         }
     }
 }

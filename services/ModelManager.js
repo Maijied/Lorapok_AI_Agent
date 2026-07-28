@@ -131,7 +131,8 @@ class ModelManager {
                         provider: 'openrouter',
                         contextLength: item.context_length || null,
                         description: item.description || '',
-                        pricing: item.pricing || null
+                        pricing: item.pricing || null,
+                        tier: (item.pricing && parseFloat(item.pricing.prompt) === 0 && parseFloat(item.pricing.completion) === 0) ? 'free' : 'pro'
                     };
                 }
             }

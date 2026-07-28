@@ -3,11 +3,11 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
 import Features from './components/Features';
-import Ecosystem from './components/Ecosystem';
 import Providers from './components/Providers';
 import CliCommands from './components/CliCommands';
 import ApiEndpoints from './components/ApiEndpoints';
 import Pricing from './components/Pricing';
+import Ecosystem from './components/Ecosystem';
 import AdminModal from './components/AdminModal';
 import Footer from './components/Footer';
 
@@ -27,11 +27,11 @@ export default function App() {
         <Hero showToast={showToast} />
         <HowItWorks />
         <Features />
-        <Ecosystem />
         <Providers />
         <CliCommands showToast={showToast} />
         <ApiEndpoints />
         <Pricing />
+        <Ecosystem />
       </main>
       <Footer />
 

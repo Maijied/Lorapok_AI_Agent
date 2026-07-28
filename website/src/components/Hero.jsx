@@ -1,9 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
 import AgenticSimulation from './AgenticSimulation';
 
+const phrases = [
+  'Plan. Code. Execute.',
+  'Commit. Deploy. Ship.',
+  'Analyze. Refactor. Test.',
+  'Debug. Optimize. Scale.'
+];
+
 export default function Hero({ showToast }) {
   const [copied, setCopied] = useState(false);
+  const [textIndex, setTextIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
   const canvasRef = useRef(null);
+
+  // Typewriter effect
+  useEffect(() => {
+    const currentPhrase = phrases[textIndex];
+    let speed = isDeleting ? 40 : 75;
+
+    if (!isDeleting && charIndex === currentPhrase.length) {
+      speed = 2200; // Pause at full phrase
+    } else if (isDeleting && charIndex === 0) {
+      setIsDeleting(false);
+      setTextIndex((prev) => (prev + 1) % phrases.length);
+      speed = 400;
+    }
+
+    const timer = setTimeout(() => {
+      setCharIndex((prev) => prev + (isDeleting ? -1 : 1));
+      if (!isDeleting && charIndex === currentPhrase.length) {
+        setIsDeleting(true);
+      }
+    }, speed);
+
+    return () => clearTimeout(timer);
+  }, [charIndex, isDeleting, textIndex]);
 
   // Copy command handler
   const handleCopy = () => {
@@ -13,7 +46,7 @@ export default function Hero({ showToast }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Canvas particle effect
+  // Canvas particle background
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -76,6 +109,8 @@ export default function Hero({ showToast }) {
     };
   }, []);
 
+  const currentText = phrases[textIndex].substring(0, charIndex);
+
   return (
     <section className="hero" id="hero">
       <div className="hero-gradient-orb purple" />
@@ -91,7 +126,12 @@ export default function Hero({ showToast }) {
           </div>
 
           <h1 className="hero-title">
-            Autonomous <span className="gradient-text">Agentic</span> Coding Simulation
+            <span className="gradient-text">{currentText}</span>
+            <span className="term-cursor" style={{ height: '1.1em', width: 4, display: 'inline-block', marginLeft: 4 }} />
+            <br />
+            <span style={{ color: 'var(--text-primary)', fontSize: '0.85em' }}>
+              Autonomous Agentic Coding Simulation
+            </span>
           </h1>
 
           <p className="hero-subtitle">
@@ -131,11 +171,11 @@ export default function Hero({ showToast }) {
             </div>
             <div>
               <div className="hero-stat-value">3</div>
-              <div className="hero-stat-label">AI Engines</div>
+              <div className="hero-stat-label">Active AI Engines</div>
             </div>
             <div>
-              <div className="hero-stat-value">12+</div>
-              <div className="hero-stat-label">CLI Features</div>
+              <div className="hero-stat-value">25+</div>
+              <div className="hero-stat-label">Providers Supported</div>
             </div>
             <div>
               <div className="hero-stat-value">100%</div>

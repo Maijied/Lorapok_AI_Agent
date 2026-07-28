@@ -15,6 +15,7 @@ export default function Pricing() {
         </div>
 
         <div className="pricing-grid">
+          {/* Free Tier Card */}
           <div className="pricing-card glass-card glass-card-interactive">
             <div className="pricing-tier">Free Tier</div>
             <div className="pricing-price gradient-text">$0</div>
@@ -34,7 +35,9 @@ export default function Pricing() {
             </a>
           </div>
 
+          {/* Pro Card with Fixed POPULAR Badge */}
           <div className="pricing-card glass-card glass-card-interactive featured">
+            <div className="pricing-badge-popular">POPULAR</div>
             <div className="pricing-tier">Pro / Enterprise</div>
             <div className="pricing-price"><span className="gradient-text-amber">Pro</span></div>
             <div className="pricing-period">Coming Soon</div>

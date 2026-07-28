@@ -28,7 +28,10 @@ class FileManager {
      */
     validatePath(filePath) {
         const resolvedPath = path.resolve(this.projectRoot, filePath);
-        if (!resolvedPath.startsWith(this.projectRoot)) {
+        const realRoot = fs.existsSync(this.projectRoot) ? fs.realpathSync(this.projectRoot) : this.projectRoot;
+        const realResolved = fs.existsSync(resolvedPath) ? fs.realpathSync(resolvedPath) : resolvedPath;
+
+        if (!resolvedPath.startsWith(this.projectRoot) && !realResolved.startsWith(realRoot)) {
             throw new FileSystemError('❌ Access denied: Cannot access files outside project directory', filePath);
         }
         return resolvedPath;

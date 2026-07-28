@@ -111,7 +111,7 @@ function executeCommand(command) {
         }));
 
         const isWindows = process.platform === 'win32';
-        const shell = isWindows ? true : (fs.existsSync('/bin/bash') ? '/bin/bash' : true);
+        const shell = true;
 
         const result = spawnSync(command, {
             shell: shell,

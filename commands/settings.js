@@ -198,10 +198,23 @@ async function handleModelSelection(agent, config) {
         const filterMode = await mainMenu.run().catch(() => 'back');
         if (filterMode === 'back') return;
 
-        // Filter free available models for standard selection (no credit purchase required)
+        // Helper to check if model is free tier across all providers
+        const isFreeTier = (m) => {
+            if (!m) return false;
+            if (m.tier === 'pro') return false;
+            if (m.tier === 'free') return true;
+            const rateStr = String(m.rateLimit || '').toLowerCase();
+            const nameStr = String(m.name || m.id || '').toLowerCase();
+            if (rateStr.includes('free') || nameStr.includes(':free') || nameStr.includes('/free')) return true;
+            if (rateStr.includes('$') || rateStr.includes('pro tier')) return false;
+            if (m.provider === 'google-ai-studio') return true;
+            return false;
+        };
+
+        // Filter free available models for standard selection across all providers (no credit purchase required)
         const freeAvailableKeys = Object.keys(models).filter(id => {
             const m = models[id];
-            return m && m.available === true && (m.tier === 'free' || m.provider === 'google-ai-studio');
+            return m && m.available === true && isFreeTier(m);
         });
 
         let filteredModelKeys = [...freeAvailableKeys];
@@ -236,9 +249,9 @@ async function handleModelSelection(agent, config) {
             const provMenu = new Select({
                 message: '🏢 Select Provider:',
                 choices: [
-                    { name: 'google-ai-studio', message: '✨ Google AI Studio (Free Tier)' },
-                    { name: 'perplexity', message: '🟣 Perplexity AI (Free Tier)' },
-                    { name: 'openrouter', message: '🔵 OpenRouter' },
+                    { name: 'google-ai-studio', message: '✨ Google AI Studio (Free Models)' },
+                    { name: 'perplexity', message: '🟣 Perplexity AI (Free Models)' },
+                    { name: 'openrouter', message: '🔵 OpenRouter (Free Models)' },
                     { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
@@ -260,14 +273,14 @@ async function handleModelSelection(agent, config) {
             const tier = await tierMenu.run().catch(() => 'back');
             if (tier === 'back') continue;
             if (tier === 'free') {
-                filteredModelKeys = freeAvailableKeys.filter(id => models[id].tier === 'free' || models[id].provider === 'google-ai-studio');
+                filteredModelKeys = freeAvailableKeys;
             } else {
-                filteredModelKeys = Object.keys(models).filter(id => models[id].tier === 'pro' && models[id].provider === 'openrouter');
+                filteredModelKeys = Object.keys(models).filter(id => !isFreeTier(models[id]));
             }
             menuTitle = `Tier: ${tier}`;
         } else {
             filteredModelKeys = Object.keys(models);
-            menuTitle = 'All Supported Models (Includes Paid & Credit Models)';
+            menuTitle = 'All Supported Models (Includes Paid & Credit-Required Models)';
         }
 
         if (filteredModelKeys.length === 0) {
@@ -277,7 +290,7 @@ async function handleModelSelection(agent, config) {
 
         const choices = filteredModelKeys.map(id => {
             const item = models[id];
-            const isPaidCreditModel = item.tier === 'pro' && item.provider === 'openrouter';
+            const isPaidCreditModel = !isFreeTier(item);
             const statusIcon = item.available ? (isPaidCreditModel ? chalk.yellow('💳') : chalk.green('🟢')) : chalk.red('🔴');
             
             // Clean duplicate provider suffix from model display name
@@ -328,10 +341,15 @@ async function handleModelSelection(agent, config) {
             const cleanSelectedName = (selectedModel?.name || model)
                 .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
                 .trim();
+            const isSelectedPaid = !isFreeTier(selectedModel);
 
-            if (selectedModel?.tier === 'pro' && selectedModel?.provider === 'openrouter') {
-                console.log(chalk.yellow(`\n💳 PAID / CREDIT MODEL NOTICE: '${cleanSelectedName}' requires OpenRouter credits.`));
-                console.log(chalk.cyan(`   Purchase / add credits to your OpenRouter key at: https://openrouter.ai/keys\n`));
+            if (isSelectedPaid) {
+                let purchaseUrl = 'https://openrouter.ai/keys';
+                if (selectedModel?.provider === 'perplexity') purchaseUrl = 'https://www.perplexity.ai/settings/api';
+                if (selectedModel?.provider === 'google-ai-studio') purchaseUrl = 'https://aistudio.google.com/app/plan';
+
+                console.log(chalk.yellow(`\n💳 PAID / CREDIT MODEL NOTICE: '${cleanSelectedName}' requires paid credits.`));
+                console.log(chalk.cyan(`   To purchase credits for this model, visit: ${purchaseUrl}\n`));
             }
 
             const confirm = new Select({

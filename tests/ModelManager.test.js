@@ -37,9 +37,24 @@ describe('ModelManager Service', () => {
         axios.get.mockResolvedValue({
             data: {
                 data: [
-                    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Coding model' },
-                    { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', description: 'Reasoning model' },
-                    { id: 'google/gemini-2.0-flash-001', name: 'Gemini Flash', description: 'Fast model' }
+                    { 
+                        id: 'anthropic/claude-3.5-sonnet', 
+                        name: 'Claude 3.5 Sonnet', 
+                        description: 'Coding model',
+                        pricing: { prompt: "0.000003", completion: "0.000015" }
+                    },
+                    { 
+                        id: 'deepseek/deepseek-r1', 
+                        name: 'DeepSeek R1', 
+                        description: 'Reasoning model',
+                        pricing: { prompt: "0", completion: "0" }
+                    },
+                    { 
+                        id: 'google/gemini-2.0-flash-001', 
+                        name: 'Gemini Flash', 
+                        description: 'Fast model',
+                        pricing: { prompt: "0.0", completion: "0.0" }
+                    }
                 ]
             }
         });
@@ -47,8 +62,13 @@ describe('ModelManager Service', () => {
         const models = await modelManager.fetchModels({ bypassCache: true });
         expect(models['anthropic/claude-3.5-sonnet']).toBeDefined();
         expect(models['anthropic/claude-3.5-sonnet'].category).toBe('coding');
+        expect(models['anthropic/claude-3.5-sonnet'].tier).toBe('pro');
+        
         expect(models['deepseek/deepseek-r1'].category).toBe('reasoning');
+        expect(models['deepseek/deepseek-r1'].tier).toBe('free');
+        
         expect(models['google/gemini-2.0-flash-001'].category).toBe('fast');
+        expect(models['google/gemini-2.0-flash-001'].tier).toBe('free');
     });
 
     test('should group models by expertise category', async () => {

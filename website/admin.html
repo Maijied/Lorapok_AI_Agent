@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Lorapok AI</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#030711">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .admin-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .admin-container::before {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: var(--accent-purple);
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.2;
+      top: 20%;
+      left: 30%;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+    .admin-card {
+      max-width: 420px;
+      width: 100%;
+      padding: 3rem 2.5rem;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .admin-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+    }
+    .admin-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .admin-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.25rem;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-full);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-amber);
+      margin-bottom: 2rem;
+    }
+    .admin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      text-align: left;
+    }
+    .admin-form label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+    .admin-form input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+    .admin-form input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px var(--accent-purple-glow);
+    }
+    .admin-form input::placeholder {
+      color: var(--text-muted);
+    }
+    .admin-form .btn-primary {
+      width: 100%;
+      justify-content: center;
+      margin-top: 0.5rem;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .admin-back {
+      margin-top: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .admin-back:hover {
+      color: var(--accent-cyan);
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-card glass-card">
+      <img src="assets/logo.png" alt="Lorapok AI" class="admin-logo">
+      <h1 class="admin-title">Admin <span class="gradient-text">Panel</span></h1>
+      <p class="admin-subtitle">Lorapok AI management dashboard</p>
+
+      <div class="admin-badge">
+        🚧 Coming Soon
+      </div>
+
+      <form class="admin-form" onsubmit="return false;">
+        <div>
+          <label for="admin-email">Email</label>
+          <input type="email" id="admin-email" placeholder="admin@lorapok.tech" disabled>
+        </div>
+        <div>
+          <label for="admin-password">Password</label>
+          <input type="password" id="admin-password" placeholder="••••••••" disabled>
+        </div>
+        <button type="submit" class="btn btn-primary" disabled>Sign In</button>
+      </form>
+
+      <a href="index.html" class="admin-back">← Back to Lorapok AI</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -8,6 +8,7 @@
 const axios = require('axios');
 const NodeCache = require('node-cache');
 const logger = require('../lib/logger');
+const modelValidator = require('./ModelValidator');
 
 /**
  * Expertise categories definitions.
@@ -304,29 +305,7 @@ class ModelManager {
      * @returns {Object} Dictionary of only validated usable models
      */
     validateUsableModels(models = {}, keys = {}) {
-        const usableModels = {};
-        const { googleKey, openRouterKey, perplexityKey } = keys;
-
-        const hasGoogle = Boolean(googleKey && String(googleKey).trim());
-        const hasOpenRouter = Boolean(openRouterKey && String(openRouterKey).trim());
-        const hasPerplexity = Boolean(perplexityKey && String(perplexityKey).trim());
-
-        const unusableModels = ['gemini-2.5-pro', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-3.1-pro'];
-
-        for (const [id, meta] of Object.entries(models)) {
-            if (unusableModels.includes(id)) continue;
-
-            const provider = meta.provider || 'perplexity';
-            let isUsable = true;
-            if (meta.available === false) isUsable = false;
-            if (provider === 'google-ai-studio' && !hasGoogle) isUsable = false;
-            if (provider === 'openrouter' && !hasOpenRouter) isUsable = false;
-            if (provider === 'perplexity' && !hasPerplexity) isUsable = false;
-
-            usableModels[id] = { ...meta, available: isUsable };
-        }
-
-        return usableModels;
+        return modelValidator.validateUsableModels(models, keys);
     }
 
     /**

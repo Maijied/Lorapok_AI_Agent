@@ -218,7 +218,7 @@ async function handleModelSelection(agent, config) {
                     { name: 'openweights', message: '🦙 Open Weights & Open Source' },
                     { name: 'fast', message: '⚡ Fast & Lightweight' },
                     { name: 'general', message: '🌐 General Intelligence' },
-                    { name: 'back', message: '🔙 Back' }
+                    { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
@@ -233,7 +233,7 @@ async function handleModelSelection(agent, config) {
                     { name: 'google-ai-studio', message: '✨ Google AI Studio' },
                     { name: 'perplexity', message: '🟣 Perplexity AI' },
                     { name: 'openrouter', message: '🔵 OpenRouter' },
-                    { name: 'back', message: '🔙 Back' }
+                    { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
@@ -247,7 +247,7 @@ async function handleModelSelection(agent, config) {
                 choices: [
                     { name: 'free', message: '🆓 Free Models' },
                     { name: 'pro', message: '💎 Pro / Paid Models' },
-                    { name: 'back', message: '🔙 Back' }
+                    { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
@@ -309,8 +309,12 @@ async function handleModelSelection(agent, config) {
 
         if (model) {
             const selectedModel = models[model];
+            const cleanSelectedName = (selectedModel?.name || model)
+                .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
+                .trim();
+
             const confirm = new Select({
-                message: `Switch active AI model to '${selectedModel?.name || model}'?`,
+                message: `Switch active AI model to '${cleanSelectedName}'?`,
                 choices: [
                     { name: 'save', message: '🟢 Switch & Save Model' },
                     { name: 'reject', message: '❌ Reject / Cancel' }
@@ -320,7 +324,7 @@ async function handleModelSelection(agent, config) {
             const ans = await confirm.run().catch(() => 'reject');
             if (ans === 'save') {
                 config.setModel(model);
-                console.log(TerminalUI.formatSuccess(`AI Model updated to ${selectedModel?.name || model}.`));
+                console.log(TerminalUI.formatSuccess(`AI Model updated to ${cleanSelectedName}.`));
                 return;
             } else {
                 console.log(chalk.yellow('\n⚠️ Model change rejected. Kept current model.\n'));

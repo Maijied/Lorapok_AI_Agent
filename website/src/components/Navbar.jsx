@@ -26,10 +26,9 @@ export default function Navbar({ onOpenAdmin }) {
           <a href="#features" className="nav-link">Features</a>
           <a href="#how-it-works" className="nav-link">How It Works</a>
           <a href="#providers" className="nav-link">Providers</a>
+          <a href="#api" className="nav-link">API</a>
+          <a href="#pricing" className="nav-link">Pricing</a>
           <a href="#ecosystem" className="nav-link">Ecosystem</a>
-          <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/research" className="nav-link" target="_blank" rel="noopener noreferrer">Research 🔬</a>
-          <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/connect" className="nav-link" target="_blank" rel="noopener noreferrer">Connect 🌐</a>
-          <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/" className="nav-link" target="_blank" rel="noopener noreferrer">Labs Bible 📖</a>
           <button onClick={onOpenAdmin} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
             Admin
           </button>
@@ -55,10 +54,9 @@ export default function Navbar({ onOpenAdmin }) {
         <a href="#features" className="nav-link" onClick={() => setDrawerOpen(false)}>Features</a>
         <a href="#how-it-works" className="nav-link" onClick={() => setDrawerOpen(false)}>How It Works</a>
         <a href="#providers" className="nav-link" onClick={() => setDrawerOpen(false)}>Providers</a>
+        <a href="#api" className="nav-link" onClick={() => setDrawerOpen(false)}>API</a>
+        <a href="#pricing" className="nav-link" onClick={() => setDrawerOpen(false)}>Pricing</a>
         <a href="#ecosystem" className="nav-link" onClick={() => setDrawerOpen(false)}>Ecosystem</a>
-        <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/research" className="nav-link" target="_blank" rel="noopener noreferrer" onClick={() => setDrawerOpen(false)}>Research 🔬</a>
-        <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/connect" className="nav-link" target="_blank" rel="noopener noreferrer" onClick={() => setDrawerOpen(false)}>Connect 🌐</a>
-        <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/" className="nav-link" target="_blank" rel="noopener noreferrer" onClick={() => setDrawerOpen(false)}>Labs Bible 📖</a>
         <button
           onClick={() => { setDrawerOpen(false); onOpenAdmin(); }}
           className="nav-link"

@@ -62,19 +62,19 @@ describe('utils.js Command Safety and CWD Tracking', () => {
 
             const res = executeCommand(`cd "${subDir}"`);
             expect(res.success).toBe(true);
-            expect(getCwd()).toBe(fs.realpathSync(subDir));
+            expect(path.resolve(getCwd())).toBe(path.resolve(fs.realpathSync(subDir)));
         });
 
         test('should update CWD on chained commands like mkdir foo && cd foo', () => {
             const res = executeCommand('mkdir test_folder && cd test_folder');
             expect(res.success).toBe(true);
-            expect(getCwd()).toBe(fs.realpathSync(path.join(testDir, 'test_folder')));
+            expect(path.resolve(getCwd())).toBe(path.resolve(fs.realpathSync(path.join(testDir, 'test_folder'))));
         });
 
         test('should expand ~ to home directory in cd command', () => {
             const res = executeCommand('cd ~');
             expect(res.success).toBe(true);
-            expect(getCwd()).toBe(fs.realpathSync(os.homedir()));
+            expect(path.resolve(getCwd())).toBe(path.resolve(fs.realpathSync(os.homedir())));
         });
     });
 });

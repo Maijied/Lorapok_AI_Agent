@@ -138,7 +138,7 @@ class GitManager {
         const result = this.getStatus();
         if (!result.success) return result;
 
-        const lines = (result.output || '').split('\n').filter(l => l.trim());
+        const lines = (result.output || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
         const files = lines.map(line => {
             const status = line.substring(0, 2);
             const file = line.substring(3);
@@ -327,7 +327,7 @@ class GitManager {
         const result = this.executeGit('branch -a');
         if (!result.success) return result;
 
-        const branches = (result.output || '').split('\n')
+        const branches = (result.output || '').replace(/\r/g, '').split('\n')
             .map(b => b.trim())
             .filter(b => b)
             .map(b => ({
@@ -352,7 +352,7 @@ class GitManager {
 
         if (!result.success) return result;
 
-        const commits = (result.output || '').split('\n')
+        const commits = (result.output || '').replace(/\r/g, '').split('\n')
             .filter(l => l.trim())
             .map(line => {
                 const [hash, author, date, message] = line.split('|');

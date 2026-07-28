@@ -61,7 +61,6 @@ const DEFAULT_GOOGLE_MODELS = {
     'gemini-3.1-flash-lite': { name: '🚀 Gemini 3.1 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 250k TPM | 1M ctx', description: 'Fast lightweight preview model.' },
     'gemini-3-pro-preview': { name: '✨ Gemini 3 Pro Preview (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', contextLength: 1000000, rateLimit: '2 RPM | 32k TPM | 1M ctx', description: 'Gemini 3 Pro preview engine.' },
     'gemini-3-flash-preview': { name: '⚡ Gemini 3 Flash Preview (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '5 RPM | 250k TPM | 1M ctx', description: 'Gemini 3 Flash preview engine.' },
-    'gemini-2.5-pro': { name: '✨ Gemini 2.5 Pro (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', contextLength: 2000000, rateLimit: 'Pro / Billed Tier (0 RPM Free)', description: 'Google flagship coding & complex reasoning model.' },
     'gemini-2.5-flash-lite': { name: '🚀 Gemini 2.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '10 RPM | 250k TPM | 1M ctx', description: 'Extremely fast cost-optimized model.' },
     'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Ultra-low latency production model with search grounding.' },
     'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 4M TPM | 1M ctx', description: 'Extremely fast cost-optimized model.' },
@@ -209,7 +208,7 @@ class ModelManager {
                     if (item.supportedGenerationMethods && !item.supportedGenerationMethods.includes('generateContent')) {
                         continue;
                     }
-                    if (['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-3.1-pro'].includes(modelId)) {
+                    if (['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-3.1-pro', 'gemini-2.5-pro'].includes(modelId)) {
                         continue;
                     }
 

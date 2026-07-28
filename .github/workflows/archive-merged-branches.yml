@@ -1,0 +1,31 @@
+name: Archive Merged Branches
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  archive-branch:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Archive Branch
+        run: |
+          HEAD_REF="${{ github.event.pull_request.head.ref }}"
+          ARCHIVE_REF="archive/${HEAD_REF}"
+
+          echo "📦 Archiving branch '${HEAD_REF}' to '${ARCHIVE_REF}'..."
+          
+          # Fetch all commits
+          git fetch origin
+
+          # Create and push archive branch
+          git checkout -b "${ARCHIVE_REF}" "origin/${HEAD_REF}" || git checkout -b "${ARCHIVE_REF}" "${{ github.event.pull_request.head.sha }}"
+          git push origin "${ARCHIVE_REF}"
+
+          echo "✅ Branch successfully archived as '${ARCHIVE_REF}'!"

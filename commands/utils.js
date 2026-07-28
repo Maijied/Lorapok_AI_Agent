@@ -112,10 +112,13 @@ function executeCommand(command) {
         }));
 
         const isWindows = process.platform === 'win32';
-        const shell = true;
+        let execCmd = command;
+        if (isWindows) {
+            execCmd = execCmd.replace(/\bcd\s+~(?=$|\/|\\|\s)/gi, `cd "${os.homedir()}"`);
+        }
 
-        const result = spawnSync(command, {
-            shell: shell,
+        const result = spawnSync(execCmd, {
+            shell: true,
             encoding: 'utf8',
             cwd: currentCwd,
             timeout: 60000,

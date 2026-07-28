@@ -298,6 +298,38 @@ class ModelManager {
 
 
     /**
+     * Model Validator Middleware: Filter and return only usable, active models with valid provider keys.
+     * @param {Object} models - Dictionary of model objects
+     * @param {Object} keys - API keys object { googleKey, openRouterKey, perplexityKey }
+     * @returns {Object} Dictionary of only validated usable models
+     */
+    validateUsableModels(models = {}, keys = {}) {
+        const usableModels = {};
+        const { googleKey, openRouterKey, perplexityKey } = keys;
+
+        const hasGoogle = Boolean(googleKey && String(googleKey).trim());
+        const hasOpenRouter = Boolean(openRouterKey && String(openRouterKey).trim());
+        const hasPerplexity = Boolean(perplexityKey && String(perplexityKey).trim());
+
+        const unusableModels = ['gemini-2.5-pro', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-3.1-pro'];
+
+        for (const [id, meta] of Object.entries(models)) {
+            if (unusableModels.includes(id)) continue;
+
+            const provider = meta.provider || 'perplexity';
+            let isUsable = true;
+            if (meta.available === false) isUsable = false;
+            if (provider === 'google-ai-studio' && !hasGoogle) isUsable = false;
+            if (provider === 'openrouter' && !hasOpenRouter) isUsable = false;
+            if (provider === 'perplexity' && !hasPerplexity) isUsable = false;
+
+            usableModels[id] = { ...meta, available: isUsable };
+        }
+
+        return usableModels;
+    }
+
+    /**
      * Retrieve models grouped by expertise categories.
      * @param {Object} [options={}] - Filter options
      * @returns {Promise<Object>} Object mapping category IDs to arrays of model objects

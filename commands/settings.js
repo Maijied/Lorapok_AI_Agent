@@ -198,11 +198,13 @@ async function handleModelSelection(agent, config) {
         const filterMode = await mainMenu.run().catch(() => 'back');
         if (filterMode === 'back') return;
 
-        let filteredModelKeys = Object.keys(models);
+        // Filter out unusable models so only usable models appear in selection menus
+        let usableKeys = Object.keys(models).filter(id => models[id] && models[id].available !== false);
+        let filteredModelKeys = [...usableKeys];
         let menuTitle = '';
 
         if (filterMode === 'ready') {
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].available);
+            filteredModelKeys = usableKeys.filter(id => models[id].available);
             menuTitle = 'Ready Models';
         } else if (filterMode === 'category') {
             const categoryMenu = new Select({

@@ -131,7 +131,11 @@ class ModelManager {
                 for (const item of response.data.models) {
                     if (!item.name) continue;
                     const modelId = item.name.replace(/^models\//, '');
-                    if (!modelId.startsWith('gemini')) continue;
+                    
+                    // Only include models that support content generation
+                    if (item.supportedGenerationMethods && !item.supportedGenerationMethods.includes('generateContent')) {
+                        continue;
+                    }
 
                     const cat = this.categorizeModel(modelId, item.displayName || '', item.description || '');
                     const icon = this.getModelIcon(modelId, item.displayName || '');
@@ -144,7 +148,7 @@ class ModelManager {
                         provider: 'google-ai-studio',
                         contextLength: item.inputTokenLimit || null,
                         description: item.description || '',
-                        tier: (modelId.includes('flash') || modelId.includes('lite')) ? 'free' : 'pro'
+                        tier: (modelId.includes('flash') || modelId.includes('lite') || modelId.includes('nano')) ? 'free' : 'pro'
                     };
                 }
                 if (Object.keys(dynamicGoogleModels).length > 0) {

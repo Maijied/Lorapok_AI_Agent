@@ -97,6 +97,68 @@ function getProjectOverviewContext(agent) {
 }
 
 /**
+ * Helper to render structured model name and token usage footer card after AI responses.
+ */
+function renderTokenUsageBox(context, response, activeModelIdOverride) {
+    const { agent, config, sessionData } = context;
+    const boxen = require('boxen');
+
+    const activeModelId = activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
+    const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
+    const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
+    const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
+    const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
+
+    let promptTokens = response?.usage?.prompt_tokens || 0;
+    let completionTokens = response?.usage?.completion_tokens || 0;
+    let totalTokens = response?.usage?.total_tokens || 0;
+
+    if (!totalTokens && response?.content) {
+        promptTokens = Math.max(10, Math.ceil(response.content.length / 4));
+        completionTokens = Math.max(5, Math.ceil(response.content.length / 8));
+        totalTokens = promptTokens + completionTokens;
+    }
+
+    if (sessionData) {
+        if (!sessionData.tokens) sessionData.tokens = { prompt: 0, completion: 0, total: 0 };
+        sessionData.tokens.prompt += promptTokens;
+        sessionData.tokens.completion += completionTokens;
+        sessionData.tokens.total += totalTokens;
+
+        if (!sessionData.modelUsage) sessionData.modelUsage = {};
+        if (!sessionData.modelUsage[activeModelId]) {
+            sessionData.modelUsage[activeModelId] = { name: displayName, prompt: 0, completion: 0, total: 0, requests: 0 };
+        }
+        sessionData.modelUsage[activeModelId].prompt += promptTokens;
+        sessionData.modelUsage[activeModelId].completion += completionTokens;
+        sessionData.modelUsage[activeModelId].total += totalTokens;
+        sessionData.modelUsage[activeModelId].requests += 1;
+    }
+
+    const maxCtx = activeModelMeta?.contextLength || 1000000;
+    const currentModelUsed = sessionData?.modelUsage?.[activeModelId]?.total || totalTokens;
+    const remainingTokens = Math.min(maxCtx, Math.max(0, maxCtx - currentModelUsed));
+
+    const remStr = remainingTokens >= 1000000 ? `${(remainingTokens / 1000000).toFixed(2)}M` : `${Math.round(remainingTokens / 1000)}k`;
+    const maxCtxStr = maxCtx >= 1000000 ? `${(maxCtx / 1000000).toFixed(1)}M` : `${Math.round(maxCtx / 1000)}k`;
+    const pctLeft = Math.min(100, Math.max(0, Math.round((remainingTokens / maxCtx) * 100)));
+
+    const cacheTag = response?.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
+    const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
+    const tokenBar = chalk.cyan(`📊 Turn Usage: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) +
+                     chalk.yellow(`  │  ⚡ Available Token Limit: ${remStr} / ${maxCtxStr} (${pctLeft}% Remaining)`);
+
+    const usageBox = boxen(`${modelLabel}\n${tokenBar}`, {
+        padding: { top: 0, bottom: 0, left: 2, right: 2 },
+        margin: { top: 1, bottom: 1 },
+        borderStyle: 'round',
+        borderColor: 'cyan'
+    });
+
+    console.log(usageBox);
+}
+
+/**
  * Handle primary LLM chat interaction, token usage tracking, and action block execution.
  * @param {string} input - Input message string
  * @param {Object} context - CommandContext containing { agent, config, sessionData, ui }
@@ -123,81 +185,13 @@ async function handleChat(input, context, options = {}) {
             return { success: false, error: 'Request cancelled by user.' };
         }
 
-        // Active model metadata & token calculation
-        const activeModelId = config.getModel();
-        const allModels = agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
-        const activeModelMeta = allModels ? allModels[activeModelId] : null;
-        const icon = activeModelMeta?.icon || (agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
-        const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
-
-        let promptTokens = response.usage?.prompt_tokens || 0;
-        let completionTokens = response.usage?.completion_tokens || 0;
-        let totalTokens = response.usage?.total_tokens || 0;
-
-        if (!totalTokens && response.content) {
-            promptTokens = Math.max(10, Math.ceil((processedInput.length + projectInfo.length) / 4));
-            completionTokens = Math.max(5, Math.ceil(response.content.length / 4));
-            totalTokens = promptTokens + completionTokens;
-        }
-
-        // Aggregate token stats per model and session
-        if (sessionData) {
-            if (!sessionData.tokens) {
-                sessionData.tokens = { prompt: 0, completion: 0, total: 0 };
-            }
-            sessionData.tokens.prompt += promptTokens;
-            sessionData.tokens.completion += completionTokens;
-            sessionData.tokens.total += totalTokens;
-
-            if (!sessionData.modelUsage) {
-                sessionData.modelUsage = {};
-            }
-            if (!sessionData.modelUsage[activeModelId]) {
-                sessionData.modelUsage[activeModelId] = {
-                    name: displayName,
-                    prompt: 0,
-                    completion: 0,
-                    total: 0,
-                    requests: 0
-                };
-            }
-            sessionData.modelUsage[activeModelId].prompt += promptTokens;
-            sessionData.modelUsage[activeModelId].completion += completionTokens;
-            sessionData.modelUsage[activeModelId].total += totalTokens;
-            sessionData.modelUsage[activeModelId].requests += 1;
-        }
-
         console.log(chalk.cyan.bold('\n🐛 LORAPOK:'));
 
         const cleanContent = ui.hideLongCodeBlocks(response.content);
         console.log(await renderMarkdown(cleanContent));
 
-        // Render dynamic token consumption footer bar
-        const modelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || activeModelMeta;
-        const maxCtx = modelMeta?.contextLength || 1000000;
-        const currentModelUsed = sessionData.modelUsage?.[activeModelId]?.total || totalTokens;
-        const remainingTokens = Math.min(maxCtx, Math.max(0, maxCtx - currentModelUsed));
-
-        const remStr = remainingTokens >= 1000000 ? `${(remainingTokens / 1000000).toFixed(2)}M` : `${Math.round(remainingTokens / 1000)}k`;
-        const maxCtxStr = maxCtx >= 1000000 ? `${(maxCtx / 1000000).toFixed(1)}M` : `${Math.round(maxCtx / 1000)}k`;
-        const pctLeft = Math.min(100, Math.max(0, Math.round((remainingTokens / maxCtx) * 100)));
-
-        const cacheTag = response.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
-        const tokenBar = chalk.cyan(`📊 Turn Usage: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) +
-                         chalk.yellow(`  │  ⚡ Available Token Limit: ${remStr} / ${maxCtxStr} (${pctLeft}% Remaining)`);
-        const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
-
-        const boxen = require('boxen');
-        const usageBox = boxen(`${modelLabel}\n${tokenBar}`, {
-            padding: { top: 0, bottom: 0, left: 2, right: 2 },
-            margin: { top: 1, bottom: 1 },
-            borderStyle: 'round',
-            borderColor: 'cyan'
-        });
-
-        console.log(usageBox);
-
-
+        // Render model name and token usage card
+        renderTokenUsageBox(context, response);
 
         // Parse & execute file/shell action blocks
         const actions = agent.parseActions(response.content);
@@ -265,6 +259,9 @@ async function handleAnalyze(context) {
             });
 
             console.log(footerBox);
+
+            // Render token usage box after analysis completion
+            renderTokenUsageBox(context, result, activeModelId);
 
             return { success: true, content: result.content };
         }

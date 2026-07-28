@@ -6,85 +6,149 @@ const socialCards = [
     name: 'GitHub',
     url: 'https://github.com/maijied',
     displayUrl: 'github.com/maijied',
-    icon: '</>'
+    icon: '🐙',
+    badge: 'Developer'
   },
   {
     name: 'LinkedIn',
     url: 'https://linkedin.com/showcase/lorapok/',
     displayUrl: 'linkedin.com/showcase/lorapok/',
-    icon: '💼'
+    icon: '💼',
+    badge: 'Showcase'
   },
   {
     name: 'Product Hunt',
     url: 'https://www.producthunt.com/products/lorapok-atlas-api-directory',
     displayUrl: 'producthunt.com/products/lorapok...',
-    icon: '🚀'
+    icon: '🚀',
+    badge: 'Product'
   },
   {
     name: 'Reddit',
     url: 'https://reddit.com/r/LorapokLabs/',
     displayUrl: 'reddit.com/r/LorapokLabs/',
-    icon: '💬'
+    icon: '💬',
+    badge: 'Community'
   },
   {
     name: 'Instagram',
     url: 'https://instagram.com/lorapoklabs/',
     displayUrl: 'instagram.com/lorapoklabs/',
-    icon: '📷'
+    icon: '📷',
+    badge: 'Media'
   },
   {
     name: 'Facebook',
     url: 'https://facebook.com/lorapoklabs',
     displayUrl: 'facebook.com/lorapoklabs',
-    icon: '👥'
+    icon: '👥',
+    badge: 'Social'
   },
   {
     name: 'Wellfound',
     url: 'https://wellfound.com/u/maizied',
     displayUrl: 'wellfound.com/u/maizied',
-    icon: '💼'
+    icon: '💼',
+    badge: 'Profile'
   },
   {
     name: 'Portfolio',
     url: 'https://maijied.github.io/Maijied',
     displayUrl: 'maijied.github.io/Maijied',
-    icon: '🌐'
+    icon: '🌐',
+    badge: 'Website'
   },
   {
     name: 'OSS Ecosystem',
     url: 'https://lorapok.github.io',
     displayUrl: 'lorapok.github.io',
-    icon: '📦'
+    icon: '📦',
+    badge: 'Ecosystem'
   }
 ];
 
 export default function Footer() {
   return (
-    <footer className="footer" id="footer" style={{ background: '#030711', borderTop: '1px solid var(--border-glass)' }}>
+    <footer className="footer" id="footer" style={{ background: '#030711', borderTop: '1px solid var(--border-glass)', padding: '5rem 2rem 2.5rem' }}>
       <div className="container">
-        {/* Top Quick Links Pill Row (Matching SS1) */}
+
+        {/* ── Typography Section Header ── */}
+        <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+          <div
+            style={{
+              fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+              fontWeight: 900,
+              letterSpacing: '-0.03em',
+              lineHeight: 1.1,
+              marginBottom: '0.75rem'
+            }}
+          >
+            <span className="gradient-text">Building the Future.</span>
+          </div>
+          <h2
+            style={{
+              fontSize: '1.5rem',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem',
+              letterSpacing: '-0.01em'
+            }}
+          >
+            Lorapok Labs Ecosystem
+          </h2>
+          <p
+            style={{
+              fontSize: '1.1rem',
+              color: 'var(--text-secondary)',
+              maxWidth: '540px',
+              margin: '0 auto 1.5rem',
+              lineHeight: 1.6
+            }}
+          >
+            Products that feel alive, built with precision.
+          </p>
+
+          {/* Mono Code Snippet Banner */}
+          <div
+            style={{
+              display: 'inline-block',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-cyan)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.65rem 1.5rem',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: '0.92rem',
+              color: '#22D3EE',
+              boxShadow: '0 0 20px rgba(34, 211, 238, 0.15)'
+            }}
+          >
+            <span style={{ color: 'var(--accent-purple-light)' }}>const</span> future = <span style={{ color: '#10B981' }}>buildOneLineAtATime</span>();
+          </div>
+        </div>
+
+        {/* ── Top Pill Buttons Row (SS1) ── */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '3.5rem' }}>
-          <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+          <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
             &lt;/&gt; Org
           </a>
-          <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem', borderColor: '#10B981', color: '#10B981' }}>
+          <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem', borderColor: '#10B981', color: '#10B981' }}>
             🌐 Founder
           </a>
-          <a href="https://gravatar.com/maijied" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+          <a href="https://gravatar.com/maijied" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
             🌐 Gravatar
           </a>
-          <a href="https://reddit.com/r/LorapokLabs/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+          <a href="https://reddit.com/r/LorapokLabs/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
             🌐 Reddit
           </a>
-          <a href="https://twitter.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+          <a href="https://twitter.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
             🌐 X
           </a>
-          <a href="mailto:contact@lorapok.tech" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+          <a href="mailto:contact@lorapok.tech" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
             ✉️ Email
           </a>
         </div>
 
-        {/* Social Cards 3x3 Grid (Matching SS2) */}
+        {/* ── Social Cards Grid (SS2) ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '4rem' }}>
           {socialCards.map((card) => (
             <a
@@ -99,29 +163,28 @@ export default function Footer() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 textDecoration: 'none',
-                background: 'rgba(15, 23, 42, 0.6)'
+                background: 'rgba(15, 23, 42, 0.65)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                 <div
                   style={{
-                    width: 38,
-                    height: 38,
+                    width: 40,
+                    height: 40,
                     borderRadius: 'var(--radius-sm)',
                     background: 'rgba(34, 211, 238, 0.12)',
                     border: '1px solid var(--border-cyan)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.1rem',
-                    color: '#10B981'
+                    fontSize: '1.15rem'
                   }}
                 >
                   {card.icon}
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{card.name}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                     {card.displayUrl}
                   </div>
                 </div>
@@ -131,8 +194,8 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Traditional Footer Main Grid */}
-        <div className="footer-grid" style={{ marginBottom: '3rem' }}>
+        {/* ── Main Footer Grid ── */}
+        <div className="footer-grid" style={{ marginBottom: '3.5rem' }}>
           <div>
             <div className="footer-brand">
               <img src="assets/logo.png" alt="Lorapok AI" />
@@ -175,9 +238,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar with Country Badge & Social Icons (Matching SS3) */}
+        {/* ── Bottom Bar with Country Badge & Social Icons (SS3) ── */}
         <div className="footer-bottom">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '1.2rem' }}>🌐</span>
             <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
               Lorapok Labs · Bangladesh

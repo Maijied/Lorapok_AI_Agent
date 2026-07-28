@@ -16,3 +16,5 @@ This file provides context and rules for AI agents operating within the `Lorapok
 - **Zero Test Regressions**: Ensure `npm test` runs with 100% passing rate before finishing any task.
 - **Docker Fallback**: Maintain backwards compatibility with Docker compose environments (`docker-compose.yml`, `Dockerfile`).
 - **Interactive Shell Handling**: Respect CLI non-interactive modes when running under automated environments or CI.
+- **Token Efficiency**: Use targeted line-range file reads (`StartLine`/`EndLine`), chunked edits, and `BRAIN.md` lookup to conserve prompt context tokens.
+

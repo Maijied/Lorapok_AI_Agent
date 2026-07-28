@@ -33,6 +33,15 @@
 
 ---
 
+## Token Optimization & Context Conservation
+1. **Targeted File Reading**: Always specify line ranges (`StartLine`/`EndLine`) when viewing large files to minimize prompt context overhead.
+2. **Concise Edits**: Use `replace_file_content` with minimal target chunks instead of dumping full file contents.
+3. **Single Source of Truth**: Use `BRAIN.md` for architecture and component maps instead of executing full workspace dir scans.
+4. **Log Scoping**: Filter test log outputs to tracebacks and summary statistics.
+
+---
+
 ## Security & Credentials
 - NEVER commit `.env` files, API keys, OAuth tokens, or sensitive credentials.
 - Always use `process.env.OPENAI_API_KEY`, `process.env.PERPLEXITY_API_KEY`, or `services/GithubAuth.js` token managers.
+

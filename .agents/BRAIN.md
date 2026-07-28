@@ -1,7 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-07-28 | Version: 1.0.0 | Test Suite: 18/18 Passed (175 Tests)*
+> *Last Synced: 2026-07-29 | Version: 1.1.0 | Test Suite: 19/19 Passed (181 Tests)*
 
 ---
 
@@ -14,7 +14,7 @@
 - **Token-Saving Cache Engine**: Persistent SHA-256 response caching (`lib/cache.js`) tracking tokens saved and decreasing latency.
 - **Collapsible Bash Execution Box**: Framed bash execution box (`commands/utils.js`) displaying live duration, exit status, and collapsible output.
 - **Agent Runtimes**: Dual execution capability (Native Node.js >= 18 and Docker Compose container fallback).
-- **Core Integrations**: Multi-provider LLM support (Perplexity, OpenAI), Git repository management (`services/GitManager.js`), file system operations (`services/FileManager.js`), and action rerun execution (`services/ActionsManager.js`).
+- **Core Integrations**: Multi-provider LLM engine (Google AI Studio Gemini, Perplexity AI, OpenRouter), Git repository management (`services/GitManager.js`), file system operations (`services/FileManager.js`), model management (`services/ModelManager.js`), and action rerun execution (`services/ActionsManager.js`).
 
 
 ---

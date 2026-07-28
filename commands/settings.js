@@ -47,10 +47,24 @@ function getPerplexityInstructions() {
     ].join('\n');
 }
 
+function getGoogleInstructions() {
+    return [
+        chalk.green.bold('✨ How to Create a Google AI Studio (Gemini) API Key:\n'),
+        chalk.white('1. Open your browser and navigate to:'),
+        chalk.underline.yellow('   https://aistudio.google.com/app/apikey'),
+        '',
+        chalk.white('2. Sign in with your Google account.'),
+        chalk.white('3. Click ') + chalk.green('"Create API key"') + chalk.white('.'),
+        chalk.white('4. Select a project and copy your key (starts with ') + chalk.cyan('AIzaSy...') + chalk.white(').'),
+        chalk.white('5. Paste the key into Lorapok CLI settings.')
+    ].join('\n');
+}
+
 async function handleApiKeySettings(config) {
     const keyMenu = new Select({
         message: '🔑 Select API Key Provider to Update:',
         choices: [
+            { name: 'google', message: '✨ Google AI Studio API Key (https://aistudio.google.com/app/apikey)' },
             { name: 'openrouter', message: '🌐 OpenRouter API Key (https://openrouter.ai/keys)' },
             { name: 'perplexity', message: '🟣 Perplexity API Key (https://www.perplexity.ai/settings/api)' },
             { name: 'instructions', message: '📖 View Detailed Key Creation Instructions' },
@@ -63,9 +77,35 @@ async function handleApiKeySettings(config) {
     if (subChoice === 'back') return;
 
     if (subChoice === 'instructions') {
+        console.log('\n' + boxen(getGoogleInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'green' }));
         console.log('\n' + boxen(getOpenRouterInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
         console.log('\n' + boxen(getPerplexityInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'magenta' }));
         return;
+    }
+
+    if (subChoice === 'google') {
+        const url = 'https://aistudio.google.com/app/apikey';
+        console.log('\n' + boxen(getGoogleInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'green' }));
+        
+        const openAns = await new Select({
+            message: 'Open https://aistudio.google.com/app/apikey in your browser now?',
+            choices: [
+                { name: 'open', message: '🌐 Yes, open browser' },
+                { name: 'skip', message: '⏩ Skip opening, I will paste my key' }
+            ],
+            result(name) { return this.map(name)[name]; }
+        }).run().catch(() => 'skip');
+
+        if (openAns === 'open') {
+            await openBrowserUrl(url);
+            console.log(chalk.gray('Opening browser to https://aistudio.google.com/app/apikey...'));
+        }
+
+        const keyRes = await new Input({ message: '🔑 Enter/Paste Google AI Studio API Key:' }).run().catch(() => null);
+        if (keyRes && keyRes.trim()) {
+            config.setGoogleApiKey(keyRes.trim());
+            console.log(TerminalUI.formatSuccess('Google AI Studio API Key saved successfully.'));
+        }
     }
 
     if (subChoice === 'openrouter') {
@@ -184,6 +224,7 @@ async function handleModelSelection(agent, config) {
             const provMenu = new Select({
                 message: '🏢 Select Provider:',
                 choices: [
+                    { name: 'google-ai-studio', message: '✨ Google AI Studio' },
                     { name: 'perplexity', message: '🟣 Perplexity AI' },
                     { name: 'openrouter', message: '🔵 OpenRouter' },
                     { name: 'back', message: '🔙 Back' }

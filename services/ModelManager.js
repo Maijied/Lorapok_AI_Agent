@@ -32,6 +32,17 @@ const DEFAULT_PERPLEXITY_MODELS = {
 };
 
 /**
+ * Default Google AI Studio models.
+ */
+const DEFAULT_GOOGLE_MODELS = {
+    'gemini-2.5-pro': { name: '✨ Gemini 2.5 Pro (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', description: 'Google flagship coding & complex reasoning model.' },
+    'gemini-2.5-flash': { name: '⚡ Gemini 2.5 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Next-gen multimodal fast & lightweight model.' },
+    'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Ultra-low latency production model with search grounding.' },
+    'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Extremely fast cost-optimized model.' },
+    'gemini-1.5-pro': { name: '🎯 Gemini 1.5 Pro (Google AI Studio)', category: 'reasoning', provider: 'google-ai-studio', tier: 'pro', description: '1M+ token context window reasoning model.' }
+};
+
+/**
  * Service managing LLM model fetching, caching, and expertise categorization.
  */
 class ModelManager {
@@ -103,7 +114,51 @@ class ModelManager {
     }
 
     /**
-     * Fetch all available LLM models from OpenRouter API & Perplexity defaults.
+     * Dynamically fetch available models from Google AI Studio API.
+     * @param {string|null} [apiKey=null] - Optional Google API Key
+     * @returns {Promise<Object>} Dictionary of Google models metadata
+     */
+    async fetchGoogleModels(apiKey = null) {
+        const key = apiKey || (this.config && typeof this.config.getGoogleApiKey === 'function' ? this.config.getGoogleApiKey() : process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+        if (!key) return DEFAULT_GOOGLE_MODELS;
+
+        try {
+            logger.info('ModelManager: Fetching dynamic models from Google AI Studio API...');
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+            const response = await axios.get(endpoint, { timeout: 8000 });
+            if (response.data && Array.isArray(response.data.models)) {
+                const dynamicGoogleModels = {};
+                for (const item of response.data.models) {
+                    if (!item.name) continue;
+                    const modelId = item.name.replace(/^models\//, '');
+                    if (!modelId.startsWith('gemini')) continue;
+
+                    const cat = this.categorizeModel(modelId, item.displayName || '', item.description || '');
+                    const icon = this.getModelIcon(modelId, item.displayName || '');
+                    const displayName = item.displayName || modelId;
+
+                    dynamicGoogleModels[modelId] = {
+                        name: `${icon} ${displayName} (Google AI Studio)`,
+                        category: cat,
+                        icon: icon,
+                        provider: 'google-ai-studio',
+                        contextLength: item.inputTokenLimit || null,
+                        description: item.description || '',
+                        tier: (modelId.includes('flash') || modelId.includes('lite')) ? 'free' : 'pro'
+                    };
+                }
+                if (Object.keys(dynamicGoogleModels).length > 0) {
+                    return dynamicGoogleModels;
+                }
+            }
+        } catch (error) {
+            logger.error(`ModelManager: Failed to fetch Google AI Studio models: ${error.message}`);
+        }
+        return DEFAULT_GOOGLE_MODELS;
+    }
+
+    /**
+     * Fetch all available LLM models from Google AI Studio API, OpenRouter API & Perplexity defaults.
      * @param {Object} [options={}] - Options (bypassCache: boolean)
      * @returns {Promise<Object>} Dictionary of model metadata objects indexed by ID
      */
@@ -113,7 +168,8 @@ class ModelManager {
             if (cached) return cached;
         }
 
-        const models = { ...DEFAULT_PERPLEXITY_MODELS };
+        const googleModels = await this.fetchGoogleModels();
+        const models = { ...DEFAULT_PERPLEXITY_MODELS, ...googleModels };
 
         try {
             logger.info('ModelManager: Fetching dynamic models from OpenRouter API...');
@@ -189,6 +245,7 @@ class ModelManager {
                 { id: 'sonar-pro', name: 'Sonar Pro', provider: 'perplexity', reason: 'Fast grounded web search with citations.' }
             ],
             fast: [
+                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google-ai-studio', reason: 'Ultra-low latency multimodal fast execution.' },
                 { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', provider: 'openrouter', reason: 'Ultra-low latency for quick code edits.' },
                 { id: 'sonar', name: 'Sonar', provider: 'perplexity', reason: 'Lightweight web grounded model.' }
             ]
@@ -204,4 +261,4 @@ class ModelManager {
     }
 }
 
-module.exports = { ModelManager, CATEGORIES, DEFAULT_PERPLEXITY_MODELS };
+module.exports = { ModelManager, CATEGORIES, DEFAULT_PERPLEXITY_MODELS, DEFAULT_GOOGLE_MODELS };

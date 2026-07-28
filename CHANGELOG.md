@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Multi-provider dynamic API querying for Model Selection (Perplexity and OpenRouter)
+- Native Google AI Studio (Gemini) provider integration supporting `GEMINI_API_KEY` and `GOOGLE_API_KEY` environment variables
+- Dynamic Google AI Studio model fetching directly from `https://generativelanguage.googleapis.com/v1beta/models` API endpoint with static fallback
+- Multi-provider dynamic API querying for Model Selection (Perplexity, OpenRouter, Google AI Studio)
 - Professional hierarchical nested settings menu for Model Selection filtering by Category, Provider, Availability, and Pricing Tier
 - Dynamic `tier` property parsing based on zero-cost prompt/completion API definitions for OpenRouter
 - Clean `boxen`-wrapped professional UI for rendering token usage and active model statistics directly in chat responses

@@ -38,6 +38,9 @@ class GithubAuth {
      * @returns {Promise<{ success: boolean, data: { url: string, opened: boolean }, opened: boolean, url: string }>} Result status
      */
     async openBrowser(url) {
+        if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
+            return { success: true, data: { url, opened: false }, opened: false, url };
+        }
         try {
             await open(url);
             return { success: true, data: { url, opened: true }, opened: true, url };

@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 (2026-07-28)
+
+
+### Features
+
+* **actions:** add rerun capability, smart status icons, and UI standardization ([60e0441](https://github.com/Maijied/Lorapok_AI_Agent/commit/60e04417cf39408ead432d84a0f8910c8ef4bf0c))
+* add agent workflow scaffolding ([4924870](https://github.com/Maijied/Lorapok_AI_Agent/commit/4924870cc95505cd957a3daf5ae08370df7353a6))
+* Add Docker support and README ([e8c3d49](https://github.com/Maijied/Lorapok_AI_Agent/commit/e8c3d49577d3575b3cd7e3c4d8201694bdcb46a5))
+* add project run checklist and update request brief ([d4792b2](https://github.com/Maijied/Lorapok_AI_Agent/commit/d4792b27adfd65cafcfe16cee329721786e733e5))
+* added bash command support with user confirmation and output capture ([5d19f27](https://github.com/Maijied/Lorapok_AI_Agent/commit/5d19f273b2ef6ef91abced0a144d912047fa26fc))
+* **agents:** add BRAIN system memory, custom skills, subagents, MCP config, and clean project structure ([19dbbf6](https://github.com/Maijied/Lorapok_AI_Agent/commit/19dbbf68868d62632fc4ff3393ff681d81584ed4))
+* **agents:** add workspace token-efficiency skill, steer guide, subagent, and rules ([d54c38e](https://github.com/Maijied/Lorapok_AI_Agent/commit/d54c38e188693796efed151f06e8cf3752f2d86b))
+* **auth:** implement professional Device Flow & GitHub CLI authentication suite ([b7f298b](https://github.com/Maijied/Lorapok_AI_Agent/commit/b7f298bf6d695b800239026430ffa014dfdcead1))
+* **auth:** Implement professional unified Git authentication system ([9bb5c57](https://github.com/Maijied/Lorapok_AI_Agent/commit/9bb5c57b69ad25122813f5c43b2ad3a105380380))
+* **bash:** perfect bash command parsing, inline command execution, and expanded action regex ([b8ca289](https://github.com/Maijied/Lorapok_AI_Agent/commit/b8ca289353644f8e1b321d664d00b6a0d3dbf7e0))
+* **cache,cli:** add LLM response caching engine and collapsible bash execution process box ([0dbb84e](https://github.com/Maijied/Lorapok_AI_Agent/commit/0dbb84e5dee0697df4aa9217fe3341962fbf8e75))
+* complete command ecosystem with DooD (Docker-outside-of-Docker) and native OS support ([645cce9](https://github.com/Maijied/Lorapok_AI_Agent/commit/645cce976b1ecaaa93a4ac9c5124504e157bd660))
+* **core:** stability overhaul & identity reinforcement ([3f88464](https://github.com/Maijied/Lorapok_AI_Agent/commit/3f8846447d20d11bb103d40f2883ea44458c33b0))
+* expand language support to 60+ langs and enhance action parsing ([dadd463](https://github.com/Maijied/Lorapok_AI_Agent/commit/dadd46377cd23a542c3347a1ed05e18c3b169988))
+* fix CLI design, add comprehensive corner-case tests (155 tests passing) ([d6c0313](https://github.com/Maijied/Lorapok_AI_Agent/commit/d6c03138c4e04a9abb1b39466ca4b20bbd6d4ba7))
+* implement professional identity override for Lorapok agent ([70e675b](https://github.com/Maijied/Lorapok_AI_Agent/commit/70e675b67261e51292130ba9bf76fd72e378a1a9))
+* Initial release - Lorapok AI Coding Agent v1.0.0 ([d0ad4de](https://github.com/Maijied/Lorapok_AI_Agent/commit/d0ad4de6e803c042b9e617401c4fd66584066f27))
+* Lorapok Pro v1.0.0-beta.1 release ([e5850ea](https://github.com/Maijied/Lorapok_AI_Agent/commit/e5850ea56b6e08e8568e9818b6aa47c29c4a32b1))
+* persistent shell sessions and improved bash tool robustness ([0243958](https://github.com/Maijied/Lorapok_AI_Agent/commit/024395823da5212a7117d629738d275413b87f53))
+* reinforce Lorapok agent identity in system prompt ([1d9ad28](https://github.com/Maijied/Lorapok_AI_Agent/commit/1d9ad28cd42042d0e91a0478088dd71377b30131))
+* **services:** add multiReplaceFileContent primitive and verify all workspace skills/steer/subagents ([aed3475](https://github.com/Maijied/Lorapok_AI_Agent/commit/aed34759985c83b6866973bbfb711176b277ae2c))
+* **services:** implement viewFile, replaceFileContent, grepSearch, and listDir primitives ([6d48143](https://github.com/Maijied/Lorapok_AI_Agent/commit/6d481433a0f7e8c782331099a457fed4c04f1968))
+* **ui:** complete UI polish and functionality improvements ([58894e2](https://github.com/Maijied/Lorapok_AI_Agent/commit/58894e22efe6c86904bf8597f63568ea70f45928))
+* **ui:** complete ui polish, settings themes, exit summary, and update docker/documentation ([afb4a83](https://github.com/Maijied/Lorapok_AI_Agent/commit/afb4a839f7f1e3c2fe0bada7f445d4141f03972a))
+* **ui:** enhance branding with animation, themes, and polished layout ([dcc168f](https://github.com/Maijied/Lorapok_AI_Agent/commit/dcc168f2705420e68d1f5aa6782553aeaa018bd9))
+* **ui:** enhanced markdown rendering with marked & marked-terminal ([406d1e0](https://github.com/Maijied/Lorapok_AI_Agent/commit/406d1e09a499842b29648b1715af3765fcbb82ea))
+* universal shell support with bash/curl pre-installed and cross-platform native execution ([d309ff9](https://github.com/Maijied/Lorapok_AI_Agent/commit/d309ff9139580b3e74be3905abd5a4819278a4c1))
+* **ux:** premium terminal UI with high-contrast rendering, smart table pivot, and robust API recovery ([d673667](https://github.com/Maijied/Lorapok_AI_Agent/commit/d673667630f6ea29104152b648c1a33eeb9c704a))
+* **website:** add futuristic AI agent site ([27520a5](https://github.com/Maijied/Lorapok_AI_Agent/commit/27520a5e7f581ae082eca73b7f44f097529c9349))
+* **website:** add professional Lorapok Pages build and Node 24+ Enquirer fix ([7b5d72e](https://github.com/Maijied/Lorapok_AI_Agent/commit/7b5d72ea7438379f7e3252922feb599c68c5be3a))
+
+
+### Bug Fixes
+
+* **ci,test:** isolate git user config per test suite and add fail-fast false to CI matrix ([2423080](https://github.com/Maijied/Lorapok_AI_Agent/commit/2423080e95873ebf0a994d2d751cdef73e5cb533))
+* **ci:** add GITHUB_TOKEN authentication to release-please action step ([ae35863](https://github.com/Maijied/Lorapok_AI_Agent/commit/ae358637a03242390cc2abf34d9e6a729c421555))
+* **ci:** improve cross-platform OS compatibility (macOS/Windows) and expand Node.js matrix [18.x, 20.x, 22.x, 24.x] ([23943d2](https://github.com/Maijied/Lorapok_AI_Agent/commit/23943d2530d68f978b965f07fbeafb60c5f96009))
+* **git,test:** normalize CRLF line endings in GitManager and path resolution in CWD unit tests ([f7292df](https://github.com/Maijied/Lorapok_AI_Agent/commit/f7292df2e5cccf9cbd71e8f570581f8652254992))
+* installed missing docker-compose plugin ([1c64f73](https://github.com/Maijied/Lorapok_AI_Agent/commit/1c64f73ade295c33264c0f950af7eaf260d57685))
+* prevented greedy action parsing from capturing multiple code blocks ([c2d2b71](https://github.com/Maijied/Lorapok_AI_Agent/commit/c2d2b713280a3d16030460d119cd708c1c8a8d3e))
+* Update Express route syntax for compatibility ([1ee53f8](https://github.com/Maijied/Lorapok_AI_Agent/commit/1ee53f857a48d2e75abac5043b158ba42932e167))
+* **utils,ci:** resolve macOS symlink CWD mismatch in utils.js and restore Node 18.x matrix support ([8217c32](https://github.com/Maijied/Lorapok_AI_Agent/commit/8217c32a1a1f6e5a71893a0d6186c743924f7933))
+* **utils:** pre-expand ~ tilde in cd commands for Windows cmd.exe shell execution ([269cb2c](https://github.com/Maijied/Lorapok_AI_Agent/commit/269cb2c33d747508b4bdd5fac1e7ed3c59347d21))
+* **windows:** normalize Windows 8.3 short paths and CRLF line breaks in FileManager and utils tests ([81fd977](https://github.com/Maijied/Lorapok_AI_Agent/commit/81fd9775932730b0d9abc6edeccb07fa904ac14c))
+
 ## [1.0.0] - 2026-07-23
 
 ### Added

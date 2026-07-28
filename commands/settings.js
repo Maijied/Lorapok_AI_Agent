@@ -198,14 +198,18 @@ async function handleModelSelection(agent, config) {
         const filterMode = await mainMenu.run().catch(() => 'back');
         if (filterMode === 'back') return;
 
-        // Filter out unusable models so only usable models appear in selection menus
-        let usableKeys = Object.keys(models).filter(id => models[id] && models[id].available === true);
-        let filteredModelKeys = [...usableKeys];
+        // Filter free available models for standard selection (no credit purchase required)
+        const freeAvailableKeys = Object.keys(models).filter(id => {
+            const m = models[id];
+            return m && m.available === true && (m.tier === 'free' || m.provider === 'google-ai-studio');
+        });
+
+        let filteredModelKeys = [...freeAvailableKeys];
         let menuTitle = '';
 
         if (filterMode === 'ready') {
-            filteredModelKeys = Object.keys(models).filter(id => models[id] && models[id].available === true);
-            menuTitle = 'Ready Models';
+            filteredModelKeys = [...freeAvailableKeys];
+            menuTitle = 'Ready Free Models';
         } else if (filterMode === 'category') {
             const categoryMenu = new Select({
                 message: '📁 Select Category:',
@@ -226,14 +230,14 @@ async function handleModelSelection(agent, config) {
             });
             const cat = await categoryMenu.run().catch(() => 'back');
             if (cat === 'back') continue;
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].category === cat);
+            filteredModelKeys = freeAvailableKeys.filter(id => models[id].category === cat);
             menuTitle = `Category: ${cat}`;
         } else if (filterMode === 'provider') {
             const provMenu = new Select({
                 message: '🏢 Select Provider:',
                 choices: [
-                    { name: 'google-ai-studio', message: '✨ Google AI Studio' },
-                    { name: 'perplexity', message: '🟣 Perplexity AI' },
+                    { name: 'google-ai-studio', message: '✨ Google AI Studio (Free Tier)' },
+                    { name: 'perplexity', message: '🟣 Perplexity AI (Free Tier)' },
                     { name: 'openrouter', message: '🔵 OpenRouter' },
                     { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
@@ -241,24 +245,29 @@ async function handleModelSelection(agent, config) {
             });
             const prov = await provMenu.run().catch(() => 'back');
             if (prov === 'back') continue;
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].provider === prov);
+            filteredModelKeys = freeAvailableKeys.filter(id => models[id].provider === prov);
             menuTitle = `Provider: ${prov}`;
         } else if (filterMode === 'tier') {
             const tierMenu = new Select({
                 message: '💰 Select Pricing Tier:',
                 choices: [
-                    { name: 'free', message: '🆓 Free Models' },
-                    { name: 'pro', message: '💎 Pro / Paid Models' },
+                    { name: 'free', message: '🆓 Free Models (No Purchase Required)' },
+                    { name: 'pro', message: '💎 Pro / Paid Credit Models' },
                     { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
             const tier = await tierMenu.run().catch(() => 'back');
             if (tier === 'back') continue;
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].tier === tier);
+            if (tier === 'free') {
+                filteredModelKeys = freeAvailableKeys.filter(id => models[id].tier === 'free' || models[id].provider === 'google-ai-studio');
+            } else {
+                filteredModelKeys = Object.keys(models).filter(id => models[id].tier === 'pro' && models[id].provider === 'openrouter');
+            }
             menuTitle = `Tier: ${tier}`;
         } else {
-            menuTitle = 'All Models';
+            filteredModelKeys = Object.keys(models);
+            menuTitle = 'All Supported Models (Includes Paid & Credit Models)';
         }
 
         if (filteredModelKeys.length === 0) {
@@ -268,7 +277,8 @@ async function handleModelSelection(agent, config) {
 
         const choices = filteredModelKeys.map(id => {
             const item = models[id];
-            const statusIcon = item.available ? chalk.green('🟢') : chalk.red('🔴');
+            const isPaidCreditModel = item.tier === 'pro' && item.provider === 'openrouter';
+            const statusIcon = item.available ? (isPaidCreditModel ? chalk.yellow('💳') : chalk.green('🟢')) : chalk.red('🔴');
             
             // Clean duplicate provider suffix from model display name
             const cleanName = (item.name || id)
@@ -278,7 +288,7 @@ async function handleModelSelection(agent, config) {
             let providerTag = chalk.magenta('[Perplexity]');
             if (item.provider === 'google-ai-studio') providerTag = chalk.cyan('[Google]');
             if (item.provider === 'openrouter') providerTag = chalk.blue('[OpenRouter]');
-            const tierTag = item.tier === 'free' ? chalk.green('(Free)') : chalk.yellow('(Pro)');
+            const tierTag = isPaidCreditModel ? chalk.yellow('(Credit Purchase Required)') : chalk.green('(Free Tier)');
             
             let limitTag = '';
             if (item.contextLength) {
@@ -318,6 +328,11 @@ async function handleModelSelection(agent, config) {
             const cleanSelectedName = (selectedModel?.name || model)
                 .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
                 .trim();
+
+            if (selectedModel?.tier === 'pro' && selectedModel?.provider === 'openrouter') {
+                console.log(chalk.yellow(`\n💳 PAID / CREDIT MODEL NOTICE: '${cleanSelectedName}' requires OpenRouter credits.`));
+                console.log(chalk.cyan(`   Purchase / add credits to your OpenRouter key at: https://openrouter.ai/keys\n`));
+            }
 
             const confirm = new Select({
                 message: `Switch active AI model to '${cleanSelectedName}'?`,

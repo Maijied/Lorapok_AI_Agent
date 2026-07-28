@@ -117,15 +117,17 @@ export default function Hero({ showToast }) {
       <div className="hero-gradient-orb cyan" />
       <canvas ref={canvasRef} className="hero-canvas" />
 
-      {/* Top Center Typewriter Animation Banner */}
+      {/* Top Center Single-Line Typewriter Banner */}
       <div
         style={{
           textAlign: 'center',
           position: 'relative',
           zIndex: 2,
-          maxWidth: '800px',
+          maxWidth: '900px',
+          width: '100%',
           margin: '0 auto',
-          padding: '0 1.5rem'
+          padding: '0 1.5rem',
+          overflow: 'hidden'
         }}
       >
         <div className="hero-badge" style={{ marginBottom: '1rem' }}>
@@ -133,29 +135,33 @@ export default function Hero({ showToast }) {
           A Product of Lorapok Labs
         </div>
 
+        {/* Single-Line Typewriter Text Container */}
         <div
           style={{
             fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 'clamp(2.2rem, 5vw, 3.6rem)',
+            fontSize: 'clamp(1.5rem, 3.8vw, 2.8rem)',
             fontWeight: 800,
             letterSpacing: '-0.02em',
-            lineHeight: 1.15,
-            minHeight: '4.5rem',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '4px'
+            gap: '6px',
+            minHeight: '3.5rem'
           }}
         >
           <span className="gradient-text">{currentText}</span>
           <span
             className="term-cursor"
             style={{
-              height: '1em',
+              height: '0.95em',
               width: 4,
               display: 'inline-block',
               background: '#22D3EE',
-              boxShadow: '0 0 10px #22D3EE'
+              boxShadow: '0 0 10px #22D3EE',
+              flexShrink: 0
             }}
           />
         </div>
@@ -172,8 +178,8 @@ export default function Hero({ showToast }) {
           </h1>
 
           <p className="hero-subtitle">
-            Lorapok AI is your terminal-first coding agent that plans, writes, verifies, and commits code.
-            Powered by Google Gemini, OpenRouter &amp; Perplexity AI.
+            <span className="lorapok-brand-font" style={{ color: 'var(--text-primary)' }}>Lorapok AI</span> is your autonomous terminal-first coding agent built on LLDP.
+            Scaffolds code, executes test suites, inspects Git diffs, and orchestrates multi-provider AI models across Google Gemini, OpenRouter &amp; Perplexity AI.
           </p>
 
           <div className="hero-actions">
@@ -201,22 +207,23 @@ export default function Hero({ showToast }) {
             </a>
           </div>
 
+          {/* Upgraded Professional Engineering Metrics */}
           <div className="hero-stats">
             <div>
               <div className="hero-stat-value">186+</div>
-              <div className="hero-stat-label">Tests Passing</div>
+              <div className="hero-stat-label">Unit Tests Passing</div>
             </div>
             <div>
               <div className="hero-stat-value">3</div>
-              <div className="hero-stat-label">Active AI Engines</div>
+              <div className="hero-stat-label">Core AI Engines</div>
             </div>
             <div>
               <div className="hero-stat-value">25+</div>
-              <div className="hero-stat-label">Providers Supported</div>
+              <div className="hero-stat-label">LLM Models Supported</div>
             </div>
             <div>
-              <div className="hero-stat-value">100%</div>
-              <div className="hero-stat-label">Free Tier</div>
+              <div className="hero-stat-value">0ms</div>
+              <div className="hero-stat-label">Direct CLI Latency</div>
             </div>
           </div>
         </div>

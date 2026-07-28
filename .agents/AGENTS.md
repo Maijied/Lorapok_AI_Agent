@@ -8,7 +8,7 @@ This file provides context and rules for AI agents operating within the `Lorapok
 - `bin/`: CLI binaries (`lorapok.js`).
 - `commands/`: CLI command definitions (git, chat, actions, settings, auth, system, workflow).
 - `lib/`: Core agent implementation, configuration, history, rendering, UI components.
-- `services/`: Core logic services for Git, File management, Actions, and GitHub OAuth.
+- `services/`: Core logic services for Git, File management, Actions, GitHub OAuth, and Model management (ModelManager.js).
 - `tests/`: Jest unit and corner-case test suites.
 - `website/` & `LorapokAiBuild/`: Static UI presentation pages and GitHub Pages builds.
 

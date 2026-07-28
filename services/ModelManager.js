@@ -177,6 +177,7 @@ class ModelManager {
                         contextLength: item.inputTokenLimit || null,
                         outputTokenLimit: item.outputTokenLimit || null,
                         rateLimit: dynamicLimit,
+                        resetWindow: '1m (RPM) / 00:00 UTC (RPD)',
                         description: item.description || '',
                         tier: (modelId.includes('flash') || modelId.includes('lite') || modelId.includes('nano')) ? 'free' : 'pro'
                     };
@@ -229,6 +230,7 @@ class ModelManager {
                         provider: 'openrouter',
                         contextLength: item.context_length || null,
                         rateLimit: dynamicLimit,
+                        resetWindow: isFree ? '1m / 24h' : 'Per Request',
                         description: item.description || '',
                         pricing: item.pricing || null,
                         tier: isFree ? 'free' : 'pro'

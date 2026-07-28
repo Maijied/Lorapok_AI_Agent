@@ -274,9 +274,14 @@ async function handleModelSelection(agent, config) {
                 limitTag = chalk.gray(` ⚡ ${ctxK >= 1000 ? `${(ctxK/1000).toFixed(1)}M` : `${ctxK}k`} ctx`);
             }
 
+            let resetTag = '';
+            if (item.resetWindow) {
+                resetTag = chalk.dim(` 🕒 ${item.resetWindow}`);
+            }
+
             return {
                 name: id,
-                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}${limitTag}`
+                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}${limitTag}${resetTag}`
             };
         });
         

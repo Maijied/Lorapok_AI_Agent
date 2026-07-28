@@ -16,6 +16,8 @@ describe('GitManager', () => {
     beforeEach(() => {
         testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lorapok-git-test-'));
         gm = new GitManager(testDir);
+        gm.executeGit('config user.name "Lorapok Test"');
+        gm.executeGit('config user.email "test@lorapok.tech"');
     });
 
     afterEach(() => {

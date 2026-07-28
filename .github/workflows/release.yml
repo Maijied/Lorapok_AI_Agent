@@ -22,21 +22,25 @@ jobs:
           release-type: node
           package-name: lorapok-ai
 
-#   publish:
-#     needs: release-please
-#     if: ${{ needs.release-please.outputs.release_created }}
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#       - uses: actions/setup-node@v4
-#         with:
-#           node-version: '20.x'
-#           registry-url: 'https://registry.npmjs.org'
-#       - run: npm ci
-#       - run: npm test
-#       - run: npm publish --provenance --access public
-#         env:
-#           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  publish-npm:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "Lorapok CI Bot"
+          git config --global user.email "bot@lorapok.tech"
+      - run: npm ci || npm install
+      - run: npm test
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   docker-release:
     needs: release-please
@@ -55,3 +59,4 @@ jobs:
           files: lorapok-ai-agent-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

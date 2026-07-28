@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Multi-provider dynamic API querying for Model Selection (Perplexity and OpenRouter)
+- Professional hierarchical nested settings menu for Model Selection filtering by Category, Provider, Availability, and Pricing Tier
+- Dynamic `tier` property parsing based on zero-cost prompt/completion API definitions for OpenRouter
+- Clean `boxen`-wrapped professional UI for rendering token usage and active model statistics directly in chat responses
+
+### Fixed
+- Fixed an architectural bug where the `LorapokConfig` state would become stale in memory, routing models incorrectly to the wrong API endpoints (e.g., throwing 402 errors on Perplexity-exclusive models)
+
 ## 1.0.0 (2026-07-28)
 
 

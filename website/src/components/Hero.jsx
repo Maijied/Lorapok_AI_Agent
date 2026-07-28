@@ -112,24 +112,61 @@ export default function Hero({ showToast }) {
   const currentText = phrases[textIndex].substring(0, charIndex);
 
   return (
-    <section className="hero" id="hero">
+    <section className="hero" id="hero" style={{ flexDirection: 'column', gap: '2rem' }}>
       <div className="hero-gradient-orb purple" />
       <div className="hero-gradient-orb cyan" />
       <canvas ref={canvasRef} className="hero-canvas" />
 
-      <div className="hero-content">
-        {/* Left Column: Text & Actions */}
-        <div className="hero-text">
-          <div className="hero-badge">
-            <span className="pulse-dot" />
-            A Product of Lorapok Labs
-          </div>
+      {/* Top Center Typewriter Animation Banner */}
+      <div
+        style={{
+          textAlign: 'center',
+          position: 'relative',
+          zIndex: 2,
+          maxWidth: '800px',
+          margin: '0 auto',
+          padding: '0 1.5rem'
+        }}
+      >
+        <div className="hero-badge" style={{ marginBottom: '1rem' }}>
+          <span className="pulse-dot" />
+          A Product of Lorapok Labs
+        </div>
 
-          <h1 className="hero-title">
-            <span className="gradient-text">{currentText}</span>
-            <span className="term-cursor" style={{ height: '1.1em', width: 4, display: 'inline-block', marginLeft: 4 }} />
-            <br />
-            <span style={{ color: 'var(--text-primary)', fontSize: '0.85em' }}>
+        <div
+          style={{
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 'clamp(2.2rem, 5vw, 3.6rem)',
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.15,
+            minHeight: '4.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px'
+          }}
+        >
+          <span className="gradient-text">{currentText}</span>
+          <span
+            className="term-cursor"
+            style={{
+              height: '1em',
+              width: 4,
+              display: 'inline-block',
+              background: '#22D3EE',
+              boxShadow: '0 0 10px #22D3EE'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 2-Column Hero Content Grid */}
+      <div className="hero-content">
+        {/* Left Column: Title & Actions */}
+        <div className="hero-text">
+          <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)' }}>
+            <span style={{ color: 'var(--text-primary)' }}>
               Autonomous Agentic Coding Simulation
             </span>
           </h1>

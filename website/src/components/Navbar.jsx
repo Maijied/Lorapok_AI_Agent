@@ -16,8 +16,56 @@ export default function Navbar({ onOpenAdmin }) {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="nav-container">
         <a href="#" className="nav-brand">
-          <img src="assets/logo.png" alt="Lorapok AI" />
-          <span className="nav-brand-text">
+          {/* Animated IntelliJ / JetBrains Style Cybernetic Badge Logo */}
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+              border: '1.5px solid #22D3EE',
+              boxShadow: '0 0 15px rgba(34, 211, 238, 0.4), inset 0 0 10px rgba(124, 58, 237, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+              flexShrink: 0
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                fontWeight: 900,
+                fontSize: '1rem',
+                color: '#22D3EE',
+                textShadow: '0 0 8px rgba(34, 211, 238, 0.8)'
+              }}
+            >
+              L
+            </span>
+            <span
+              style={{
+                position: 'absolute',
+                bottom: 2,
+                right: 2,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: '#10B981',
+                boxShadow: '0 0 6px #10B981'
+              }}
+            />
+          </div>
+
+          <span
+            className="nav-brand-text"
+            style={{
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 800,
+              letterSpacing: '-0.02em'
+            }}
+          >
             Lorapok <span className="gradient-text">AI</span>
           </span>
         </a>

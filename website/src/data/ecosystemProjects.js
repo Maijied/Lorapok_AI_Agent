@@ -4,12 +4,11 @@ export const ecosystemProjects = [
     name: 'Lorapok AI Agent',
     badge: 'Flagship Product',
     tagline: 'Autonomous Terminal & REST API Coding Agent',
-    description: 'Action-oriented AI CLI engine that plans, writes, verifies, and commits code. Supports Gemini, OpenRouter, and Perplexity.',
+    description: 'Action-oriented AI CLI engine that plans, writes, verifies, and commits code. Native support for Gemini, OpenRouter, and Perplexity.',
     url: 'https://ai.lorapok.tech',
     github: 'https://github.com/Maijied/Lorapok_AI_Agent',
-    category: 'AI & Engineering',
+    category: 'AI & Agents',
     icon: '🤖',
-    featured: true,
     stats: '186 Tests · Free Tier'
   },
   {
@@ -20,9 +19,8 @@ export const ecosystemProjects = [
     description: 'Comprehensive API discovery platform and documentation hub for developers building scalable web and AI services.',
     url: 'https://maijied.github.io/Lorapok-API_Atlas/',
     github: 'https://github.com/Maijied/Lorapok-API_Atlas',
-    category: 'Documentation & Tools',
+    category: 'Developer Tools',
     icon: '🗺️',
-    featured: true,
     stats: 'Live Interactive Atlas'
   },
   {
@@ -33,10 +31,21 @@ export const ecosystemProjects = [
     description: 'Intelligent browser extension and web workspace tool that organizes, suspends, and groups active tabs for high productivity.',
     url: 'https://maijied.github.io/Lorapok-TabMan/',
     github: 'https://github.com/Maijied/Lorapok-TabMan',
-    category: 'Browser Tools',
+    category: 'Productivity & Media',
     icon: '📑',
-    featured: true,
     stats: 'Chrome Extension & App'
+  },
+  {
+    id: 'mindnode',
+    name: 'Lorapok MindNode',
+    badge: 'Visual Knowledge',
+    tagline: 'AI Mind-Mapping & Visual Architecture Knowledge Graph',
+    description: 'Generates interactive architectural diagrams, code dependency graphs, and visual mind maps from natural language.',
+    url: 'https://github.com/Maijied/Lorapok-MindNode',
+    github: 'https://github.com/Maijied/Lorapok-MindNode',
+    category: 'AI & Agents',
+    icon: '🧠',
+    stats: 'Knowledge Graph Engine'
   },
   {
     id: 'querycraft',
@@ -46,10 +55,9 @@ export const ecosystemProjects = [
     description: 'AI-assisted SQL query generator, schema analyzer, and performance tuner for BigQuery, PostgreSQL, and MySQL.',
     url: 'https://github.com/Maijied/Lorapok-Querycraft',
     github: 'https://github.com/Maijied/Lorapok-Querycraft',
-    category: 'Database & SQL',
+    category: 'Developer Tools',
     icon: '⚡',
-    featured: false,
-    stats: 'SQL Optimization'
+    stats: 'SQL Tuning Engine'
   },
   {
     id: 'sorcerer',
@@ -59,9 +67,8 @@ export const ecosystemProjects = [
     description: 'Next-gen command-line wizard for scaffolding microservices, boilerplate code, and rapid developer automation.',
     url: 'https://github.com/Maijied/Lorapok-Sorcerer',
     github: 'https://github.com/Maijied/Lorapok-Sorcerer',
-    category: 'CLI Tools',
+    category: 'Developer Tools',
     icon: '🧙',
-    featured: false,
     stats: 'CLI Scaffold Engine'
   },
   {
@@ -72,10 +79,93 @@ export const ecosystemProjects = [
     description: 'Streamlines branching, merge conflict resolution, pull request creation, and repository analytics.',
     url: 'https://github.com/Maijied/Lorapok-Git-Geek',
     github: 'https://github.com/Maijied/Lorapok-Git-Geek',
-    category: 'DevOps & Git',
+    category: 'Developer Tools',
     icon: '🐙',
-    featured: false,
     stats: 'Git Intelligence'
+  },
+  {
+    id: 'gamespark',
+    name: 'Lorapok GameSpark',
+    badge: 'Game Engine',
+    tagline: 'Interactive Web Game Engine & AI Arcade Toolkit',
+    description: 'Lightweight HTML5 2D/3D game development framework with AI bot behavior simulation and canvas physics.',
+    url: 'https://github.com/Maijied/Lorapok-GameSpark',
+    github: 'https://github.com/Maijied/Lorapok-GameSpark',
+    category: 'Productivity & Media',
+    icon: '🎮',
+    stats: 'Canvas Physics Engine'
+  },
+  {
+    id: 'localsync',
+    name: 'Lorapok LocalSync',
+    badge: 'P2P Sync',
+    tagline: 'Local-First P2P Workspace & File Synchronization',
+    description: 'Encrypted peer-to-peer file synchronization engine for offline-first workspace sharing without cloud lock-in.',
+    url: 'https://github.com/Maijied/Lorapok-LocalSync',
+    github: 'https://github.com/Maijied/Lorapok-LocalSync',
+    category: 'Developer Tools',
+    icon: '🔄',
+    stats: 'Encrypted P2P Sync'
+  },
+  {
+    id: 'red-bot',
+    name: 'Lorapok Red-Bot',
+    badge: 'Security Bot',
+    tagline: 'Automated Security Audit & Red Team Testing Bot',
+    description: 'Scans repositories for exposed credentials, vulnerable dependencies, and OWASP Top 10 security flaws.',
+    url: 'https://github.com/Maijied/Lorapok-Red-Bot',
+    github: 'https://github.com/Maijied/Lorapok-Red-Bot',
+    category: 'AI & Agents',
+    icon: '🛡️',
+    stats: 'Automated Red Team'
+  },
+  {
+    id: 'intellij-lorapok',
+    name: 'Intellij Lorapok',
+    badge: 'IDE Integration',
+    tagline: 'Lorapok IDE Plugin & Development Suite',
+    description: 'JetBrains IntelliJ & WebStorm plugin integrating Lorapok AI code generation directly into your IDE editor.',
+    url: 'https://github.com/Maijied/Intellij-Lorapok',
+    github: 'https://github.com/Maijied/Intellij-Lorapok',
+    category: 'Developer Tools',
+    icon: '🎨',
+    stats: 'JetBrains IDE Plugin'
+  },
+  {
+    id: 'agentsmesh',
+    name: 'AgentsMesh',
+    badge: 'Multi-Agent Network',
+    tagline: 'Multi-Agent Communication Protocol & Mesh',
+    description: 'Inter-agent pub/sub messaging protocol allowing multiple AI agents to collaborate autonomously across machines.',
+    url: 'https://github.com/Maijied/AgentsMesh',
+    github: 'https://github.com/Maijied/AgentsMesh',
+    category: 'AI & Agents',
+    icon: '🕸️',
+    stats: 'Agent Mesh Network'
+  },
+  {
+    id: 'turbovec',
+    name: 'Turbovec',
+    badge: 'Vector Search',
+    tagline: 'Ultra-Fast Vector Embedding & Similarity Search Index',
+    description: 'High-speed CJS/Native vector similarity search engine for RAG applications and semantic code search.',
+    url: 'https://github.com/Maijied/turbovec',
+    github: 'https://github.com/Maijied/turbovec',
+    category: 'AI & Agents',
+    icon: '⚡',
+    stats: 'Vector Index'
+  },
+  {
+    id: 'larvox',
+    name: 'Larvox Engine',
+    badge: 'Sensory Computing',
+    tagline: 'High-Throughput Sensory Computing & Voice Agent Engine',
+    description: 'Real-time audio processing and voice interface engine for conversational AI agents and sensory UI applications.',
+    url: 'https://github.com/Maijied/Larvox',
+    github: 'https://github.com/Maijied/Larvox',
+    category: 'AI & Agents',
+    icon: '🐛',
+    stats: 'Voice Agent Engine'
   },
   {
     id: 'lorashare',
@@ -87,7 +177,6 @@ export const ecosystemProjects = [
     github: 'https://github.com/Maijied/LoraShare',
     category: 'Developer Tools',
     icon: '📦',
-    featured: false,
     stats: 'Snippet Platform'
   },
   {
@@ -98,10 +187,33 @@ export const ecosystemProjects = [
     description: 'High-speed test automation engine supporting unit, integration, and end-to-end assertions with visual reports.',
     url: 'https://github.com/Maijied/LoraPok-LaraTest',
     github: 'https://github.com/Maijied/LoraPok-LaraTest',
-    category: 'Testing & QA',
+    category: 'Developer Tools',
     icon: '🧪',
-    featured: false,
     stats: 'Automated Testing'
+  },
+  {
+    id: 'luvon',
+    name: 'Lorapok Luvon',
+    badge: 'Developer Social',
+    tagline: 'Developer Social & Community Engagement Platform',
+    description: 'Community hub for open-source developers to showcase projects, collaborate on repos, and share technical blogs.',
+    url: 'https://github.com/Maijied/Lorapok-Luvon',
+    github: 'https://github.com/Maijied/Lorapok-Luvon',
+    category: 'Productivity & Media',
+    icon: '💖',
+    stats: 'Developer Community'
+  },
+  {
+    id: 'labs-bible',
+    name: 'Lorapok Labs Bible',
+    badge: 'Architecture Spec',
+    tagline: 'Comprehensive Architecture & Open-Source Engineering Spec',
+    description: 'The master architectural documentation and design principles governing all Lorapok Labs products.',
+    url: 'https://github.com/Maijied/Lorapok-Labs-Bible',
+    github: 'https://github.com/Maijied/Lorapok-Labs-Bible',
+    category: 'Developer Tools',
+    icon: '📖',
+    stats: 'Open Spec & Docs'
   }
 ];
 

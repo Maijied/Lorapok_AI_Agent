@@ -1,26 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ecosystemProjects, ecosystemLinks } from '../data/ecosystemProjects';
 
+const categories = ['All Products', 'AI & Agents', 'Developer Tools', 'Productivity & Media'];
+
 export default function Ecosystem() {
+  const [activeCategory, setActiveCategory] = useState('All Products');
+
+  const filtered = activeCategory === 'All Products'
+    ? ecosystemProjects
+    : ecosystemProjects.filter(p => p.category === activeCategory);
+
   return (
     <section className="ecosystem" id="ecosystem">
       <div className="container">
         <div style={{ textAlign: 'center' }}>
-          <span className="section-badge purple">🌌 Product Ecosystem</span>
+          <span className="section-badge purple">🌌 Complete Open-Source Ecosystem</span>
           <h2 className="section-title">
             The <span className="gradient-text">Lorapok Labs</span> Universe
           </h2>
           <p className="section-subtitle" style={{ margin: '0 auto' }}>
-            Lorapok Labs is an open-source product ecosystem blending biological UI, sensory computing, and practical engineering by{' '}
+            Explore 18+ open-source products, AI tools, and developer platforms engineered by{' '}
             <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer">
               {ecosystemLinks.developerName}
-            </a>.
+            </a>{' '}
+            and <a href={ecosystemLinks.labsWebsite} target="_blank" rel="noopener noreferrer">Lorapok Labs</a>.
           </p>
         </div>
 
+        {/* Category Filter Tabs */}
+        <div className="providers-tabs" style={{ marginTop: '2.5rem', marginBottom: '2.5rem' }}>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              className={`provider-tab-btn ${activeCategory === cat ? 'active' : ''}`}
+              onClick={() => setActiveCategory(cat)}
+            >
+              {cat} ({cat === 'All Products' ? ecosystemProjects.length : ecosystemProjects.filter(p => p.category === cat).length})
+            </button>
+          ))}
+        </div>
+
+        {/* Products Grid */}
         <div className="ecosystem-grid">
-          {ecosystemProjects.map(proj => (
-            <div key={proj.id} className={`eco-card glass-card glass-card-interactive ${proj.featured ? 'featured' : ''}`}>
+          {filtered.map(proj => (
+            <div key={proj.id} className="eco-card glass-card glass-card-interactive">
               <div>
                 <div className="eco-header">
                   <span className="eco-icon">{proj.icon}</span>
@@ -50,15 +73,15 @@ export default function Ecosystem() {
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '3.5rem' }}>
+        <div style={{ textAlign: 'center', marginTop: '4rem' }}>
           <a
             href={ecosystemLinks.labsWebsite}
             className="btn btn-primary"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ padding: '0.85rem 2.25rem', fontSize: '1rem' }}
+            style={{ padding: '0.9rem 2.5rem', fontSize: '1.05rem' }}
           >
-            Explore Lorapok Labs (lorapok.tech) 🌐
+            Visit Lorapok Labs Hub (lorapok.tech) 🌐
           </a>
         </div>
       </div>

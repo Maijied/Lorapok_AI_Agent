@@ -13,18 +13,17 @@ export default function Footer() {
             </span>
           </div>
           <p className="footer-description">
-            Autonomous, action-oriented AI coding agent for terminal engineering &amp; full-stack development. A product of Lorapok Labs.
+            Autonomous, action-oriented AI coding agent for terminal engineering &amp; full-stack development. Built on the Lorapok Labs Design Pattern (LLDP).
           </p>
         </div>
 
         <div>
-          <h4 className="footer-heading">Ecosystem &amp; Products</h4>
+          <h4 className="footer-heading">Research &amp; Specs</h4>
           <div className="footer-links">
-            <a href="https://ai.lorapok.tech" className="footer-link">Lorapok AI Agent</a>
-            <a href="https://maijied.github.io/Lorapok-API_Atlas/" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok API Atlas</a>
-            <a href="https://maijied.github.io/Lorapok-TabMan/" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok TabMan</a>
-            <a href="https://github.com/Maijied/Lorapok-Querycraft" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Querycraft</a>
-            <a href="https://github.com/Maijied/Lorapok-Git-Geek" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Git Geek</a>
+            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/research" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Research 🔬</a>
+            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/connect" className="footer-link" target="_blank" rel="noopener noreferrer">Connect &amp; Telemetry 🌐</a>
+            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Labs Bible 📖</a>
+            <a href="https://ai.lorapok.tech" className="footer-link">Lorapok AI Agent 🤖</a>
           </div>
         </div>
 
@@ -43,14 +42,14 @@ export default function Footer() {
           <div className="footer-links">
             <a href={ecosystemLinks.labsWebsite} className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Labs (lorapok.tech)</a>
             <a href={ecosystemLinks.developerGithub} className="footer-link" target="_blank" rel="noopener noreferrer">Developer Profile (@Maijied)</a>
-            <a href="mailto:contact@lorapok.tech" className="footer-link">Contact Us</a>
+            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/connect" className="footer-link" target="_blank" rel="noopener noreferrer">Contact &amp; Connect</a>
           </div>
         </div>
       </div>
 
       <div className="footer-bottom">
         <span>
-          Built with 🐛 by <a href={ecosystemLinks.labsWebsite} target="_blank" rel="noopener noreferrer">Lorapok Labs</a> · © 2026 All rights reserved.
+          Built with 🐛 Cybernetic Larva by <a href={ecosystemLinks.labsWebsite} target="_blank" rel="noopener noreferrer">Lorapok Labs</a> · © 2026 All rights reserved.
         </span>
         <div className="footer-social">
           <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" aria-label="GitHub Org">

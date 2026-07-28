@@ -10,6 +10,8 @@ import Pricing from './components/Pricing';
 import Ecosystem from './components/Ecosystem';
 import AdminModal from './components/AdminModal';
 import Footer from './components/Footer';
+import GlobalParticleCanvas from './components/GlobalParticleCanvas';
+import CyberneticLarvaMascot from './components/CyberneticLarvaMascot';
 
 export default function App() {
   const [toastMessage, setToastMessage] = useState('');
@@ -21,9 +23,13 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app" style={{ position: 'relative' }}>
+      {/* Global Background Particle Canvas */}
+      <GlobalParticleCanvas />
+
       <Navbar onOpenAdmin={() => setIsAdminOpen(true)} />
-      <main>
+
+      <main style={{ position: 'relative', zIndex: 1 }}>
         <Hero showToast={showToast} />
         <HowItWorks />
         <Features />
@@ -33,7 +39,11 @@ export default function App() {
         <Pricing />
         <Ecosystem />
       </main>
+
       <Footer />
+
+      {/* Cybernetic Black Soldier Fly Larva Companion Mascot */}
+      <CyberneticLarvaMascot showToast={showToast} />
 
       <AdminModal isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />
 

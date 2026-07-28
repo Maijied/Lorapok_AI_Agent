@@ -51,7 +51,8 @@ Run `lorapok` to enter the primary chat mode.
 ```bash
 npm test
 ```
-- **Goal**: 26/26 Passing.
+- **Goal**: 16/16 Test Suites Passing (155 Total Tests).
+
 
 ---
 *Clean up your environment after testing:*

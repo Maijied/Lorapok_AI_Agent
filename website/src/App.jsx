@@ -7,6 +7,7 @@ import Providers from './components/Providers';
 import CliCommands from './components/CliCommands';
 import ApiEndpoints from './components/ApiEndpoints';
 import Pricing from './components/Pricing';
+import ResearchPhilosophy from './components/ResearchPhilosophy';
 import Ecosystem from './components/Ecosystem';
 import AdminModal from './components/AdminModal';
 import Footer from './components/Footer';
@@ -37,6 +38,7 @@ export default function App() {
         <CliCommands showToast={showToast} />
         <ApiEndpoints />
         <Pricing />
+        <ResearchPhilosophy />
         <Ecosystem />
       </main>
 

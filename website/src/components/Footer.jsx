@@ -1,80 +1,215 @@
 import React from 'react';
 import { ecosystemLinks } from '../data/ecosystemProjects';
 
+const socialCards = [
+  {
+    name: 'GitHub',
+    url: 'https://github.com/maijied',
+    displayUrl: 'github.com/maijied',
+    icon: '</>'
+  },
+  {
+    name: 'LinkedIn',
+    url: 'https://linkedin.com/showcase/lorapok/',
+    displayUrl: 'linkedin.com/showcase/lorapok/',
+    icon: '💼'
+  },
+  {
+    name: 'Product Hunt',
+    url: 'https://www.producthunt.com/products/lorapok-atlas-api-directory',
+    displayUrl: 'producthunt.com/products/lorapok...',
+    icon: '🚀'
+  },
+  {
+    name: 'Reddit',
+    url: 'https://reddit.com/r/LorapokLabs/',
+    displayUrl: 'reddit.com/r/LorapokLabs/',
+    icon: '💬'
+  },
+  {
+    name: 'Instagram',
+    url: 'https://instagram.com/lorapoklabs/',
+    displayUrl: 'instagram.com/lorapoklabs/',
+    icon: '📷'
+  },
+  {
+    name: 'Facebook',
+    url: 'https://facebook.com/lorapoklabs',
+    displayUrl: 'facebook.com/lorapoklabs',
+    icon: '👥'
+  },
+  {
+    name: 'Wellfound',
+    url: 'https://wellfound.com/u/maizied',
+    displayUrl: 'wellfound.com/u/maizied',
+    icon: '💼'
+  },
+  {
+    name: 'Portfolio',
+    url: 'https://maijied.github.io/Maijied',
+    displayUrl: 'maijied.github.io/Maijied',
+    icon: '🌐'
+  },
+  {
+    name: 'OSS Ecosystem',
+    url: 'https://lorapok.github.io',
+    displayUrl: 'lorapok.github.io',
+    icon: '📦'
+  }
+];
+
 export default function Footer() {
   return (
-    <footer className="footer" id="footer">
-      <div className="footer-grid">
-        {/* Column 1: Brand & Philosophy */}
-        <div>
-          <div className="footer-brand">
-            <img src="assets/logo.png" alt="Lorapok AI" />
-            <span className="footer-brand-name">
-              Lorapok <span className="gradient-text">AI</span>
+    <footer className="footer" id="footer" style={{ background: '#030711', borderTop: '1px solid var(--border-glass)' }}>
+      <div className="container">
+        {/* Top Quick Links Pill Row (Matching SS1) */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '3.5rem' }}>
+          <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+            &lt;/&gt; Org
+          </a>
+          <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem', borderColor: '#10B981', color: '#10B981' }}>
+            🌐 Founder
+          </a>
+          <a href="https://gravatar.com/maijied" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+            🌐 Gravatar
+          </a>
+          <a href="https://reddit.com/r/LorapokLabs/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+            🌐 Reddit
+          </a>
+          <a href="https://twitter.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+            🌐 X
+          </a>
+          <a href="mailto:contact@lorapok.tech" className="btn btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+            ✉️ Email
+          </a>
+        </div>
+
+        {/* Social Cards 3x3 Grid (Matching SS2) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '4rem' }}>
+          {socialCards.map((card) => (
+            <a
+              key={card.name}
+              href={card.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card glass-card-interactive"
+              style={{
+                padding: '1.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                textDecoration: 'none',
+                background: 'rgba(15, 23, 42, 0.6)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(34, 211, 238, 0.12)',
+                    border: '1px solid var(--border-cyan)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.1rem',
+                    color: '#10B981'
+                  }}
+                >
+                  {card.icon}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{card.name}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                    {card.displayUrl}
+                  </div>
+                </div>
+              </div>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>↗</span>
+            </a>
+          ))}
+        </div>
+
+        {/* Traditional Footer Main Grid */}
+        <div className="footer-grid" style={{ marginBottom: '3rem' }}>
+          <div>
+            <div className="footer-brand">
+              <img src="assets/logo.png" alt="Lorapok AI" />
+              <span className="footer-brand-name">
+                Lorapok <span className="gradient-text">AI</span>
+              </span>
+            </div>
+            <p className="footer-description">
+              Independent Open-Source Ecosystem. Building the Future. One Line at a Time. Experimental developer tools with a signature Biological UI aesthetic.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="footer-heading">Research &amp; Specs</h4>
+            <div className="footer-links">
+              <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/research" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Research 🔬</a>
+              <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/connect" className="footer-link" target="_blank" rel="noopener noreferrer">Connect &amp; Telemetry 🌐</a>
+              <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Labs Bible 📖</a>
+              <a href="https://ai.lorapok.tech" className="footer-link">Lorapok AI Hub 🤖</a>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="footer-heading">Resources</h4>
+            <div className="footer-links">
+              <a href={ecosystemLinks.githubOrg} className="footer-link" target="_blank" rel="noopener noreferrer">GitHub Org</a>
+              <a href={ecosystemLinks.npmPackage} className="footer-link" target="_blank" rel="noopener noreferrer">npm Package</a>
+              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/CHANGELOG.md" className="footer-link" target="_blank" rel="noopener noreferrer">Changelog</a>
+              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/LICENSE" className="footer-link" target="_blank" rel="noopener noreferrer">MIT License</a>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="footer-heading">Contact &amp; Support</h4>
+            <div className="footer-links">
+              <a href="mailto:contact@lorapok.tech" className="footer-link">contact@lorapok.tech</a>
+              <a href="mailto:maijied@gmail.com" className="footer-link">maijied@gmail.com</a>
+              <a href={ecosystemLinks.developerGithub} className="footer-link" target="_blank" rel="noopener noreferrer">@Maijied GitHub</a>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar with Country Badge & Social Icons (Matching SS3) */}
+        <div className="footer-bottom">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>🌐</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+              Lorapok Labs · Bangladesh
+            </span>
+            <span style={{ color: 'var(--text-muted)' }}>
+              © 2026 Lorapok Labs. All rights reserved.
             </span>
           </div>
-          <p className="footer-description">
-            Autonomous, action-oriented AI coding agent for terminal engineering &amp; full-stack development. Built on the Lorapok Labs Design Pattern (LLDP).
-          </p>
-          <div style={{ marginTop: '1.25rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            ✉️ Contact: <a href="mailto:contact@lorapok.tech" style={{ color: 'var(--accent-cyan)' }}>contact@lorapok.tech</a>
-          </div>
-        </div>
 
-        {/* Column 2: Research & Connect Hub */}
-        <div>
-          <h4 className="footer-heading">Research &amp; Telemetry</h4>
-          <div className="footer-links">
-            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/research" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Research 🔬</a>
-            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/connect" className="footer-link" target="_blank" rel="noopener noreferrer">Connect &amp; Telemetry 🌐</a>
-            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/" className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Labs Bible 📖</a>
-            <a href="https://ai.lorapok.tech" className="footer-link">Lorapok AI Product Hub 🤖</a>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="GitHub Org">
+              🐙
+            </a>
+            <a href="https://twitter.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Twitter / X">
+              🐦
+            </a>
+            <a href="mailto:contact@lorapok.tech" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Email">
+              ✉️
+            </a>
+            <a href="https://linkedin.com/showcase/lorapok/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="LinkedIn">
+              💼
+            </a>
+            <a href="https://reddit.com/r/LorapokLabs/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Reddit">
+              💬
+            </a>
+            <a href="https://instagram.com/lorapoklabs/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Instagram">
+              📷
+            </a>
+            <a href="https://facebook.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Facebook">
+              👥
+            </a>
           </div>
-        </div>
-
-        {/* Column 3: Open-Source Resources */}
-        <div>
-          <h4 className="footer-heading">Resources &amp; Code</h4>
-          <div className="footer-links">
-            <a href={ecosystemLinks.githubOrg} className="footer-link" target="_blank" rel="noopener noreferrer">GitHub Organization 🐙</a>
-            <a href={ecosystemLinks.npmPackage} className="footer-link" target="_blank" rel="noopener noreferrer">npm Package Registry 📦</a>
-            <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/CHANGELOG.md" className="footer-link" target="_blank" rel="noopener noreferrer">Release Changelog 📋</a>
-            <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/LICENSE" className="footer-link" target="_blank" rel="noopener noreferrer">MIT Open Source License 📜</a>
-          </div>
-        </div>
-
-        {/* Column 4: Community & Social Links */}
-        <div>
-          <h4 className="footer-heading">Social &amp; Connect</h4>
-          <div className="footer-links">
-            <a href={ecosystemLinks.labsWebsite} className="footer-link" target="_blank" rel="noopener noreferrer">Lorapok Labs Hub (lorapok.tech) 🌐</a>
-            <a href={ecosystemLinks.developerGithub} className="footer-link" target="_blank" rel="noopener noreferrer">Developer Profile (@Maijied) 👤</a>
-            <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/connect" className="footer-link" target="_blank" rel="noopener noreferrer">Community Discussion 💬</a>
-            <a href="mailto:maijied@gmail.com" className="footer-link">Developer Email ✉️</a>
-          </div>
-        </div>
-      </div>
-
-      <div className="footer-bottom">
-        <span>
-          Built with 🐛 Cybernetic Larva by <a href={ecosystemLinks.labsWebsite} target="_blank" rel="noopener noreferrer">Lorapok Labs</a> · © 2026 All rights reserved.
-        </span>
-        <div className="footer-social">
-          <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" aria-label="GitHub Org" title="GitHub Organization">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-            </svg>
-          </a>
-          <a href={ecosystemLinks.npmPackage} target="_blank" rel="noopener noreferrer" aria-label="npm Package" title="npm Package">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M0 7.334v8h6.666v1.332H12v-1.332h12v-8H0zm6.666 6.664H5.334v-4H3.999v4H1.335V8.667h5.331v5.331zm4 0v1.336H8.001V8.667h5.334v5.332h-2.669zm12.001 0h-1.33v-4h-1.336v4h-1.335v-4h-1.33v4h-2.671V8.667h8.002v5.331z"/>
-            </svg>
-          </a>
-          <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer" aria-label="Developer GitHub" title="Developer Profile">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-            </svg>
-          </a>
         </div>
       </div>
     </footer>

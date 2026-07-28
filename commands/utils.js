@@ -22,7 +22,8 @@ let currentCwd = process.cwd();
  * @returns {void}
  */
 function setCwd(newCwd) {
-    currentCwd = path.resolve(newCwd);
+    const resolved = path.resolve(newCwd);
+    currentCwd = fs.existsSync(resolved) ? fs.realpathSync(resolved) : resolved;
 }
 
 /**
@@ -171,7 +172,7 @@ function executeCommand(command) {
                     }
                     const newPath = path.resolve(currentCwd, target);
                     if (fs.existsSync(newPath) && fs.statSync(newPath).isDirectory()) {
-                        currentCwd = newPath;
+                        currentCwd = fs.realpathSync(newPath);
                     }
                 }
             }

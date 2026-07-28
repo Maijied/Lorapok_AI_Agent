@@ -47,10 +47,24 @@ function getPerplexityInstructions() {
     ].join('\n');
 }
 
+function getGoogleInstructions() {
+    return [
+        chalk.green.bold('✨ How to Create a Google AI Studio (Gemini) API Key:\n'),
+        chalk.white('1. Open your browser and navigate to:'),
+        chalk.underline.yellow('   https://aistudio.google.com/app/apikey'),
+        '',
+        chalk.white('2. Sign in with your Google account.'),
+        chalk.white('3. Click ') + chalk.green('"Create API key"') + chalk.white('.'),
+        chalk.white('4. Select a project and copy your key (starts with ') + chalk.cyan('AIzaSy...') + chalk.white(').'),
+        chalk.white('5. Paste the key into Lorapok CLI settings.')
+    ].join('\n');
+}
+
 async function handleApiKeySettings(config) {
     const keyMenu = new Select({
         message: '🔑 Select API Key Provider to Update:',
         choices: [
+            { name: 'google', message: '✨ Google AI Studio API Key (https://aistudio.google.com/app/apikey)' },
             { name: 'openrouter', message: '🌐 OpenRouter API Key (https://openrouter.ai/keys)' },
             { name: 'perplexity', message: '🟣 Perplexity API Key (https://www.perplexity.ai/settings/api)' },
             { name: 'instructions', message: '📖 View Detailed Key Creation Instructions' },
@@ -63,9 +77,35 @@ async function handleApiKeySettings(config) {
     if (subChoice === 'back') return;
 
     if (subChoice === 'instructions') {
+        console.log('\n' + boxen(getGoogleInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'green' }));
         console.log('\n' + boxen(getOpenRouterInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
         console.log('\n' + boxen(getPerplexityInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'magenta' }));
         return;
+    }
+
+    if (subChoice === 'google') {
+        const url = 'https://aistudio.google.com/app/apikey';
+        console.log('\n' + boxen(getGoogleInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'green' }));
+        
+        const openAns = await new Select({
+            message: 'Open https://aistudio.google.com/app/apikey in your browser now?',
+            choices: [
+                { name: 'open', message: '🌐 Yes, open browser' },
+                { name: 'skip', message: '⏩ Skip opening, I will paste my key' }
+            ],
+            result(name) { return this.map(name)[name]; }
+        }).run().catch(() => 'skip');
+
+        if (openAns === 'open') {
+            await openBrowserUrl(url);
+            console.log(chalk.gray('Opening browser to https://aistudio.google.com/app/apikey...'));
+        }
+
+        const keyRes = await new Input({ message: '🔑 Enter/Paste Google AI Studio API Key:' }).run().catch(() => null);
+        if (keyRes && keyRes.trim()) {
+            config.setGoogleApiKey(keyRes.trim());
+            console.log(TerminalUI.formatSuccess('Google AI Studio API Key saved successfully.'));
+        }
     }
 
     if (subChoice === 'openrouter') {
@@ -122,7 +162,7 @@ async function handleModelSelection(agent, config) {
     const isInteractive = process.stdout.isTTY;
     let spinner = null;
     if (isInteractive) {
-        spinner = ora('Fetching available models from OpenRouter API & Perplexity...').start();
+        spinner = ora('Fetching available models from Google AI Studio, OpenRouter API & Perplexity...').start();
     } else {
         console.log(chalk.cyan('Fetching available models...'));
     }
@@ -147,7 +187,7 @@ async function handleModelSelection(agent, config) {
             choices: [
                 { name: 'ready', message: '🟢 View Ready Models (Available Without Credit Errors)' },
                 { name: 'category', message: '📁 Browse by Domain / Category' },
-                { name: 'provider', message: '🏢 Browse by AI Provider (Perplexity, OpenRouter)' },
+                { name: 'provider', message: '🏢 Browse by AI Provider (Google AI Studio, Perplexity, OpenRouter)' },
                 { name: 'tier', message: '💰 Browse by Pricing Tier (Free, Pro)' },
                 { name: 'all', message: '🌐 View All Supported Models' },
                 { name: 'back', message: '🔙 Back to Settings' }
@@ -158,12 +198,31 @@ async function handleModelSelection(agent, config) {
         const filterMode = await mainMenu.run().catch(() => 'back');
         if (filterMode === 'back') return;
 
-        let filteredModelKeys = Object.keys(models);
+        // Helper to check if model is free tier across all providers
+        const isFreeTier = (m) => {
+            if (!m) return false;
+            if (m.tier === 'pro') return false;
+            if (m.tier === 'free') return true;
+            const rateStr = String(m.rateLimit || '').toLowerCase();
+            const nameStr = String(m.name || m.id || '').toLowerCase();
+            if (rateStr.includes('free') || nameStr.includes(':free') || nameStr.includes('/free')) return true;
+            if (rateStr.includes('$') || rateStr.includes('pro tier')) return false;
+            if (m.provider === 'google-ai-studio') return true;
+            return false;
+        };
+
+        // Filter free available models for standard selection across all providers (no credit purchase required)
+        const freeAvailableKeys = Object.keys(models).filter(id => {
+            const m = models[id];
+            return m && m.available === true && isFreeTier(m);
+        });
+
+        let filteredModelKeys = [...freeAvailableKeys];
         let menuTitle = '';
 
         if (filterMode === 'ready') {
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].available);
-            menuTitle = 'Ready Models';
+            filteredModelKeys = [...freeAvailableKeys];
+            menuTitle = 'Ready Free Models';
         } else if (filterMode === 'category') {
             const categoryMenu = new Select({
                 message: '📁 Select Category:',
@@ -171,45 +230,57 @@ async function handleModelSelection(agent, config) {
                     { name: 'coding', message: '💻 Coding & Engineering' },
                     { name: 'reasoning', message: '🔬 Complex Logic & Reasoning' },
                     { name: 'research', message: '🔍 Web Research & Search' },
-                    { name: 'fast', message: '⚡ Fast & Lightweight' },
-                    { name: 'back', message: '🔙 Back' }
+                    { name: 'agent', message: '🤖 Autonomous Agents & Tools' },
+                    { name: 'image', message: '🎨 Image & Visual Generation' },
+                    { name: 'audio', message: '🎙️ Audio & Voice Synthesis' },
+                    { name: 'video', message: '🎬 Video Generation' },
+                    { name: 'openweights', message: '🦙 Open Weights & Open Source' },
+                    { name: 'fast', message: '🚀 Fast & Lightweight' },
+                    { name: 'general', message: '🌐 General Intelligence' },
+                    { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
             const cat = await categoryMenu.run().catch(() => 'back');
             if (cat === 'back') continue;
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].category === cat);
+            filteredModelKeys = freeAvailableKeys.filter(id => models[id].category === cat);
             menuTitle = `Category: ${cat}`;
         } else if (filterMode === 'provider') {
             const provMenu = new Select({
                 message: '🏢 Select Provider:',
                 choices: [
-                    { name: 'perplexity', message: '🟣 Perplexity AI' },
-                    { name: 'openrouter', message: '🔵 OpenRouter' },
-                    { name: 'back', message: '🔙 Back' }
+                    { name: 'google-ai-studio', message: '✨ Google AI Studio (Free Models)' },
+                    { name: 'perplexity', message: '🟣 Perplexity AI (Free Models)' },
+                    { name: 'openrouter', message: '🔵 OpenRouter (Free Models)' },
+                    { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
             const prov = await provMenu.run().catch(() => 'back');
             if (prov === 'back') continue;
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].provider === prov);
+            filteredModelKeys = freeAvailableKeys.filter(id => models[id].provider === prov);
             menuTitle = `Provider: ${prov}`;
         } else if (filterMode === 'tier') {
             const tierMenu = new Select({
                 message: '💰 Select Pricing Tier:',
                 choices: [
-                    { name: 'free', message: '🆓 Free Models' },
-                    { name: 'pro', message: '💎 Pro / Paid Models' },
-                    { name: 'back', message: '🔙 Back' }
+                    { name: 'free', message: '🆓 Free Models (No Purchase Required)' },
+                    { name: 'pro', message: '💎 Pro / Paid Credit Models' },
+                    { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
             const tier = await tierMenu.run().catch(() => 'back');
             if (tier === 'back') continue;
-            filteredModelKeys = filteredModelKeys.filter(id => models[id].tier === tier);
+            if (tier === 'free') {
+                filteredModelKeys = freeAvailableKeys;
+            } else {
+                filteredModelKeys = Object.keys(models).filter(id => !isFreeTier(models[id]));
+            }
             menuTitle = `Tier: ${tier}`;
         } else {
-            menuTitle = 'All Models';
+            filteredModelKeys = Object.keys(models);
+            menuTitle = 'All Supported Models (Includes Paid & Credit-Required Models)';
         }
 
         if (filteredModelKeys.length === 0) {
@@ -219,12 +290,39 @@ async function handleModelSelection(agent, config) {
 
         const choices = filteredModelKeys.map(id => {
             const item = models[id];
-            const statusIcon = item.available ? chalk.green('🟢') : chalk.gray('🔒');
-            const providerTag = item.provider === 'openrouter' ? chalk.cyan('[OpenRouter]') : chalk.magenta('[Perplexity]');
-            const tierTag = item.tier === 'free' ? chalk.green('(Free)') : chalk.yellow('(Pro)');
+            const isPaidCreditModel = !isFreeTier(item);
+            const statusIcon = item.available ? (isPaidCreditModel ? chalk.yellow('💳') : chalk.green('🟢')) : chalk.red('🔴');
+            
+            // Clean duplicate provider suffix from model display name
+            const cleanName = (item.name || id)
+                .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
+                .trim();
+
+            let providerTag = chalk.magenta('[Perplexity]');
+            if (item.provider === 'google-ai-studio') providerTag = chalk.cyan('[Google]');
+            if (item.provider === 'openrouter') providerTag = chalk.blue('[OpenRouter]');
+            const tierTag = isPaidCreditModel ? chalk.yellow('(Credit Purchase Required)') : chalk.green('(Free Tier)');
+            
+            let limitTag = '';
+            if (item.contextLength) {
+                const ctxK = Math.round(item.contextLength / 1000);
+                const ctxStr = ctxK >= 1000 ? `${(ctxK / 1000).toFixed(1)}M` : `${ctxK}k`;
+                limitTag = chalk.gray(` ⚡ Token Limit: ${ctxStr}`);
+                if (item.rateLimit) {
+                    limitTag += chalk.gray(` (${item.rateLimit})`);
+                }
+            } else if (item.rateLimit) {
+                limitTag = chalk.gray(` ⚡ Token Limit: ${item.rateLimit}`);
+            }
+
+            let resetTag = '';
+            if (item.resetWindow) {
+                resetTag = chalk.dim(` ⏱️ ${item.resetWindow}`);
+            }
+
             return {
                 name: id,
-                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}`
+                message: `${statusIcon} ${cleanName} ${providerTag} ${tierTag}${limitTag}${resetTag}`
             };
         });
         
@@ -240,8 +338,22 @@ async function handleModelSelection(agent, config) {
 
         if (model) {
             const selectedModel = models[model];
+            const cleanSelectedName = (selectedModel?.name || model)
+                .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
+                .trim();
+            const isSelectedPaid = !isFreeTier(selectedModel);
+
+            if (isSelectedPaid) {
+                let purchaseUrl = 'https://openrouter.ai/keys';
+                if (selectedModel?.provider === 'perplexity') purchaseUrl = 'https://www.perplexity.ai/settings/api';
+                if (selectedModel?.provider === 'google-ai-studio') purchaseUrl = 'https://aistudio.google.com/app/plan';
+
+                console.log(chalk.yellow(`\n💳 PAID / CREDIT MODEL NOTICE: '${cleanSelectedName}' requires paid credits.`));
+                console.log(chalk.cyan(`   To purchase credits for this model, visit: ${purchaseUrl}\n`));
+            }
+
             const confirm = new Select({
-                message: `Switch active AI model to '${selectedModel?.name || model}'?`,
+                message: `Switch active AI model to '${cleanSelectedName}'?`,
                 choices: [
                     { name: 'save', message: '🟢 Switch & Save Model' },
                     { name: 'reject', message: '❌ Reject / Cancel' }
@@ -251,7 +363,7 @@ async function handleModelSelection(agent, config) {
             const ans = await confirm.run().catch(() => 'reject');
             if (ans === 'save') {
                 config.setModel(model);
-                console.log(TerminalUI.formatSuccess(`AI Model updated to ${selectedModel?.name || model}.`));
+                console.log(TerminalUI.formatSuccess(`AI Model updated to ${cleanSelectedName}.`));
                 return;
             } else {
                 console.log(chalk.yellow('\n⚠️ Model change rejected. Kept current model.\n'));
@@ -280,7 +392,7 @@ async function showSettings(agent, config) {
         },
         choices: [
             { name: 'name', message: '👤 Change User Name' },
-            { name: 'model', message: '🧠 Change LLM Model' },
+            { name: 'model', message: '🧠 LLM Model Configuration' },
             { name: 'cache', message: '⚡ LLM Response Cache Engine' },
             { name: 'language', message: '🌐 Change Default Language' },
             { name: 'theme', message: '🎨 CLI Theme Customizer' },

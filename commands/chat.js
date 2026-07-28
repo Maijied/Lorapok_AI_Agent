@@ -97,6 +97,68 @@ function getProjectOverviewContext(agent) {
 }
 
 /**
+ * Helper to render structured model name and token usage footer card after AI responses.
+ */
+function renderTokenUsageBox(context, response, activeModelIdOverride) {
+    const { agent, config, sessionData } = context;
+    const boxen = require('boxen');
+
+    const activeModelId = response?.model || activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
+    const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
+    const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
+    const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
+    const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
+
+    let promptTokens = response?.usage?.prompt_tokens || 0;
+    let completionTokens = response?.usage?.completion_tokens || 0;
+    let totalTokens = response?.usage?.total_tokens || 0;
+
+    if (!totalTokens && response?.content) {
+        promptTokens = Math.max(10, Math.ceil(response.content.length / 4));
+        completionTokens = Math.max(5, Math.ceil(response.content.length / 8));
+        totalTokens = promptTokens + completionTokens;
+    }
+
+    if (sessionData) {
+        if (!sessionData.tokens) sessionData.tokens = { prompt: 0, completion: 0, total: 0 };
+        sessionData.tokens.prompt += promptTokens;
+        sessionData.tokens.completion += completionTokens;
+        sessionData.tokens.total += totalTokens;
+
+        if (!sessionData.modelUsage) sessionData.modelUsage = {};
+        if (!sessionData.modelUsage[activeModelId]) {
+            sessionData.modelUsage[activeModelId] = { name: displayName, prompt: 0, completion: 0, total: 0, requests: 0 };
+        }
+        sessionData.modelUsage[activeModelId].prompt += promptTokens;
+        sessionData.modelUsage[activeModelId].completion += completionTokens;
+        sessionData.modelUsage[activeModelId].total += totalTokens;
+        sessionData.modelUsage[activeModelId].requests += 1;
+    }
+
+    const maxCtx = activeModelMeta?.contextLength || 1000000;
+    const currentModelUsed = sessionData?.modelUsage?.[activeModelId]?.total || totalTokens;
+    const remainingTokens = Math.min(maxCtx, Math.max(0, maxCtx - currentModelUsed));
+
+    const remStr = remainingTokens >= 1000000 ? `${(remainingTokens / 1000000).toFixed(2)}M` : `${Math.round(remainingTokens / 1000)}k`;
+    const maxCtxStr = maxCtx >= 1000000 ? `${(maxCtx / 1000000).toFixed(1)}M` : `${Math.round(maxCtx / 1000)}k`;
+    const pctLeft = Math.min(100, Math.max(0, Math.round((remainingTokens / maxCtx) * 100)));
+
+    const cacheTag = response?.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
+    const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
+    const tokenBar = chalk.cyan(`📊 Turn Usage: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) +
+                     chalk.yellow(`  │  ⚡ Available Token Limit: ${remStr} / ${maxCtxStr} (${pctLeft}% Remaining)`);
+
+    const usageBox = boxen(`${modelLabel}\n${tokenBar}`, {
+        padding: { top: 0, bottom: 0, left: 2, right: 2 },
+        margin: { top: 1, bottom: 1 },
+        borderStyle: 'round',
+        borderColor: 'cyan'
+    });
+
+    console.log(usageBox);
+}
+
+/**
  * Handle primary LLM chat interaction, token usage tracking, and action block execution.
  * @param {string} input - Input message string
  * @param {Object} context - CommandContext containing { agent, config, sessionData, ui }
@@ -123,75 +185,13 @@ async function handleChat(input, context, options = {}) {
             return { success: false, error: 'Request cancelled by user.' };
         }
 
-        // Active model metadata & token calculation
-        const activeModelId = config.getModel();
-        const allModels = agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
-        const activeModelMeta = allModels ? allModels[activeModelId] : null;
-        const icon = activeModelMeta?.icon || (agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
-        const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
-
-        let promptTokens = response.usage?.prompt_tokens || 0;
-        let completionTokens = response.usage?.completion_tokens || 0;
-        let totalTokens = response.usage?.total_tokens || 0;
-
-        if (!totalTokens && response.content) {
-            promptTokens = Math.max(10, Math.ceil((processedInput.length + projectInfo.length) / 4));
-            completionTokens = Math.max(5, Math.ceil(response.content.length / 4));
-            totalTokens = promptTokens + completionTokens;
-        }
-
-        // Aggregate token stats per model and session
-        if (sessionData) {
-            if (!sessionData.tokens) {
-                sessionData.tokens = { prompt: 0, completion: 0, total: 0 };
-            }
-            sessionData.tokens.prompt += promptTokens;
-            sessionData.tokens.completion += completionTokens;
-            sessionData.tokens.total += totalTokens;
-
-            if (!sessionData.modelUsage) {
-                sessionData.modelUsage = {};
-            }
-            if (!sessionData.modelUsage[activeModelId]) {
-                sessionData.modelUsage[activeModelId] = {
-                    name: displayName,
-                    prompt: 0,
-                    completion: 0,
-                    total: 0,
-                    requests: 0
-                };
-            }
-            sessionData.modelUsage[activeModelId].prompt += promptTokens;
-            sessionData.modelUsage[activeModelId].completion += completionTokens;
-            sessionData.modelUsage[activeModelId].total += totalTokens;
-            sessionData.modelUsage[activeModelId].requests += 1;
-        }
-
         console.log(chalk.cyan.bold('\n🐛 LORAPOK:'));
 
         const cleanContent = ui.hideLongCodeBlocks(response.content);
         console.log(await renderMarkdown(cleanContent));
 
-        // Render dynamic token consumption footer bar
-        const termWidth = process.stdout.columns || 80;
-        const cacheTag = response.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
-        const contextLenStr = activeModelMeta?.contextLength ? ` | Context: ${(activeModelMeta.contextLength / 1000).toFixed(0)}k` : '';
-        const modelTotalStr = sessionData.modelUsage?.[activeModelId]?.total ? sessionData.modelUsage[activeModelId].total.toLocaleString() : totalTokens.toLocaleString();
-
-        const boxen = require('boxen');
-        const tokenBar = chalk.cyan(`📊 Tokens: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) + chalk.gray(`  (Model Session Total: ${modelTotalStr}${contextLenStr})`);
-        const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
-
-        const usageBox = boxen(`${modelLabel}\n${tokenBar}`, {
-            padding: { top: 0, bottom: 0, left: 2, right: 2 },
-            margin: { top: 1, bottom: 1 },
-            borderStyle: 'round',
-            borderColor: 'cyan'
-        });
-
-        console.log(usageBox);
-
-
+        // Render model name and token usage card
+        renderTokenUsageBox(context, response);
 
         // Parse & execute file/shell action blocks
         const actions = agent.parseActions(response.content);
@@ -216,18 +216,63 @@ async function handleChat(input, context, options = {}) {
  * @returns {Promise<{ success: boolean, content?: string, error?: string }>} Analysis result
  */
 async function handleAnalyze(context) {
-    const { agent } = context;
+    const { agent, config } = context;
+    const boxen = require('boxen');
+
     try {
-        const result = await withCancellation('Analyzing project...', (signal) =>
+        const result = await withCancellation('Analyzing project structure & architecture...', (signal) =>
             agent.analyzeProject({ signal })
         );
 
-        if (result && !result.aborted) {
-            console.log(await renderMarkdown(result.content));
+        if (result && result.content) {
+            const activeModelId = result.model || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
+            const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
+            const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
+            const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
+            const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
+
+            const headerText =
+                chalk.bold.cyan('🔬 LORAPOK CODEBASE ARCHITECTURE & ANALYSIS') + '\n' +
+                chalk.gray('──────────────────────────────────────────────────────────────') + '\n' +
+                chalk.yellow(`🧠 Active Engine: ${displayName}`) + '  │  ' + chalk.green.bold('🟢 Status: Analysis Complete');
+
+            const headerBox = boxen(headerText, {
+                padding: { top: 0, bottom: 0, left: 2, right: 2 },
+                margin: { top: 1, bottom: 1 },
+                borderStyle: 'double',
+                borderColor: 'cyan'
+            });
+
+            console.log(headerBox);
+
+            const renderedMarkdown = await renderMarkdown(result.content);
+            console.log(renderedMarkdown);
+
+            const footerText =
+                chalk.cyan.bold('💡 Recommended Action:') + chalk.white(' Use ') + chalk.yellow.bold('/chat') + chalk.white(' to discuss findings or ') + chalk.yellow.bold('/plan') + chalk.white(' to generate implementation roadmap.');
+
+            const footerBox = boxen(footerText, {
+                padding: { top: 0, bottom: 0, left: 2, right: 2 },
+                margin: { top: 1, bottom: 1 },
+                borderStyle: 'round',
+                borderColor: 'green'
+            });
+
+            console.log(footerBox);
+
+            // Render token usage box after analysis completion using actual executed model
+            renderTokenUsageBox(context, result, activeModelId);
+
             return { success: true, content: result.content };
         }
-        return { success: false, error: 'Analysis cancelled.' };
+        if (result && result.aborted) {
+            console.log(chalk.yellow('\n⚠️ Analysis cancelled by user.\n'));
+            return { success: false, error: 'Analysis cancelled.' };
+        }
+        console.log(chalk.red('\n❌ Project analysis produced no output.\n'));
+        return { success: false, error: 'No content' };
     } catch (err) {
+        console.log(chalk.red(`\n❌ Project Analysis Error: ${err.message || String(err)}\n`));
         return { success: false, error: err.message || String(err) };
     }
 }

@@ -16,13 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Multi-provider dynamic API querying for Model Selection (Perplexity and OpenRouter)
-- Professional hierarchical nested settings menu for Model Selection filtering by Category, Provider, Availability, and Pricing Tier
-- Dynamic `tier` property parsing based on zero-cost prompt/completion API definitions for OpenRouter
-- Clean `boxen`-wrapped professional UI for rendering token usage and active model statistics directly in chat responses
+- Created `services/ModelValidator.js` for dynamic model usability validation, zero-quota free tier model filtering, and non-text modality exclusion.
+- Created `services/ModelCacheService.js` for in-memory model catalog caching and runtime API failure tracking (`addFailedModel`).
+- Native Google AI Studio (Gemini) provider integration supporting `GEMINI_API_KEY` and `GOOGLE_API_KEY` environment variables.
+- Dynamic Google AI Studio model fetching directly from `https://generativelanguage.googleapis.com/v1beta/models` API endpoint with static fallback.
+- Multi-provider dynamic API querying for Model Selection (Perplexity, OpenRouter, Google AI Studio).
+- Professional hierarchical nested settings menu for Model Selection filtering by Category, Provider, Availability, and Pricing Tier.
+- Restricted `Ready Models`, `Category`, `Provider`, and `Pricing Tier` selection menus to free active models across all 3 providers without credit purchase requirements.
+- Categorized paid/credit-required models under `View All Supported Models` with clear `💳 (Credit Purchase Required)` status indicators and provider credit purchase instructions.
+- Clean `boxen`-wrapped professional UI for rendering turn token usage, active model name, and remaining token capacity limit directly in chat responses and `/analyze` command outputs.
 
 ### Fixed
-- Fixed an architectural bug where the `LorapokConfig` state would become stale in memory, routing models incorrectly to the wrong API endpoints (e.g., throwing 402 errors on Perplexity-exclusive models)
+- Fixed automatic fallback model routing metrics so fallback model execution (`gemini-3.6-flash`) is dynamically credited in status cards, header cards, and session recap tables.
+- Fixed an architectural bug where the `LorapokConfig` state would become stale in memory, routing models incorrectly to the wrong API endpoints.
 
 ## 1.0.0 (2026-07-28)
 

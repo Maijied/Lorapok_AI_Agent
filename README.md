@@ -13,7 +13,7 @@
 
 # 🐛 Lorapok AI
 
-**Autonomous, action-oriented terminal AI assistant powered by Perplexity AI & Express REST API.**
+**Autonomous, action-oriented AI coding agent for terminal engineering & full-stack development.**
 
 *Plan. Code. Execute. Commit. Deploy — directly from your terminal.*
 
@@ -31,9 +31,13 @@
 
 | Feature | Description | Status |
 | :--- | :--- | :---: |
+| 🧠 **Multi-Provider Model Engine** | Native support for Google AI Studio (Gemini 3.6/3.5/2.0), Perplexity AI, and OpenRouter | `Ready` |
+| 🛡️ **Dynamic Model Validator** | Automatic zero-quota model filtering, non-text modality exclusion, & runtime failure caching | `Ready` |
+| 📊 **Token Capacity & Limit UI** | Real-time turn usage & available model context capacity tracking (`1.0M / 1.0M (100% Remaining)`) | `Ready` |
+| 🆓 **Free Tier Filter & Credit Notice** | Dedicated free model filters with clear provider billing instructions for paid credit models | `Ready` |
 | ⚡ **Token-Saving Response Cache** | Persistent SHA-256 LLM response cache (`/cache`) reducing token consumption & latency | `Ready` |
 | 💻 **Collapsible Bash Process Box** | Framed bash execution box with duration badges, exit status, and collapsible output | `Ready` |
-| 🤖 **Interactive AI REPL** | Terminal-first interactive chat powered by Perplexity API | `Ready` |
+| 🤖 **Interactive AI REPL** | Terminal-first interactive chat with context-aware workspace file injection | `Ready` |
 | 📝 **Proactive File Actions** | Proposes CREATE / UPDATE / DELETE file operations with interactive diff previews | `Ready` |
 | 🔗 **Full Git Suite** | Smart AI commits, branching, stashing, pushing, pulling, log viewing | `Ready` |
 | ⚡ **GitHub Actions Manager** | Monitor workflow runs, inspect jobs, and rerun failed pipelines | `Ready` |
@@ -103,13 +107,17 @@ rm -rf ~/.lorapok
 
 ## 🎯 Quick Start Guide
 
-1. **Set your API Key (Perplexity AI or OpenRouter):**
+1. **Set your Provider API Key (Google AI Studio, OpenRouter, or Perplexity):**
    ```bash
-   # Option A: OpenRouter API Key (Access Claude 3.5 Sonnet, GPT-4o, DeepSeek R1, Llama 3)
+   # Option A: Google AI Studio API Key (Gemini 3.6 Flash, 3.5 Flash-Lite, 2.0 Flash) [100% Free Tier Available]
+   # Get key at: https://aistudio.google.com/app/apikey
+   export GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxx
+
+   # Option B: OpenRouter API Key (Claude 3.7 Sonnet, GPT-4o, DeepSeek R1, Llama 3.3 70B)
    # Get key at: https://openrouter.ai/keys
    export OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx
 
-   # Option B: Perplexity AI API Key (Access Sonar, Sonar Pro, Reasoning models)
+   # Option C: Perplexity AI API Key (Sonar, Sonar Pro, Sonar Reasoning)
    # Get key at: https://www.perplexity.ai/settings/api
    export PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxx
    ```
@@ -133,7 +141,9 @@ Lorapok stores user settings in `~/.lorapok/config.json`. You can modify setting
 
 | Variable | Description | Default Value | Required |
 | :--- | :--- | :---: | :---: |
-| `PERPLEXITY_API_KEY` | Perplexity AI API Key for model inference | — | **Yes** |
+| `GEMINI_API_KEY` | Google AI Studio (Gemini) API Key | — | **Yes (if using Google)** |
+| `OPENROUTER_API_KEY` | OpenRouter API Key for multi-model access | — | **Yes (if using OpenRouter)** |
+| `PERPLEXITY_API_KEY` | Perplexity AI API Key for search grounding | — | **Yes (if using Perplexity)** |
 | `PORT` | Express REST API server port | `3847` | No |
 | `NODE_ENV` | Environment mode (`development` / `production`) | `production` | No |
 | `GH_TOKEN` | GitHub Access Token for Git & Actions integration | — | No |

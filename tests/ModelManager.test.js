@@ -21,7 +21,8 @@ describe('ModelManager Service', () => {
     test('should resolve dynamic model icons by vendor or family', () => {
         expect(modelManager.getModelIcon('anthropic/claude-3.5-sonnet')).toBe('🎭');
         expect(modelManager.getModelIcon('openai/gpt-4o')).toBe('⚡');
-        expect(modelManager.getModelIcon('google/gemini-2.0-flash')).toBe('✨');
+        expect(modelManager.getModelIcon('google/gemini-2.0-flash')).toBe('⚡');
+        expect(modelManager.getModelIcon('google/gemini-2.5-pro')).toBe('💎');
         expect(modelManager.getModelIcon('deepseek/deepseek-r1')).toBe('🧬');
         expect(modelManager.getModelIcon('meta-llama/llama-3.3-70b')).toBe('🦙');
         expect(modelManager.getModelIcon('mistralai/ministral-3b')).toBe('🌪️');

@@ -24,32 +24,31 @@ const CATEGORIES = {
  * Default Perplexity models categorized by expertise.
  */
 const DEFAULT_PERPLEXITY_MODELS = {
-    'sonar': { name: '⚡ Sonar (Perplexity)', category: 'fast', provider: 'perplexity', description: 'Fast, lightweight model with web grounding.' },
-    'sonar-pro': { name: '🎯 Sonar Pro (Perplexity)', category: 'research', provider: 'perplexity', description: 'Enhanced web search and deep query resolution.' },
-    'sonar-reasoning': { name: '🧠 Sonar Reasoning (Perplexity)', category: 'reasoning', provider: 'perplexity', description: 'Reasoning model with real-time web search capabilities.' },
-    'sonar-reasoning-pro': { name: '🔬 Sonar Reasoning Pro (Perplexity)', category: 'reasoning', provider: 'perplexity', description: 'Advanced chain-of-thought reasoning with deep web search.' },
-    'sonar-deep-research': { name: '🔍 Sonar Deep Research (Perplexity)', category: 'research', provider: 'perplexity', description: 'Exhaustive multi-step research engine for complex domain queries.' }
+    'sonar': { name: '⚡ Sonar (Perplexity)', category: 'fast', provider: 'perplexity', contextLength: 127000, rateLimit: 'Standard Tier (127k ctx)', description: 'Fast, lightweight model with web grounding.' },
+    'sonar-pro': { name: '🎯 Sonar Pro (Perplexity)', category: 'research', provider: 'perplexity', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Enhanced web search and deep query resolution.' },
+    'sonar-reasoning': { name: '🧠 Sonar Reasoning (Perplexity)', category: 'reasoning', provider: 'perplexity', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Reasoning model with real-time web search capabilities.' },
+    'sonar-reasoning-pro': { name: '🔬 Sonar Reasoning Pro (Perplexity)', category: 'reasoning', provider: 'perplexity', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Advanced chain-of-thought reasoning with deep web search.' },
+    'sonar-deep-research': { name: '🔍 Sonar Deep Research (Perplexity)', category: 'research', provider: 'perplexity', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Exhaustive multi-source research engine for complex domain queries.' }
 };
 
 /**
  * Default Google AI Studio models.
  */
 const DEFAULT_GOOGLE_MODELS = {
-    'gemini-3.6-flash': { name: '⚡ Gemini 3.6 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Next-gen fast multimodal flagship model.' },
-    'gemini-3.5-flash-lite': { name: '🚀 Gemini 3.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Ultra cost-effective lightweight model.' },
-    'gemini-3.5-flash': { name: '⚡ Gemini 3.5 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'High speed lightweight model.' },
-    'gemini-3.1-pro': { name: '✨ Gemini 3.1 Pro (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', description: 'Advanced reasoning and code architecture model.' },
-    'gemini-3.1-flash-lite': { name: '🚀 Gemini 3.1 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Fast lightweight preview model.' },
-    'gemini-3-pro-preview': { name: '✨ Gemini 3 Pro Preview (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', description: 'Gemini 3 Pro preview engine.' },
-    'gemini-3-flash-preview': { name: '⚡ Gemini 3 Flash Preview (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Gemini 3 Flash preview engine.' },
-    'gemini-2.5-pro': { name: '✨ Gemini 2.5 Pro (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', description: 'Google flagship coding & complex reasoning model.' },
-    'gemini-2.5-flash-lite': { name: '🚀 Gemini 2.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Extremely fast cost-optimized model.' },
-    'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Ultra-low latency production model with search grounding.' },
-    'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Extremely fast cost-optimized model.' },
-    'gemma-4-31b-it': { name: '🦙 Gemma 4 31B IT (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'free', description: 'Open weights state-of-the-art Gemma model.' },
-    'gemma-4-26b-a4b-it': { name: '🦙 Gemma 4 26B IT (Google AI Studio)', category: 'general', provider: 'google-ai-studio', tier: 'free', description: 'Lightweight open weights Gemma model.' },
-    'antigravity-preview-05-2026': { name: '🧠 Antigravity Agent Preview (Google AI Studio)', category: 'reasoning', provider: 'google-ai-studio', tier: 'pro', description: 'Autonomous coding agent preview model.' },
-    'deep-research-max-preview-04-2026': { name: '🔍 Deep Research Max Preview (Google AI Studio)', category: 'research', provider: 'google-ai-studio', tier: 'pro', description: 'Exhaustive research report generation model.' }
+    'gemini-3.6-flash': { name: '⚡ Gemini 3.6 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 2000000, rateLimit: '5 RPM | 250k TPM | 2M ctx', description: 'Next-gen fast multimodal flagship model.' },
+    'gemini-3.5-flash-lite': { name: '🚀 Gemini 3.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 250k TPM | 1M ctx', description: 'Ultra cost-effective lightweight model.' },
+    'gemini-3.5-flash': { name: '⚡ Gemini 3.5 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '5 RPM | 250k TPM | 1M ctx', description: 'High speed lightweight model.' },
+    'gemini-3.1-flash-lite': { name: '🚀 Gemini 3.1 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 250k TPM | 1M ctx', description: 'Fast lightweight preview model.' },
+    'gemini-3-pro-preview': { name: '✨ Gemini 3 Pro Preview (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', contextLength: 1000000, rateLimit: '2 RPM | 32k TPM | 1M ctx', description: 'Gemini 3 Pro preview engine.' },
+    'gemini-3-flash-preview': { name: '⚡ Gemini 3 Flash Preview (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '5 RPM | 250k TPM | 1M ctx', description: 'Gemini 3 Flash preview engine.' },
+    'gemini-2.5-pro': { name: '✨ Gemini 2.5 Pro (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', contextLength: 2000000, rateLimit: 'Pro / Billed Tier (0 RPM Free)', description: 'Google flagship coding & complex reasoning model.' },
+    'gemini-2.5-flash-lite': { name: '🚀 Gemini 2.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '10 RPM | 250k TPM | 1M ctx', description: 'Extremely fast cost-optimized model.' },
+    'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Ultra-low latency production model with search grounding.' },
+    'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 4M TPM | 1M ctx', description: 'Extremely fast cost-optimized model.' },
+    'gemma-4-31b-it': { name: '🦙 Gemma 4 31B IT (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'free', contextLength: 128000, rateLimit: '30 RPM | 128k ctx', description: 'Open weights state-of-the-art Gemma model.' },
+    'gemma-4-26b-a4b-it': { name: '🦙 Gemma 4 26B IT (Google AI Studio)', category: 'general', provider: 'google-ai-studio', tier: 'free', contextLength: 128000, rateLimit: '30 RPM | 128k ctx', description: 'Lightweight open weights Gemma model.' },
+    'antigravity-preview-05-2026': { name: '🧠 Antigravity Agent Preview (Google AI Studio)', category: 'reasoning', provider: 'google-ai-studio', tier: 'pro', contextLength: 500000, rateLimit: '60 RPM | 100k TPM | 500k ctx', description: 'Autonomous coding agent preview model.' },
+    'deep-research-max-preview-04-2026': { name: '🔍 Deep Research Max Preview (Google AI Studio)', category: 'research', provider: 'google-ai-studio', tier: 'pro', contextLength: 1000000, rateLimit: 'Exhaustive Deep Search', description: 'Exhaustive research report generation model.' }
 };
 
 /**
@@ -72,14 +71,21 @@ class ModelManager {
      * @param {string} [description=''] - Model description text
      * @returns {'coding'|'reasoning'|'research'|'fast'|'general'} Category ID string
      */
+    /**
+     * Categorize a model into an expertise category based on ID, name, or description.
+     * @param {string} modelId - Model ID string
+     * @param {string} [name=''] - Display name
+     * @param {string} [description=''] - Model description text
+     * @returns {'coding'|'reasoning'|'research'|'fast'|'general'} Category ID string
+     */
     categorizeModel(modelId, name = '', description = '') {
         const idLower = (modelId || '').toLowerCase();
         const text = `${modelId} ${name} ${description}`.toLowerCase();
 
-        if (idLower.includes('sonar-deep-research') || idLower.includes('sonar-pro') || text.includes('search') || text.includes('web search')) {
+        if (idLower.includes('deep-research') || idLower.includes('sonar-deep-research') || idLower.includes('sonar-pro') || text.includes('search') || text.includes('web search')) {
             return 'research';
         }
-        if (idLower.includes('r1') || idLower.includes('reasoning') || idLower.includes('o1') || idLower.includes('o3') || text.includes('reasoning') || text.includes('thinker')) {
+        if (idLower.includes('antigravity') || idLower.includes('r1') || idLower.includes('reasoning') || idLower.includes('o1') || idLower.includes('o3') || text.includes('reasoning') || text.includes('thinker') || text.includes('agent')) {
             return 'reasoning';
         }
         if (idLower.includes('coder') || idLower.includes('sonnet') || idLower.includes('codestral') || idLower.includes('deepseek-v3') || idLower.includes('qwen-coder') || idLower.includes('starcoder') || text.includes('code') || text.includes('coding')) {
@@ -100,9 +106,15 @@ class ModelManager {
     getModelIcon(modelId = '', name = '') {
         const text = `${modelId} ${name}`.toLowerCase();
 
+        if (text.includes('antigravity')) return '🧠';
+        if (text.includes('deep-research') || text.includes('research')) return '🔍';
+        if (text.includes('nano-banana') || text.includes('imagen') || text.includes('image')) return '🎨';
+        if (text.includes('tts') || text.includes('speech') || text.includes('audio')) return '🎙️';
+        if (text.includes('veo') || text.includes('video')) return '🎬';
         if (text.includes('claude') || text.includes('anthropic')) return '🎭';
         if (text.includes('gpt') || text.includes('openai') || text.includes('codex') || text.includes('o1') || text.includes('o3')) return '⚡';
-        if (text.includes('gemini') || text.includes('google') || text.includes('gemma')) return '✨';
+        if (text.includes('gemini') || text.includes('google')) return '✨';
+        if (text.includes('gemma')) return '🦙';
         if (text.includes('deepseek') || text.includes('r1') || text.includes('v3')) return '🧬';
         if (text.includes('llama') || text.includes('meta')) return '🦙';
         if (text.includes('mistral') || text.includes('mixtral') || text.includes('ministral') || text.includes('voxtral')) return '🌪️';
@@ -118,7 +130,6 @@ class ModelManager {
         if (text.includes('olmo') || text.includes('allenai')) return '🧠';
         if (text.includes('cogito')) return '💡';
         if (text.includes('code') || text.includes('coder')) return '💻';
-        if (text.includes('search') || text.includes('research')) return '🔍';
 
         return '🌐';
     }

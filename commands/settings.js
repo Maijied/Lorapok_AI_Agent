@@ -261,11 +261,22 @@ async function handleModelSelection(agent, config) {
         const choices = filteredModelKeys.map(id => {
             const item = models[id];
             const statusIcon = item.available ? chalk.green('🟢') : chalk.gray('🔒');
-            const providerTag = item.provider === 'openrouter' ? chalk.cyan('[OpenRouter]') : chalk.magenta('[Perplexity]');
+            let providerTag = chalk.magenta('[Perplexity]');
+            if (item.provider === 'google-ai-studio') providerTag = chalk.cyan('[Google AI Studio]');
+            if (item.provider === 'openrouter') providerTag = chalk.blue('[OpenRouter]');
             const tierTag = item.tier === 'free' ? chalk.green('(Free)') : chalk.yellow('(Pro)');
+            
+            let limitTag = '';
+            if (item.rateLimit) {
+                limitTag = chalk.gray(` ⚡ ${item.rateLimit}`);
+            } else if (item.contextLength) {
+                const ctxK = Math.round(item.contextLength / 1000);
+                limitTag = chalk.gray(` ⚡ ${ctxK >= 1000 ? `${(ctxK/1000).toFixed(1)}M` : `${ctxK}k`} ctx`);
+            }
+
             return {
                 name: id,
-                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}`
+                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}${limitTag}`
             };
         });
         

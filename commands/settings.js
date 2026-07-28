@@ -321,7 +321,7 @@ async function showSettings(agent, config) {
         },
         choices: [
             { name: 'name', message: '👤 Change User Name' },
-            { name: 'model', message: '🧠 Change LLM Model' },
+            { name: 'model', message: '🧠 LLM Model Configuration' },
             { name: 'cache', message: '⚡ LLM Response Cache Engine' },
             { name: 'language', message: '🌐 Change Default Language' },
             { name: 'theme', message: '🎨 CLI Theme Customizer' },

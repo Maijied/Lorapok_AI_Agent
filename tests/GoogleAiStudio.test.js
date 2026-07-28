@@ -43,39 +43,62 @@ describe('Google AI Studio Provider Support', () => {
         delete process.env.GOOGLE_API_KEY;
     });
 
-    test('should identify google-ai-studio provider for gemini models', () => {
+    test('should identify google-ai-studio provider for gemini, gemma, and agent models', () => {
         expect(agent.getProviderForModel('gemini-2.5-pro')).toBe('google-ai-studio');
         expect(agent.getProviderForModel('gemini-2.0-flash')).toBe('google-ai-studio');
         expect(agent.getProviderForModel('models/gemini-1.5-pro')).toBe('google-ai-studio');
+        expect(agent.getProviderForModel('gemma-4-31b-it')).toBe('google-ai-studio');
+        expect(agent.getProviderForModel('antigravity-preview-05-2026')).toBe('google-ai-studio');
+        expect(agent.getProviderForModel('deep-research-max-preview-04-2026')).toBe('google-ai-studio');
         expect(agent.getProviderForModel('google-ai-studio/custom')).toBe('google-ai-studio');
     });
 
-    test('should dynamically fetch Google AI Studio models from v1beta/models API endpoint', async () => {
+    test('should dynamically fetch all models supporting generateContent including Gemma and Agent models', async () => {
         process.env.GEMINI_API_KEY = 'test-key';
         axios.get.mockResolvedValue({
             data: {
                 models: [
                     {
-                        name: 'models/gemini-2.5-pro',
-                        displayName: 'Gemini 2.5 Pro',
-                        description: 'Flagship coding model',
-                        inputTokenLimit: 2000000
+                        name: 'models/gemini-3.6-flash',
+                        displayName: 'Gemini 3.6 Flash',
+                        description: 'Flagship fast model',
+                        inputTokenLimit: 2000000,
+                        supportedGenerationMethods: ['generateContent', 'countTokens']
                     },
                     {
-                        name: 'models/gemini-2.0-flash',
-                        displayName: 'Gemini 2.0 Flash',
-                        description: 'Fast multimodal model',
-                        inputTokenLimit: 1000000
+                        name: 'models/gemma-4-31b-it',
+                        displayName: 'Gemma 4 31B IT',
+                        description: 'Open weights model',
+                        inputTokenLimit: 128000,
+                        supportedGenerationMethods: ['generateContent', 'countTokens']
+                    },
+                    {
+                        name: 'models/antigravity-preview-05-2026',
+                        displayName: 'Antigravity Agent Preview',
+                        description: 'Autonomous coding model',
+                        inputTokenLimit: 500000,
+                        supportedGenerationMethods: ['generateContent']
+                    },
+                    {
+                        name: 'models/embedding-001',
+                        displayName: 'Embedding Model',
+                        description: 'Text embedding only',
+                        inputTokenLimit: 2048,
+                        supportedGenerationMethods: ['embedContent']
                     }
                 ]
             }
         });
 
         const googleModels = await modelManager.fetchGoogleModels('test-key');
-        expect(googleModels['gemini-2.5-pro']).toBeDefined();
-        expect(googleModels['gemini-2.5-pro'].provider).toBe('google-ai-studio');
-        expect(googleModels['gemini-2.5-pro'].tier).toBe('pro');
-        expect(googleModels['gemini-2.0-flash'].tier).toBe('free');
+        expect(googleModels['gemini-3.6-flash']).toBeDefined();
+        expect(googleModels['gemma-4-31b-it']).toBeDefined();
+        expect(googleModels['gemma-4-31b-it'].provider).toBe('google-ai-studio');
+        expect(googleModels['antigravity-preview-05-2026']).toBeDefined();
+        expect(googleModels['antigravity-preview-05-2026'].category).toBe('coding');
+        
+        // Embedding only model should be excluded from chat/generation catalog
+        expect(googleModels['embedding-001']).toBeUndefined();
         delete process.env.GEMINI_API_KEY;
     });
 
@@ -83,8 +106,9 @@ describe('Google AI Studio Provider Support', () => {
         delete process.env.GEMINI_API_KEY;
         delete process.env.GOOGLE_API_KEY;
         const googleModels = await modelManager.fetchGoogleModels(null);
+        expect(googleModels['gemini-3.6-flash']).toBeDefined();
+        expect(googleModels['gemini-3.6-flash'].provider).toBe('google-ai-studio');
         expect(googleModels['gemini-2.5-flash']).toBeDefined();
-        expect(googleModels['gemini-2.5-flash'].provider).toBe('google-ai-studio');
     });
 
     test('should execute chat API call using Google AI Studio OpenAI-compatible endpoint', async () => {

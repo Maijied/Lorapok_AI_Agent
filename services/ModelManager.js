@@ -35,11 +35,23 @@ const DEFAULT_PERPLEXITY_MODELS = {
  * Default Google AI Studio models.
  */
 const DEFAULT_GOOGLE_MODELS = {
+    'gemini-3.6-flash': { name: '⚡ Gemini 3.6 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Next-gen fast multimodal flagship model.' },
+    'gemini-3.5-flash': { name: '⚡ Gemini 3.5 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'High speed lightweight model.' },
+    'gemini-3.5-flash-lite': { name: '🚀 Gemini 3.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Ultra cost-effective lightweight model.' },
+    'gemini-3.1-pro': { name: '✨ Gemini 3.1 Pro (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', description: 'Advanced reasoning and code architecture model.' },
+    'gemini-3.1-flash-lite': { name: '🚀 Gemini 3.1 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Fast lightweight preview model.' },
+    'gemini-3-pro-preview': { name: '✨ Gemini 3 Pro Preview (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', description: 'Gemini 3 Pro preview engine.' },
+    'gemini-3-flash-preview': { name: '⚡ Gemini 3 Flash Preview (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Gemini 3 Flash preview engine.' },
     'gemini-2.5-pro': { name: '✨ Gemini 2.5 Pro (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', description: 'Google flagship coding & complex reasoning model.' },
     'gemini-2.5-flash': { name: '⚡ Gemini 2.5 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Next-gen multimodal fast & lightweight model.' },
+    'gemini-2.5-flash-lite': { name: '🚀 Gemini 2.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Extremely fast cost-optimized model.' },
     'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Ultra-low latency production model with search grounding.' },
     'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', description: 'Extremely fast cost-optimized model.' },
-    'gemini-1.5-pro': { name: '🎯 Gemini 1.5 Pro (Google AI Studio)', category: 'reasoning', provider: 'google-ai-studio', tier: 'pro', description: '1M+ token context window reasoning model.' }
+    'gemini-1.5-pro': { name: '🎯 Gemini 1.5 Pro (Google AI Studio)', category: 'reasoning', provider: 'google-ai-studio', tier: 'pro', description: '1M+ token context window reasoning model.' },
+    'gemma-4-31b-it': { name: '🦙 Gemma 4 31B IT (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'free', description: 'Open weights state-of-the-art Gemma model.' },
+    'gemma-4-26b-a4b-it': { name: '🦙 Gemma 4 26B IT (Google AI Studio)', category: 'general', provider: 'google-ai-studio', tier: 'free', description: 'Lightweight open weights Gemma model.' },
+    'antigravity-preview-05-2026': { name: '🧠 Antigravity Agent Preview (Google AI Studio)', category: 'reasoning', provider: 'google-ai-studio', tier: 'pro', description: 'Autonomous coding agent preview model.' },
+    'deep-research-max-preview-04-2026': { name: '🔍 Deep Research Max Preview (Google AI Studio)', category: 'research', provider: 'google-ai-studio', tier: 'pro', description: 'Exhaustive research report generation model.' }
 };
 
 /**

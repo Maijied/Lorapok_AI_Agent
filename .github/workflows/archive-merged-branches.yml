@@ -9,26 +9,42 @@ permissions:
 
 jobs:
   archive-branch:
-    if: github.event.pull_request.merged == true
+    if: |
+      github.event.pull_request.merged == true &&
+      (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'master') &&
+      !startsWith(github.event.pull_request.head.ref, 'main') &&
+      !startsWith(github.event.pull_request.head.ref, 'master') &&
+      !startsWith(github.event.pull_request.head.ref, 'archive/')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Create Archive Branch
+      - name: Configure Git Identity
+        run: |
+          git config user.name "Lorapok CI Bot"
+          git config user.email "bot@lorapok.tech"
+
+      - name: Archive and Remove Feature Branch
         run: |
           HEAD_REF="${{ github.event.pull_request.head.ref }}"
           ARCHIVE_REF="archive/${HEAD_REF}"
 
-          echo "📦 Archiving branch '${HEAD_REF}' to '${ARCHIVE_REF}'..."
+          echo "📦 Archiving feature branch '${HEAD_REF}' to '${ARCHIVE_REF}'..."
           
-          # Fetch all commits
           git fetch origin
-
-          # Create and push archive branch
-          git checkout -b "${ARCHIVE_REF}" "origin/${HEAD_REF}" || git checkout -b "${ARCHIVE_REF}" "${{ github.event.pull_request.head.sha }}"
-          git push origin "${ARCHIVE_REF}"
+          git checkout -b "${ARCHIVE_REF}" "${{ github.event.pull_request.head.sha }}"
+          git push origin "${ARCHIVE_REF}" --force
 
           echo "✅ Branch successfully archived as '${ARCHIVE_REF}'!"
+
+          if git ls-remote --exit-code --heads origin "${HEAD_REF}" > /dev/null 2>&1; then
+            echo "🧹 Removing original branch '${HEAD_REF}' from remote..."
+            git push origin --delete "${HEAD_REF}" || true
+          fi
+

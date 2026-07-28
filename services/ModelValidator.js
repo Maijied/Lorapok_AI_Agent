@@ -66,7 +66,19 @@ class ModelValidator {
         const provider = meta.provider || 'perplexity';
 
         if (provider === 'google-ai-studio') {
-            return Boolean(googleKey && String(googleKey).trim() !== '');
+            const hasKey = Boolean(googleKey && String(googleKey).trim() !== '');
+            if (!hasKey) return false;
+
+            const zeroQuotaOrDeprecated = [
+                'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro',
+                'gemini-3.1-pro', 'gemini-3.1-flash', 'gemini-1.0-pro', 'gemini-pro',
+                'lyria-3-clip-preview', 'lyria-3-pro-preview',
+                'gemini-robotics-er-1.5-preview', 'gemini-robotics-er-1.6-preview'
+            ];
+            if (zeroQuotaOrDeprecated.includes(id)) {
+                return false;
+            }
+            return true;
         }
         if (provider === 'openrouter') {
             return Boolean(openRouterKey && String(openRouterKey).trim() !== '');

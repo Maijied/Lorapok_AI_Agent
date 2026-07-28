@@ -199,12 +199,12 @@ async function handleModelSelection(agent, config) {
         if (filterMode === 'back') return;
 
         // Filter out unusable models so only usable models appear in selection menus
-        let usableKeys = Object.keys(models).filter(id => models[id] && models[id].available !== false);
+        let usableKeys = Object.keys(models).filter(id => models[id] && models[id].available === true);
         let filteredModelKeys = [...usableKeys];
         let menuTitle = '';
 
         if (filterMode === 'ready') {
-            filteredModelKeys = usableKeys.filter(id => models[id].available);
+            filteredModelKeys = Object.keys(models).filter(id => models[id] && models[id].available === true);
             menuTitle = 'Ready Models';
         } else if (filterMode === 'category') {
             const categoryMenu = new Select({
@@ -268,7 +268,7 @@ async function handleModelSelection(agent, config) {
 
         const choices = filteredModelKeys.map(id => {
             const item = models[id];
-            const statusIcon = item.available ? chalk.green('🟢') : chalk.gray('🔒');
+            const statusIcon = item.available ? chalk.green('🟢') : chalk.red('🔴');
             
             // Clean duplicate provider suffix from model display name
             const cleanName = (item.name || id)

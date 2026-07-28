@@ -95,7 +95,7 @@ describe('Google AI Studio Provider Support', () => {
         expect(googleModels['gemma-4-31b-it']).toBeDefined();
         expect(googleModels['gemma-4-31b-it'].provider).toBe('google-ai-studio');
         expect(googleModels['antigravity-preview-05-2026']).toBeDefined();
-        expect(googleModels['antigravity-preview-05-2026'].category).toBe('coding');
+        expect(googleModels['antigravity-preview-05-2026'].category).toBe('agent');
         
         // Embedding only model should be excluded from chat/generation catalog
         expect(googleModels['embedding-001']).toBeUndefined();

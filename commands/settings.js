@@ -211,7 +211,13 @@ async function handleModelSelection(agent, config) {
                     { name: 'coding', message: '💻 Coding & Engineering' },
                     { name: 'reasoning', message: '🔬 Complex Logic & Reasoning' },
                     { name: 'research', message: '🔍 Web Research & Search' },
+                    { name: 'agent', message: '🤖 Autonomous Agents & Tools' },
+                    { name: 'image', message: '🎨 Image & Visual Generation' },
+                    { name: 'audio', message: '🎙️ Audio & Voice Synthesis' },
+                    { name: 'video', message: '🎬 Video Generation' },
+                    { name: 'openweights', message: '🦙 Open Weights & Open Source' },
                     { name: 'fast', message: '⚡ Fast & Lightweight' },
+                    { name: 'general', message: '🌐 General Intelligence' },
                     { name: 'back', message: '🔙 Back' }
                 ],
                 result(name) { return this.map(name)[name]; }

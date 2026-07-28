@@ -16,6 +16,11 @@ const CATEGORIES = {
     CODING: { id: 'coding', name: '💻 Coding & Engineering', description: 'Specialized for code generation, debugging, refactoring, and architecture.' },
     REASONING: { id: 'reasoning', name: '🔬 Complex Logic & Reasoning', description: 'Advanced step-by-step reasoning, mathematical & algorithmic analysis.' },
     RESEARCH: { id: 'research', name: '🔍 Web Research & Search', description: 'Live web search, citation lookup, and deep topic research.' },
+    AGENT: { id: 'agent', name: '🤖 Autonomous Agents & Tools', description: 'Autonomous coding agents, tool use, and computer use models.' },
+    IMAGE: { id: 'image', name: '🎨 Image & Visual Generation', description: 'Image generation, editing, and visual creation models.' },
+    AUDIO: { id: 'audio', name: '🎙️ Audio & Voice Synthesis', description: 'Text-to-speech, audio generation, and voice synthesis.' },
+    VIDEO: { id: 'video', name: '🎬 Video Generation', description: 'Video creation and motion generation models.' },
+    OPENWEIGHTS: { id: 'openweights', name: '🦙 Open Weights & Open Source', description: 'Open-weights models like Gemma, Llama, and Mistral.' },
     FAST: { id: 'fast', name: '⚡ Fast & Lightweight', description: 'High speed, low latency, ideal for quick iterations and minor tasks.' },
     GENERAL: { id: 'general', name: '🌐 General Intelligence', description: 'All-round strong performance across versatile multimodal tasks.' }
 };
@@ -82,14 +87,29 @@ class ModelManager {
         const idLower = (modelId || '').toLowerCase();
         const text = `${modelId} ${name} ${description}`.toLowerCase();
 
+        if (idLower.includes('nano-banana') || idLower.includes('imagen') || idLower.includes('image') || idLower.includes('flux') || idLower.includes('dall-e')) {
+            return 'image';
+        }
+        if (idLower.includes('tts') || idLower.includes('speech') || idLower.includes('audio') || idLower.includes('lyria')) {
+            return 'audio';
+        }
+        if (idLower.includes('veo') || idLower.includes('video')) {
+            return 'video';
+        }
+        if (idLower.includes('antigravity') || idLower.includes('computer-use') || idLower.includes('agent')) {
+            return 'agent';
+        }
         if (idLower.includes('deep-research') || idLower.includes('sonar-deep-research') || idLower.includes('sonar-pro') || text.includes('search') || text.includes('web search')) {
             return 'research';
         }
-        if (idLower.includes('antigravity') || idLower.includes('r1') || idLower.includes('reasoning') || idLower.includes('o1') || idLower.includes('o3') || text.includes('reasoning') || text.includes('thinker') || text.includes('agent')) {
+        if (idLower.includes('r1') || idLower.includes('reasoning') || idLower.includes('o1') || idLower.includes('o3') || text.includes('reasoning') || text.includes('thinker')) {
             return 'reasoning';
         }
         if (idLower.includes('coder') || idLower.includes('sonnet') || idLower.includes('codestral') || idLower.includes('deepseek-v3') || idLower.includes('qwen-coder') || idLower.includes('starcoder') || text.includes('code') || text.includes('coding')) {
             return 'coding';
+        }
+        if (idLower.includes('gemma') || idLower.includes('llama') || idLower.includes('mistral') || idLower.includes('qwen') || idLower.includes('phi')) {
+            return 'openweights';
         }
         if (idLower.includes('flash') || idLower.includes('mini') || idLower.includes('haiku') || idLower.includes('sonar') || text.includes('fast') || text.includes('lightweight')) {
             return 'fast';

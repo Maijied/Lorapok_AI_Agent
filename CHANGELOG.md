@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.1.0...v1.2.0) (2026-07-28)
+
+
+### Features
+
+* Add Autonomous Agents, Image, Audio, Video, and Open Weights categories to CLI category filter menu ([43dc42e](https://github.com/Maijied/Lorapok_AI_Agent/commit/43dc42ea62d48437e5ae7f626be9671a0af30eaf))
+* Add DEFAULT_OPENROUTER_MODELS fallback catalog to ModelManager ([1943f65](https://github.com/Maijied/Lorapok_AI_Agent/commit/1943f654009994a11a71b41da4afd4458b21f016))
+* Add dynamic token capacity and remaining token limit counter to chat response footer ([ad129a6](https://github.com/Maijied/Lorapok_AI_Agent/commit/ad129a69de59dac5d9b7e10a31d9c981d886ecd0))
+* Add ModelCacheService and dynamic modality/quota validation to replace static excluded models array ([6029d76](https://github.com/Maijied/Lorapok_AI_Agent/commit/6029d768199803598f00fc7468a50188c8aa1f6b))
+* Add ModelValidator middleware service to filter out unusable models from selection menu ([173446b](https://github.com/Maijied/Lorapok_AI_Agent/commit/173446b07c7d2e5eae0f92d80d15917d3603cf04))
+* Add native Google AI Studio (Gemini) provider integration & dynamic model fetching ([b01e4ec](https://github.com/Maijied/Lorapok_AI_Agent/commit/b01e4ecaa04942cf5fab464cfd6fa5a7ad8a1afc))
+* Add professional vendor icon mappings for Grok, Poolside, Ling, Cohere, Baichuan, Yi, Stepfun, and AI models ([f62b494](https://github.com/Maijied/Lorapok_AI_Agent/commit/f62b494ff0cbcc80ed0a1615868a276dc7d786a4))
+* Add quota reset windows and retry-after header handling across error messages and model UI selector ([6416d1a](https://github.com/Maijied/Lorapok_AI_Agent/commit/6416d1a0b76942aab89eb723a34e5304faeee6ea))
+* Add rate limit, quota, and context window usage tags to model selection UI across all AI providers ([b50fa52](https://github.com/Maijied/Lorapok_AI_Agent/commit/b50fa5250b74cac87ffd5dc20d0800b3f3e70c0f))
+* Dynamically extract and format context and pricing limits directly from live API responses ([825e049](https://github.com/Maijied/Lorapok_AI_Agent/commit/825e049a18211b85ab631a132181121f575507b9))
+* Dynamically process all models supporting generateContent from Google AI Studio response ([460cdf5](https://github.com/Maijied/Lorapok_AI_Agent/commit/460cdf5cb5b4d574a8b4dab7506849fc1be999a4))
+* Enforce universal free vs credit-required model filtering across all providers (Google AI Studio, Perplexity, OpenRouter) ([9351cfd](https://github.com/Maijied/Lorapok_AI_Agent/commit/9351cfd01a4f6a87dbbf77c010e1aaed78bc27de))
+* Exclude zero-quota model gemini-2.5-pro from catalog and add automatic fallback model routing on 429/404 errors ([7738cf3](https://github.com/Maijied/Lorapok_AI_Agent/commit/7738cf34cd828df69ff7a4e341748a5384340b24))
+* Extract dedicated ModelValidator service in services/ModelValidator.js with unit test suite ([6bdd79d](https://github.com/Maijied/Lorapok_AI_Agent/commit/6bdd79d19490c1bbe39c35a3907bfca7211d35e4))
+* Modularize renderTokenUsageBox helper and render structured model card after every AI response ([6824338](https://github.com/Maijied/Lorapok_AI_Agent/commit/6824338a572e9bef146820232f45eb620f4003c8))
+* Restrict ready/category/provider/tier selection to free active models and categorize paid credit models under View All Supported Models ([a85e58f](https://github.com/Maijied/Lorapok_AI_Agent/commit/a85e58f8171415ca1e12b7b33beb59ee5321748e))
+* Standardize dynamic rate limit parsing, quota reset tips, and retry headers across all 3 AI providers (Google AI Studio, OpenRouter, Perplexity) ([6978f19](https://github.com/Maijied/Lorapok_AI_Agent/commit/6978f19554c9924dba4969ed1a0df16ddf8ee10b))
+
+
+### Bug Fixes
+
+* Define isPerplexity variable and route recursive fallback calls through callPerplexityAPI ([b012fb3](https://github.com/Maijied/Lorapok_AI_Agent/commit/b012fb356cda9eb0806a1aaa381dbc573ebb70f0))
+* Dynamically record and report fallback model usage in card boxes, header cards, and session recap breakdown ([ae18fd2](https://github.com/Maijied/Lorapok_AI_Agent/commit/ae18fd227759224a390e0c354a3f9b1a8770a89e))
+* Exclude zero-quota and deprecated Google AI Studio models from ready selection catalog ([b864e17](https://github.com/Maijied/Lorapok_AI_Agent/commit/b864e17a532323b1e7ab097e7e8b4c32e9dc589b))
+* Import chalk library in lib/agent.js for error fallback formatting ([d4eb687](https://github.com/Maijied/Lorapok_AI_Agent/commit/d4eb6875ff152d74e0320e4ad4de4874fb7499c0))
+* Parse Google AI Studio array error responses and format 429/404 messages ([1502eb5](https://github.com/Maijied/Lorapok_AI_Agent/commit/1502eb53cdbf9a03ab03befcdddc9bbbf014fb26))
+* Replace deprecated gemini-2.5-flash model with active models (gemini-3.6-flash, gemini-3.5-flash-lite) and filter unavailable models ([43eba59](https://github.com/Maijied/Lorapok_AI_Agent/commit/43eba593967c00f5044559d556c54fc29a377c7b))
+* Resolve duplicate activeModelMeta identifier declaration in commands/chat.js ([38ffce7](https://github.com/Maijied/Lorapok_AI_Agent/commit/38ffce7840bb0e6a214e00dcccaee9c9329ce282))
+* Sub-brand icon resolution logic ensuring Gemini Pro, Flash, TTS, Tools, and Image models render unique distinct icons ([df84b50](https://github.com/Maijied/Lorapok_AI_Agent/commit/df84b50b05b0da44d36a7ca9e64a99421f9fbf3c))
+* Update Fast & Lightweight icon to 🚀 Rocket and enhance /analyze output rendering and error visibility ([c38e4a7](https://github.com/Maijied/Lorapok_AI_Agent/commit/c38e4a7435e07c19a5f8ae3e57cc744639019359))
+
 ## [1.1.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.0.0...v1.1.0) (2026-07-28)
 
 

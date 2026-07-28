@@ -92,5 +92,20 @@ describe('FileManager', () => {
         expect(res.data[0].lineNumber).toBe(1);
         expect(res.data[0].lineContent).toContain('targetFunc');
     });
+
+    test('should perform multi-chunk replacements via multiReplaceFileContent', () => {
+        const fileContent = 'const a = "OLD_A";\nconst b = "OLD_B";';
+        fs.writeFileSync(path.join(testDir, 'multi.js'), fileContent);
+        const res = fm.multiReplaceFileContent('multi.js', [
+            { targetContent: 'OLD_A', replacementContent: 'NEW_A' },
+            { targetContent: 'OLD_B', replacementContent: 'NEW_B' }
+        ]);
+        expect(res.success).toBe(true);
+        expect(res.data.chunksApplied).toBe(2);
+        const updated = fs.readFileSync(path.join(testDir, 'multi.js'), 'utf8');
+        expect(updated).toContain('NEW_A');
+        expect(updated).toContain('NEW_B');
+    });
 });
+
 

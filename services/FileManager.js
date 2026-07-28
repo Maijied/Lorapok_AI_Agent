@@ -378,6 +378,48 @@ class FileManager {
     }
 
     /**
+     * Perform multiple non-contiguous string replacements in a single file.
+     * @param {string} filePath - Target file path
+     * @param {Array<{ targetContent: string, replacementContent: string }>} chunks - Array of replacement chunks
+     * @returns {{ success: boolean, data?: { path: string, chunksApplied: number }, error?: string }} Result
+     */
+    multiReplaceFileContent(filePath, chunks = []) {
+        try {
+            const readRes = this.readFile(filePath);
+            if (!readRes.success) return readRes;
+
+            let current = readRes.data;
+            let applied = 0;
+
+            for (const chunk of chunks) {
+                if (!chunk || !chunk.targetContent || typeof chunk.replacementContent !== 'string') continue;
+                if (!current.includes(chunk.targetContent)) {
+                    return {
+                        success: false,
+                        error: `❌ Target content chunk not found in ${filePath}: "${chunk.targetContent.slice(0, 30)}..."`
+                    };
+                }
+                current = current.replace(chunk.targetContent, chunk.replacementContent);
+                applied++;
+            }
+
+            const writeRes = this.writeFile(filePath, current);
+            if (!writeRes.success) return writeRes;
+
+            return {
+                success: true,
+                data: {
+                    path: filePath,
+                    chunksApplied: applied
+                }
+            };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    }
+
+
+    /**
      * High-performance grep search across project workspace.
      * @param {string} query - Text or regex pattern to find
      * @param {string} [searchPath='.'] - Search directory path

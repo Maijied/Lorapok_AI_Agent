@@ -1,8 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (.agents/BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-07-28 | Version: 1.0.0 | Test Suite: 16/16 Passed (156 Tests)*
-
+> *Last Synced: 2026-07-28 | Version: 1.0.0 | Test Suite: 17/17 Passed (161 Tests)*
 
 ---
 
@@ -10,6 +9,8 @@
 **Lorapok AI Agent** is an enterprise-grade, action-oriented AI Coding Agent featuring:
 - **CLI Engine**: Interactive terminal UI (`bin/lorapok.js`, `index.js`) built with Boxen, Figlet, Ora, Enquirer, and Marked.
 - **REST API Server**: Express server (`server.js`) with CORS, file upload handling (`multer`), and session logging.
+- **Token-Saving Cache Engine**: Persistent SHA-256 response caching (`lib/cache.js`) tracking tokens saved and decreasing latency.
+- **Collapsible Bash Execution Box**: Framed bash execution box (`commands/utils.js`) displaying live duration, exit status, and collapsible output.
 - **Agent Runtimes**: Dual execution capability (Native Node.js >= 18 and Docker Compose container fallback).
 - **Core Integrations**: Multi-provider LLM support (Perplexity, OpenAI), Git repository management (`services/GitManager.js`), file system operations (`services/FileManager.js`), and action rerun execution (`services/ActionsManager.js`).
 
@@ -26,13 +27,14 @@ Lorapok AI Agent Workspace
 │   ├── auth.js                  # GitHub OAuth & token management
 │   ├── chat.js                  # Interactive terminal chat prompt
 │   ├── git.js                   # Git CLI actions & branch menus
-│   ├── settings.js              # Theme customization & log viewer
+│   ├── settings.js              # Theme customization, cache & log viewer
 │   ├── system.js                # Environment diagnostics
-│   ├── utils.js                 # Shared CLI utility functions
+│   ├── utils.js                 # Shared CLI utility functions & bash execution box
 │   └── workflow.js              # Multi-step automation workflows
 ├── lib/
 │   ├── agent-enhanced.js        # Context-aware AI Agent implementation
 │   ├── agent.js                 # Core LLM API communication layer
+│   ├── cache.js                 # SHA-256 Response Caching Engine & Token Savings Tracker
 │   ├── config.js                # Configuration manager (~/.lorapok/config.json)
 │   ├── errors.js                # Custom LorapokError domain error types
 │   ├── history.js               # Session & conversation history store
@@ -46,7 +48,8 @@ Lorapok AI Agent Workspace
 │   └── GithubAuth.js            # OAuth token management
 ├── server.js                    # Express REST API backend
 ├── website/ & LorapokAiBuild/   # Frontend web UI & GitHub Pages build
-├── tests/                       # Jest test suite (16 suites, 155 tests)
+├── tests/                       # Jest test suite (17 suites, 161 tests)
+
 └── .agents/                     # AI Agent rules, skills, subagents & MCP config
     ├── AGENTS.md                # Workspace developer & agent directives
     ├── BRAIN.md                 # System memory sync copy

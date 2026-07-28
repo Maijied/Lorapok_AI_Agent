@@ -30,9 +30,10 @@
 
 | Feature | Description | Status |
 | :--- | :--- | :---: |
+| ⚡ **Token-Saving Response Cache** | Persistent SHA-256 LLM response cache (`/cache`) reducing token consumption & latency | `Ready` |
+| 💻 **Collapsible Bash Process Box** | Framed bash execution box with duration badges, exit status, and collapsible output | `Ready` |
 | 🤖 **Interactive AI REPL** | Terminal-first interactive chat powered by Perplexity API | `Ready` |
 | 📝 **Proactive File Actions** | Proposes CREATE / UPDATE / DELETE file operations with interactive diff previews | `Ready` |
-| 💻 **Safe Bash Execution** | Shell command execution with safety confirmations and CWD tracking | `Ready` |
 | 🔗 **Full Git Suite** | Smart AI commits, branching, stashing, pushing, pulling, log viewing | `Ready` |
 | ⚡ **GitHub Actions Manager** | Monitor workflow runs, inspect jobs, and rerun failed pipelines | `Ready` |
 | 🔐 **GitHub Auth System** | Support for Personal Access Tokens, OAuth Device Flow, and GH CLI integration | `Ready` |
@@ -40,6 +41,7 @@
 | 📋 **Plan & Execute Workflow** | `/plan` multi-step workflow: Plan → Checklist → Execution → Summary | `Ready` |
 | 🐳 **Docker-First Environment** | Isolated Docker container execution with host volume mounting | `Ready` |
 | 🌐 **REST API Server** | Express web server providing REST endpoints (default port 3847) | `Ready` |
+
 
 ---
 

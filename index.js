@@ -183,7 +183,9 @@ async function promptSlashAutoComplete() {
 
             { role: 'heading', message: chalk.cyan.bold('\n  🚀 CONTROLS') },
             { name: '/bypass', message: `    🚀 ${chalk.bold('/bypass')}    ${chalk.gray('‣ Toggle Auto-Approve mode')}` },
+            { name: '/cache', message: `    ⚡ ${chalk.bold('/cache')}     ${chalk.gray('‣ Token-saving response cache stats & controls')}` },
             { name: '/settings', message: `    🎨 ${chalk.bold('/settings')}  ${chalk.gray('‣ Customize themes & preferences')}` },
+
 
             { role: 'heading', message: chalk.cyan.bold('\n  🔗 DEVOPS & GIT') },
             { name: '/git', message: `    🔗 ${chalk.bold('/git')}       ${chalk.gray('‣ Git operations manager')}` },

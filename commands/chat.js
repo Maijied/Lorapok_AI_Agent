@@ -138,9 +138,11 @@ async function handleChat(input, context, options = {}) {
         // Render model footer tag
         const modelName = config.getModel();
         const termWidth = process.stdout.columns || 80;
-        const modelLabel = chalk.gray(`🧠 Using ${modelName}`);
+        const cacheTag = response.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
+        const modelLabel = chalk.gray(`🧠 Using ${modelName}`) + cacheTag;
         const padLen = Math.max(0, termWidth - modelLabel.replace(/\u001b\[\d+m/g, '').length - 2);
         console.log(' '.repeat(padLen) + modelLabel + '\n');
+
 
         // Parse & execute file/shell action blocks
         const actions = agent.parseActions(response.content);

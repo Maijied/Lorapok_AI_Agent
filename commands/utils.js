@@ -65,9 +65,27 @@ function isCommandSafe(command) {
 }
 
 /**
- * Execute a shell command safely with timeout and CWD tracking.
+ * Helper to fold long terminal output strings cleanly.
+ * @param {string} text - Raw output string
+ * @param {number} [maxLines=25] - Threshold line count before folding
+ * @returns {string} Formatted output string
+ */
+function formatCollapsibleOutput(text, maxLines = 25) {
+    if (!text) return '';
+    const lines = text.split('\n');
+    if (lines.length <= maxLines) return text.trim();
+
+    const top = lines.slice(0, 10).join('\n');
+    const bottom = lines.slice(-10).join('\n');
+    const hiddenCount = lines.length - 20;
+
+    return `${top}\n${chalk.gray(`\n  --- 📂 [Folded: ${hiddenCount} lines hidden | Full output captured] ---\n`)}\n${bottom}`.trim();
+}
+
+/**
+ * Execute a shell command safely with timeout, CWD tracking, and collapsible process box.
  * @param {string} command - Shell command to execute
- * @returns {{ success: boolean, stdout?: string, stderr?: string, timedOut?: boolean, error?: string }} Execution outcome
+ * @returns {{ success: boolean, stdout?: string, stderr?: string, duration?: number, timedOut?: boolean, error?: string }} Execution outcome
  */
 function executeCommand(command) {
     if (!isCommandSafe(command)) {
@@ -75,8 +93,22 @@ function executeCommand(command) {
         return { success: false, error: 'Command blocked for safety reasons.' };
     }
 
+    const boxen = require('boxen');
+    const startTime = Date.now();
+
     try {
-        console.log(chalk.gray('Executing...'));
+        const headerInfo = [
+            `${chalk.bold.cyan('💻 $')} ${chalk.bold.white(command)}`,
+            `${chalk.gray('📂 Directory:')} ${chalk.gray(currentCwd)}`
+        ].join('\n');
+
+        console.log(boxen(headerInfo, {
+            padding: { top: 0, bottom: 0, left: 1, right: 1 },
+            title: chalk.cyan.bold(' ⚡ RUNNING BASH COMMAND '),
+            titleAlignment: 'left',
+            borderColor: 'cyan',
+            borderStyle: 'round'
+        }));
 
         const isWindows = process.platform === 'win32';
         const shell = isWindows ? true : (fs.existsSync('/bin/bash') ? '/bin/bash' : true);
@@ -89,33 +121,42 @@ function executeCommand(command) {
             stdio: ['inherit', 'pipe', 'pipe']
         });
 
-        const boxen = require('boxen');
+        const duration = Date.now() - startTime;
+        const isSuccess = result.status === 0;
+        const borderColor = isSuccess ? 'green' : 'red';
+        const titleBadge = isSuccess
+            ? chalk.green.bold(` ✔ COMMAND SUCCESS (${duration}ms) `)
+            : chalk.red.bold(` ❌ COMMAND FAILED (Code ${result.status ?? 'ERR'}, ${duration}ms) `);
 
-        if (result.stdout) {
-            console.log(boxen(result.stdout.trim(), {
+        if (result.stdout && result.stdout.trim()) {
+            const formattedStdout = formatCollapsibleOutput(result.stdout.trim());
+            console.log(boxen(formattedStdout, {
                 padding: 1,
-                title: chalk.cyan(' 📄 COMMAND OUTPUT '),
+                title: titleBadge,
                 titleAlignment: 'left',
-                borderColor: 'cyan',
+                borderColor: borderColor,
                 borderStyle: 'round'
             }));
-        }
-
-        if (result.stderr && (result.status !== 0 || result.stderr.length > 0)) {
-            const isWarning = result.status === 0;
-            const borderColor = isWarning ? 'yellow' : 'red';
-            const title = isWarning ? chalk.yellow(' ⚠️ COMMAND WARNING ') : chalk.red(' ❌ COMMAND ERROR ');
-            
-            console.error(boxen(result.stderr.trim(), {
+        } else if (!isSuccess && result.stderr && result.stderr.trim()) {
+            const formattedStderr = formatCollapsibleOutput(result.stderr.trim());
+            console.error(boxen(formattedStderr, {
                 padding: 1,
-                title: title,
+                title: titleBadge,
+                titleAlignment: 'left',
+                borderColor: 'red',
+                borderStyle: 'round'
+            }));
+        } else {
+            console.log(boxen(chalk.gray(`(No output returned in ${duration}ms)`), {
+                padding: { top: 0, bottom: 0, left: 1, right: 1 },
+                title: titleBadge,
                 titleAlignment: 'left',
                 borderColor: borderColor,
                 borderStyle: 'round'
             }));
         }
 
-        if (result.status === 0 && (command.includes('cd ') || command.trim().startsWith('cd') || command.trim() === 'cd')) {
+        if (isSuccess && (command.includes('cd ') || command.trim().startsWith('cd') || command.trim() === 'cd')) {
             const parts = command.split(/(?:&&|\|\||;)/);
             for (const part of parts) {
                 const trimmed = part.trim();
@@ -137,18 +178,30 @@ function executeCommand(command) {
         }
 
         return {
-            success: result.status === 0,
+            success: isSuccess,
             stdout: result.stdout,
             stderr: result.stderr,
+            duration,
             timedOut: result.error?.code === 'ETIMEDOUT'
         };
     } catch (error) {
+        const duration = Date.now() - startTime;
+        console.error(boxen(chalk.red(`Execution Error: ${error.message}`), {
+            padding: 1,
+            title: chalk.red.bold(` ❌ EXECUTION ERROR (${duration}ms) `),
+            titleAlignment: 'left',
+            borderColor: 'red',
+            borderStyle: 'round'
+        }));
+
         return {
             success: false,
-            error: error.message
+            error: error.message,
+            duration
         };
     }
 }
+
 
 /**
  * Run async operation with a terminal spinner and ESC keypress cancellation support.

@@ -224,9 +224,13 @@ async function dispatchSlashCommand(input, context) {
         case 'config':
             return handleConfigCommand(args[0], args[1], context);
 
+        case 'cache':
+            return require('./settings').handleCacheCommand(args[0], context);
+
         case 'chat':
             console.log(chalk.cyan('\n💬 Interactive AI Chat Mode Active. Ask anything!\n'));
             return { success: true, mode: 'chat' };
+
 
         case 'menu':
             return showSystemMenu(context);

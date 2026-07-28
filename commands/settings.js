@@ -32,6 +32,7 @@ async function showSettings(agent, config) {
         choices: [
             { name: 'name', message: '👤 Change User Name' },
             { name: 'model', message: '🧠 Change LLM Model' },
+            { name: 'cache', message: '⚡ LLM Response Cache Engine' },
             { name: 'language', message: '🌐 Change Default Language' },
             { name: 'theme', message: '🎨 CLI Theme Customizer' },
             { name: 'key', message: '🔑 Update API Key' },
@@ -42,6 +43,12 @@ async function showSettings(agent, config) {
 
     const choice = await select.run().catch(() => 'back');
     if (choice === 'back' || choice === 'Back') return { success: true };
+
+    if (choice === 'cache') {
+        await handleCacheCommand(null, { agent, config, ui: TerminalUI });
+        return { success: true };
+    }
+
 
     if (choice === 'name') {
         const currentName = config.getUserName() || 'Developer';
@@ -244,9 +251,83 @@ async function handleConfigCommand(key, value, context) {
     return { success: true, key: cleanKey, value: cleanVal };
 }
 
+/**
+ * Slash command & settings handler for LLM response cache (`/cache [action]`).
+ * @param {string} [subCommand] - Optional subcommand ('stats', 'clear', 'toggle', 'enable', 'disable')
+ * @param {Object} context - CommandContext containing { agent, config, ui }
+ * @returns {Promise<{ success: boolean, stats?: Object }>} Execution result
+ */
+async function handleCacheCommand(subCommand, context) {
+    const { agent, config, ui } = context;
+    const cache = agent ? agent.responseCache : new (require('../lib/cache'))();
+
+    if (subCommand === 'clear') {
+        cache.clear();
+        console.log(ui.formatSuccess('Response cache cleared successfully.'));
+        return { success: true };
+    }
+
+    if (subCommand === 'enable' || subCommand === 'on') {
+        config.setCacheEnabled(true);
+        cache.setEnabled(true);
+        console.log(ui.formatSuccess('Response caching ENABLED.'));
+        return { success: true };
+    }
+
+    if (subCommand === 'disable' || subCommand === 'off') {
+        config.setCacheEnabled(false);
+        cache.setEnabled(false);
+        console.log(ui.formatSuccess('Response caching DISABLED.'));
+        return { success: true };
+    }
+
+    // Default interactive stats & management menu
+    const stats = cache.getStats();
+    const boxen = require('boxen');
+
+    const statsOutput = [
+        chalk.cyan.bold('⚡ LORAPOK RESPONSE CACHE ENGINE'),
+        '',
+        `Status: ${stats.enabled ? chalk.green.bold('Active / Enabled') : chalk.yellow.bold('Disabled')}`,
+        `Cache Hits: ${chalk.green.bold(stats.hits)}`,
+        `Cache Misses: ${chalk.yellow(stats.misses)}`,
+        `Hit Rate: ${chalk.cyan.bold(stats.hitRate)}`,
+        `Tokens Saved: ${chalk.green.bold(stats.tokensSaved.toLocaleString())} tokens`,
+        `Cached Items: ${chalk.cyan(stats.itemCount)} entries`
+    ].join('\n');
+
+    console.log(boxen(statsOutput, { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
+
+    const cacheMenu = new Select({
+        message: 'Cache Management:',
+        choices: [
+            { name: 'toggle', message: stats.enabled ? '⏸ Disable Response Caching' : '▶ Enable Response Caching' },
+            { name: 'clear', message: '🗑 Clear All Cached Responses' },
+            { name: 'back', message: '🔙 Back' }
+        ],
+        result(name) { return this.map(name)[name]; }
+    });
+
+    const choice = await cacheMenu.run().catch(() => 'back');
+
+    if (choice === 'toggle') {
+        const nextState = !stats.enabled;
+        config.setCacheEnabled(nextState);
+        cache.setEnabled(nextState);
+        console.log(ui.formatSuccess(`Response caching is now ${nextState ? 'ENABLED' : 'DISABLED'}.`));
+    } else if (choice === 'clear') {
+        cache.clear();
+        console.log(ui.formatSuccess('Cache storage cleared.'));
+    }
+
+    return { success: true, stats };
+}
+
 module.exports = {
     showSettings,
     showLogs,
     handleModelCommand,
-    handleConfigCommand
+    handleConfigCommand,
+    handleCacheCommand
 };
+

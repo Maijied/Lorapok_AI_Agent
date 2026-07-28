@@ -126,21 +126,26 @@ class ModelManager {
     getModelIcon(modelId = '', name = '') {
         const text = `${modelId} ${name}`.toLowerCase();
 
+        // 1. Specialized Capabilities & Sub-brands
+        if (text.includes('nano-banana') || text.includes('imagen') || text.includes('image') || text.includes('flux') || text.includes('dall-e')) return '🎨';
+        if (text.includes('tts') || text.includes('speech') || text.includes('audio') || text.includes('lyria')) return '🎙️';
+        if (text.includes('veo') || text.includes('video') || text.includes('sora')) return '🎬';
+        if (text.includes('custom tools') || text.includes('tools') || text.includes('function-calling')) return '🛠️';
+        if (text.includes('antigravity') || text.includes('computer-use') || text.includes('agent')) return '🤖';
+        if (text.includes('deep-research') || text.includes('research') || text.includes('search')) return '🔍';
+        if (text.includes('coder') || text.includes('starcoder') || text.includes('codestral')) return '💻';
+        if (text.includes('deepseek')) return '🧬';
+        if (text.includes('reasoning') || text.includes('r1') || text.includes('o1') || text.includes('o3') || text.includes('thinker')) return '🔬';
+
+        // 2. Specific Sub-Models & Vendors
         if (text.includes('grok') || text.includes('xai') || text.includes('x-ai')) return '🚀';
         if (text.includes('poolside') || text.includes('laguna')) return '🌊';
         if (text.includes('ling')) return '⚡';
-        if (text.includes('antigravity')) return '🧠';
-        if (text.includes('deep-research') || text.includes('research')) return '🔍';
-        if (text.includes('nano-banana') || text.includes('imagen') || text.includes('image') || text.includes('flux') || text.includes('dall-e')) return '🎨';
-        if (text.includes('tts') || text.includes('speech') || text.includes('audio')) return '🎙️';
-        if (text.includes('veo') || text.includes('video')) return '🎬';
         if (text.includes('claude') || text.includes('anthropic')) return '🎭';
-        if (text.includes('gpt') || text.includes('openai') || text.includes('codex') || text.includes('o1') || text.includes('o3') || text.includes('o4')) return '⚡';
-        if (text.includes('gemini') || text.includes('google')) return '✨';
-        if (text.includes('gemma')) return '🦙';
-        if (text.includes('deepseek') || text.includes('r1') || text.includes('v3')) return '🧬';
-        if (text.includes('llama') || text.includes('meta')) return '🦙';
-        if (text.includes('mistral') || text.includes('mixtral') || text.includes('ministral') || text.includes('codestral') || text.includes('pixtral') || text.includes('voxtral')) return '🌪️';
+        if (text.includes('gpt') || text.includes('openai') || text.includes('codex') || text.includes('chatgpt')) return '⚡';
+        if (text.includes('gemma') || text.includes('llama') || text.includes('meta')) return '🦙';
+        if (text.includes('deepseek')) return '🧬';
+        if (text.includes('mistral') || text.includes('mixtral') || text.includes('ministral') || text.includes('pixtral') || text.includes('voxtral')) return '🌪️';
         if (text.includes('sonar') || text.includes('perplexity')) return '🎯';
         if (text.includes('nova') || text.includes('amazon') || text.includes('bedrock')) return '📦';
         if (text.includes('nvidia') || text.includes('nemotron')) return '🎮';
@@ -152,10 +157,16 @@ class ModelManager {
         if (text.includes('baichuan')) return '🌊';
         if (text.includes('yi') || text.includes('01-ai')) return '💡';
         if (text.includes('stepfun') || text.includes('step-')) return '🐾';
-        if (text.includes('relace')) return '🔍';
         if (text.includes('olmo') || text.includes('allenai')) return '🧠';
-        if (text.includes('cogito')) return '💡';
-        if (text.includes('code') || text.includes('coder') || text.includes('starcoder')) return '💻';
+
+        // 3. Gemini / Google Specific Model Sub-Types
+        if (text.includes('gemini') || text.includes('google')) {
+            if (text.includes('pro')) return '💎';
+            if (text.includes('ultra')) return '👑';
+            if (text.includes('flash-lite') || text.includes('lite')) return '⚡';
+            if (text.includes('flash')) return '⚡';
+            return '✨';
+        }
 
         return '🤖';
     }

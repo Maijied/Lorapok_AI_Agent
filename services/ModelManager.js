@@ -37,6 +37,21 @@ const DEFAULT_PERPLEXITY_MODELS = {
 };
 
 /**
+ * Default OpenRouter models fallback when API is unreachable.
+ */
+const DEFAULT_OPENROUTER_MODELS = {
+    'anthropic/claude-3.7-sonnet': { name: '🎭 Claude 3.7 Sonnet (OpenRouter)', category: 'coding', provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $3.00/M', resetWindow: 'Realtime', description: 'Anthropic flagship hybrid reasoning & coding model.' },
+    'anthropic/claude-3.5-haiku': { name: '⚡ Claude 3.5 Haiku (OpenRouter)', category: 'fast', provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $0.80/M', resetWindow: 'Realtime', description: 'Ultra-fast lightweight Claude model.' },
+    'deepseek/deepseek-r1': { name: '🧬 DeepSeek R1 (OpenRouter)', category: 'reasoning', provider: 'openrouter', tier: 'free', contextLength: 164000, rateLimit: '164k ctx | Free', resetWindow: '1m/24h', description: 'Open-weights reasoning flagship with step-by-step chain of thought.' },
+    'deepseek/deepseek-chat': { name: '🧬 DeepSeek V3 (OpenRouter)', category: 'coding', provider: 'openrouter', tier: 'pro', contextLength: 64000, rateLimit: '64k ctx | $0.14/M', resetWindow: 'Realtime', description: 'High performance open-weights coding engine.' },
+    'meta-llama/llama-3.3-70b-instruct': { name: '🦙 Llama 3.3 70B Instruct (OpenRouter)', category: 'openweights', provider: 'openrouter', tier: 'free', contextLength: 128000, rateLimit: '128k ctx | Free', resetWindow: '1m/24h', description: 'Meta state-of-the-art open-weights model.' },
+    'qwen/qwen-2.5-coder-32b-instruct': { name: '🐉 Qwen 2.5 Coder 32B (OpenRouter)', category: 'coding', provider: 'openrouter', tier: 'free', contextLength: 32000, rateLimit: '32k ctx | Free', resetWindow: '1m/24h', description: 'Specialized open-weights coding model.' },
+    'mistralai/mistral-large-2411': { name: '🌪️ Mistral Large 2 (OpenRouter)', category: 'reasoning', provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: '128k ctx | $2.00/M', resetWindow: 'Realtime', description: 'Mistral flagship reasoning and multilingual model.' },
+    'openai/gpt-4o': { name: '⚡ GPT-4o (OpenRouter)', category: 'general', provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: '128k ctx | $2.50/M', resetWindow: 'Realtime', description: 'OpenAI flagship multimodal intelligence.' },
+    'openai/o3-mini': { name: '⚡ OpenAI o3-mini (OpenRouter)', category: 'reasoning', provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $1.10/M', resetWindow: 'Realtime', description: 'OpenAI high-speed reasoning model.' }
+};
+
+/**
  * Default Google AI Studio models.
  */
 const DEFAULT_GOOGLE_MODELS = {
@@ -241,7 +256,7 @@ class ModelManager {
         }
 
         const googleModels = await this.fetchGoogleModels();
-        const models = { ...DEFAULT_PERPLEXITY_MODELS, ...googleModels };
+        const models = { ...DEFAULT_PERPLEXITY_MODELS, ...DEFAULT_OPENROUTER_MODELS, ...googleModels };
 
         try {
             logger.info('ModelManager: Fetching dynamic models from OpenRouter API...');

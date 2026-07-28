@@ -173,18 +173,18 @@ async function handleChat(input, context, options = {}) {
         console.log(await renderMarkdown(cleanContent));
 
         // Render dynamic token consumption footer bar
-        const modelMeta = activeModelMeta || (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null);
+        const modelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || activeModelMeta;
         const maxCtx = modelMeta?.contextLength || 1000000;
         const currentModelUsed = sessionData.modelUsage?.[activeModelId]?.total || totalTokens;
-        const remainingTokens = Math.max(0, maxCtx - currentModelUsed);
+        const remainingTokens = Math.min(maxCtx, Math.max(0, maxCtx - currentModelUsed));
 
         const remStr = remainingTokens >= 1000000 ? `${(remainingTokens / 1000000).toFixed(2)}M` : `${Math.round(remainingTokens / 1000)}k`;
         const maxCtxStr = maxCtx >= 1000000 ? `${(maxCtx / 1000000).toFixed(1)}M` : `${Math.round(maxCtx / 1000)}k`;
-        const pctLeft = ((remainingTokens / maxCtx) * 100).toFixed(0);
+        const pctLeft = Math.min(100, Math.max(0, Math.round((remainingTokens / maxCtx) * 100)));
 
         const cacheTag = response.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
-        const tokenBar = chalk.cyan(`📊 Tokens: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Turn Total`) +
-                         chalk.yellow(`  [Tokens Left: ${remStr} / ${maxCtxStr} (${pctLeft}%)]`);
+        const tokenBar = chalk.cyan(`📊 Turn Usage: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) +
+                         chalk.yellow(`  │  ⚡ Available Token Limit: ${remStr} / ${maxCtxStr} (${pctLeft}% Remaining)`);
         const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
 
         const boxen = require('boxen');

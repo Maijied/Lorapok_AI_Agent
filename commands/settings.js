@@ -281,11 +281,15 @@ async function handleModelSelection(agent, config) {
             const tierTag = item.tier === 'free' ? chalk.green('(Free)') : chalk.yellow('(Pro)');
             
             let limitTag = '';
-            if (item.rateLimit) {
-                limitTag = chalk.gray(` ⚡ ${item.rateLimit}`);
-            } else if (item.contextLength) {
+            if (item.contextLength) {
                 const ctxK = Math.round(item.contextLength / 1000);
-                limitTag = chalk.gray(` ⚡ ${ctxK >= 1000 ? `${(ctxK/1000).toFixed(0)}M` : `${ctxK}k`} ctx`);
+                const ctxStr = ctxK >= 1000 ? `${(ctxK / 1000).toFixed(1)}M` : `${ctxK}k`;
+                limitTag = chalk.gray(` ⚡ Token Limit: ${ctxStr}`);
+                if (item.rateLimit) {
+                    limitTag += chalk.gray(` (${item.rateLimit})`);
+                }
+            } else if (item.rateLimit) {
+                limitTag = chalk.gray(` ⚡ Token Limit: ${item.rateLimit}`);
             }
 
             let resetTag = '';

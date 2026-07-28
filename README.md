@@ -13,7 +13,7 @@
 
 # 🐛 Lorapok AI
 
-**Autonomous, action-oriented terminal AI assistant powered by Perplexity AI & Express REST API.**
+**Autonomous, action-oriented terminal AI assistant powered by Google AI Studio, OpenRouter, Perplexity AI & Express REST API.**
 
 *Plan. Code. Execute. Commit. Deploy — directly from your terminal.*
 

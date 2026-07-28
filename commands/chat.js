@@ -178,11 +178,18 @@ async function handleChat(input, context, options = {}) {
         const contextLenStr = activeModelMeta?.contextLength ? ` | Context: ${(activeModelMeta.contextLength / 1000).toFixed(0)}k` : '';
         const modelTotalStr = sessionData.modelUsage?.[activeModelId]?.total ? sessionData.modelUsage[activeModelId].total.toLocaleString() : totalTokens.toLocaleString();
 
-        const tokenBar = chalk.gray(`📊 Tokens: `) + chalk.cyan(`${promptTokens} in + ${completionTokens} out = ${totalTokens} total`) + chalk.gray(` (Model Total: ${modelTotalStr}${contextLenStr})`);
-        const modelLabel = `${displayName} ${cacheTag}`;
+        const boxen = require('boxen');
+        const tokenBar = chalk.cyan(`📊 Tokens: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) + chalk.gray(`  (Model Session Total: ${modelTotalStr}${contextLenStr})`);
+        const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
 
-        console.log(chalk.gray('─'.repeat(Math.min(termWidth, 80))));
-        console.log(`🧠 ${chalk.bold(modelLabel)}  •  ${tokenBar}\n`);
+        const usageBox = boxen(`${modelLabel}\n${tokenBar}`, {
+            padding: { top: 0, bottom: 0, left: 2, right: 2 },
+            margin: { top: 1, bottom: 1 },
+            borderStyle: 'round',
+            borderColor: 'cyan'
+        });
+
+        console.log(usageBox);
 
 
 

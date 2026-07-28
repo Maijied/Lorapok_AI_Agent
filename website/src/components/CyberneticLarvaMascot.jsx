@@ -6,7 +6,7 @@ const statusMessages = [
   '⚡ System Bottlenecks Consumed',
   '🛡️ Zero-Quota Filter Running',
   '🌐 LLDP Pattern Architecture v2.0',
-  '🐛 Friendly Helper Active'
+  '🐛 Cybernetic Larva Active'
 ];
 
 export default function CyberneticLarvaMascot({ showToast }) {
@@ -19,7 +19,7 @@ export default function CyberneticLarvaMascot({ showToast }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setStatusIndex((prev) => (prev + 1) % statusMessages.length);
-    }, 4000);
+    }, 4200);
     return () => clearInterval(timer);
   }, []);
 
@@ -30,12 +30,12 @@ export default function CyberneticLarvaMascot({ showToast }) {
 
   return (
     <>
-      {/* Floating Bottom-Left Mascot Widget */}
+      {/* Floating Bottom-RIGHT Mascot Widget */}
       <div
         style={{
           position: 'fixed',
           bottom: '1.75rem',
-          left: '1.75rem',
+          right: '1.75rem',
           zIndex: 9998,
           display: 'flex',
           alignItems: 'center',
@@ -47,70 +47,74 @@ export default function CyberneticLarvaMascot({ showToast }) {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Status Pill Badge */}
+        {/* Sleek Glassmorphic Status Pill */}
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.88)',
-            border: '1px solid #00FF88',
-            borderRadius: '16px',
-            padding: '0.5rem 0.95rem',
-            fontSize: '0.78rem',
+            background: 'rgba(15, 23, 42, 0.92)',
+            border: '1px solid rgba(34, 211, 238, 0.4)',
+            borderRadius: 'var(--radius-full)',
+            padding: '0.55rem 1.1rem',
+            fontSize: '0.8rem',
             fontWeight: 600,
-            color: '#00FF88',
-            backdropFilter: 'blur(16px)',
-            boxShadow: '0 0 20px rgba(0, 255, 136, 0.25)',
-            transition: 'all 0.3s ease',
-            transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-            maxWidth: '230px',
+            color: '#22D3EE',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(34, 211, 238, 0.2)',
+            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            transform: isHovered ? 'translateY(-2px) scale(1.02)' : 'translateY(0)',
+            maxWidth: '240px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            textOverflow: 'ellipsis',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
           }}
         >
-          {statusMessages[statusIndex]}
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', flexShrink: 0 }} />
+          <span>{statusMessages[statusIndex]}</span>
         </div>
 
-        {/* Cybernetic Black Soldier Fly Larva Icon */}
+        {/* Cybernetic Black Soldier Fly Larva Mascot Icon */}
         <div
           style={{
             width: '56px',
             height: '56px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0, 255, 136, 0.25) 0%, rgba(3, 7, 17, 0.95) 75%)',
-            border: '2px solid #00FF88',
-            boxShadow: '0 0 25px rgba(0, 255, 136, 0.45), inset 0 0 15px rgba(0, 229, 255, 0.35)',
+            background: 'radial-gradient(circle at 30% 30%, rgba(34, 211, 238, 0.25) 0%, rgba(15, 23, 42, 0.95) 75%)',
+            border: '2px solid rgba(34, 211, 238, 0.6)',
+            boxShadow: '0 0 25px rgba(34, 211, 238, 0.35), inset 0 0 15px rgba(124, 58, 237, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            transform: isHovered ? 'scale(1.12) translateY(-4px)' : 'scale(1)'
+            transform: isHovered ? 'scale(1.12) rotate(6deg)' : 'scale(1)'
           }}
         >
           <svg width="42" height="42" viewBox="0 0 100 100" fill="none">
             {/* Segmented Charcoal Armor Body */}
-            <ellipse cx="50" cy="50" rx="34" ry="24" fill="#1A202C" stroke="#00FF88" strokeWidth="2.5" />
-            <path d="M 30 36 Q 50 28 70 36" stroke="#00E5FF" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 26 50 Q 50 42 74 50" stroke="#00FF88" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M 30 64 Q 50 56 70 64" stroke="#00E5FF" strokeWidth="2" strokeLinecap="round" />
+            <ellipse cx="50" cy="50" rx="34" ry="24" fill="#0F172A" stroke="#22D3EE" strokeWidth="2.5" />
+            <path d="M 30 36 Q 50 28 70 36" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 26 50 Q 50 42 74 50" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M 30 64 Q 50 56 70 64" stroke="#22D3EE" strokeWidth="2" strokeLinecap="round" />
 
             {/* Glowing Expressive Eyes */}
-            <circle cx="38" cy="46" r="6" fill="#00FF88" />
-            <circle cx="62" cy="46" r="6" fill="#00FF88" />
+            <circle cx="38" cy="46" r="6" fill="#10B981" />
+            <circle cx="62" cy="46" r="6" fill="#10B981" />
             <circle cx="40" cy="44" r="2" fill="#FFFFFF" />
             <circle cx="64" cy="44" r="2" fill="#FFFFFF" />
 
             {/* Smile */}
-            <path d="M 44 58 Q 50 64 56 58" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 44 58 Q 50 64 56 58" stroke="#22D3EE" strokeWidth="2" strokeLinecap="round" />
 
             {/* Small Robotic Legs */}
-            <line x1="22" y1="52" x2="14" y2="58" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" />
-            <line x1="24" y1="62" x2="16" y2="70" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" />
-            <line x1="78" y1="52" x2="86" y2="58" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" />
-            <line x1="76" y1="62" x2="84" y2="70" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" />
+            <line x1="22" y1="52" x2="14" y2="58" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
+            <line x1="24" y1="62" x2="16" y2="70" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
+            <line x1="78" y1="52" x2="86" y2="58" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
+            <line x1="76" y1="62" x2="84" y2="70" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
           </svg>
 
-          {/* Active Pulse Dot */}
+          {/* Active Pulse Indicator */}
           <span
             style={{
               position: 'absolute',
@@ -119,8 +123,8 @@ export default function CyberneticLarvaMascot({ showToast }) {
               width: 12,
               height: 12,
               borderRadius: '50%',
-              background: '#00FF88',
-              boxShadow: '0 0 10px #00FF88',
+              background: '#10B981',
+              boxShadow: '0 0 10px #10B981',
               animation: 'pulseDot 2s infinite'
             }}
           />
@@ -151,10 +155,10 @@ export default function CyberneticLarvaMascot({ showToast }) {
             style={{
               maxWidth: '560px',
               width: '100%',
-              padding: '2rem',
+              padding: '2.25rem',
               position: 'relative',
-              border: '1px solid #00FF88',
-              boxShadow: '0 0 40px rgba(0, 255, 136, 0.3)'
+              border: '1px solid var(--border-cyan)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px var(--accent-cyan-glow)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -163,13 +167,14 @@ export default function CyberneticLarvaMascot({ showToast }) {
               onClick={() => setIsOpen(false)}
               style={{
                 position: 'absolute',
-                top: '1rem',
+                top: '1.25rem',
                 right: '1.25rem',
                 background: 'none',
                 border: 'none',
                 color: 'var(--text-muted)',
-                fontSize: '1.2rem',
-                cursor: 'pointer'
+                fontSize: '1.3rem',
+                cursor: 'pointer',
+                transition: 'color var(--transition-fast)'
               }}
             >
               ✕
@@ -179,25 +184,25 @@ export default function CyberneticLarvaMascot({ showToast }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
               <div
                 style={{
-                  width: 48,
-                  height: 48,
+                  width: 52,
+                  height: 52,
                   borderRadius: '50%',
-                  background: 'rgba(0,255,136,0.15)',
-                  border: '1px solid #00FF88',
+                  background: 'rgba(34, 211, 238, 0.15)',
+                  border: '1px solid var(--border-cyan)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.5rem'
+                  fontSize: '1.6rem'
                 }}
               >
                 🐛
               </div>
               <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>
-                  Cybernetic <span style={{ color: '#00FF88' }}>Larva Assistant</span>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800 }}>
+                  Cybernetic <span className="gradient-text">Larva Assistant</span>
                 </h3>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                  Lorapok Labs Friendly System Optimizer &amp; Research Hub
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                  Lorapok Labs System Optimizer &amp; Telemetry Hub
                 </p>
               </div>
             </div>
@@ -237,7 +242,7 @@ export default function CyberneticLarvaMascot({ showToast }) {
                   <button
                     onClick={handleConsumeBottlenecks}
                     className="btn btn-primary"
-                    style={{ background: 'linear-gradient(135deg, #00FF88, #059669)', color: '#030711', fontSize: '0.82rem', padding: '0.5rem 1rem' }}
+                    style={{ fontSize: '0.82rem', padding: '0.5rem 1rem' }}
                   >
                     ⚡ Consume Bottleneck ({bottleneckCount})
                   </button>

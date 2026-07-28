@@ -9,6 +9,7 @@ const axios = require('axios');
 const NodeCache = require('node-cache');
 const logger = require('../lib/logger');
 const modelValidator = require('./ModelValidator');
+const modelCacheService = require('./ModelCacheService');
 
 /**
  * Expertise categories definitions.
@@ -205,11 +206,11 @@ class ModelManager {
                     if (!item.name) continue;
                     const modelId = item.name.replace(/^models\//, '');
                     
-                    // Only include models that support content generation and are active
+                    // Dynamic check: Exclude models that do not support generateContent or are specialized modalities/failed models
                     if (item.supportedGenerationMethods && !item.supportedGenerationMethods.includes('generateContent')) {
                         continue;
                     }
-                    if (['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-3.1-pro', 'gemini-2.5-pro'].includes(modelId)) {
+                    if (modelValidator.isNonTextModality(modelId, item) || modelCacheService.isModelFailed(modelId)) {
                         continue;
                     }
 

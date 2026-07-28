@@ -106,32 +106,38 @@ class ModelManager {
     getModelIcon(modelId = '', name = '') {
         const text = `${modelId} ${name}`.toLowerCase();
 
+        if (text.includes('grok') || text.includes('xai') || text.includes('x-ai')) return '🚀';
+        if (text.includes('poolside') || text.includes('laguna')) return '🌊';
+        if (text.includes('ling')) return '⚡';
         if (text.includes('antigravity')) return '🧠';
         if (text.includes('deep-research') || text.includes('research')) return '🔍';
-        if (text.includes('nano-banana') || text.includes('imagen') || text.includes('image')) return '🎨';
+        if (text.includes('nano-banana') || text.includes('imagen') || text.includes('image') || text.includes('flux') || text.includes('dall-e')) return '🎨';
         if (text.includes('tts') || text.includes('speech') || text.includes('audio')) return '🎙️';
         if (text.includes('veo') || text.includes('video')) return '🎬';
         if (text.includes('claude') || text.includes('anthropic')) return '🎭';
-        if (text.includes('gpt') || text.includes('openai') || text.includes('codex') || text.includes('o1') || text.includes('o3')) return '⚡';
+        if (text.includes('gpt') || text.includes('openai') || text.includes('codex') || text.includes('o1') || text.includes('o3') || text.includes('o4')) return '⚡';
         if (text.includes('gemini') || text.includes('google')) return '✨';
         if (text.includes('gemma')) return '🦙';
         if (text.includes('deepseek') || text.includes('r1') || text.includes('v3')) return '🧬';
         if (text.includes('llama') || text.includes('meta')) return '🦙';
-        if (text.includes('mistral') || text.includes('mixtral') || text.includes('ministral') || text.includes('voxtral')) return '🌪️';
+        if (text.includes('mistral') || text.includes('mixtral') || text.includes('ministral') || text.includes('codestral') || text.includes('pixtral') || text.includes('voxtral')) return '🌪️';
         if (text.includes('sonar') || text.includes('perplexity')) return '🎯';
-        if (text.includes('nova') || text.includes('amazon')) return '📦';
+        if (text.includes('nova') || text.includes('amazon') || text.includes('bedrock')) return '📦';
         if (text.includes('nvidia') || text.includes('nemotron')) return '🎮';
         if (text.includes('qwen') || text.includes('alibaba')) return '🐉';
-        if (text.includes('cohere') || text.includes('command')) return '⚔️';
+        if (text.includes('cohere') || text.includes('command') || text.includes('north')) return '⚔️';
         if (text.includes('kimi') || text.includes('moonshot')) return '🌙';
         if (text.includes('minimax')) return '🌌';
-        if (text.includes('glm') || text.includes('z.ai') || text.includes('z-ai')) return '🔮';
+        if (text.includes('glm') || text.includes('z.ai') || text.includes('z-ai') || text.includes('zhipu')) return '🔮';
+        if (text.includes('baichuan')) return '🌊';
+        if (text.includes('yi') || text.includes('01-ai')) return '💡';
+        if (text.includes('stepfun') || text.includes('step-')) return '🐾';
         if (text.includes('relace')) return '🔍';
         if (text.includes('olmo') || text.includes('allenai')) return '🧠';
         if (text.includes('cogito')) return '💡';
-        if (text.includes('code') || text.includes('coder')) return '💻';
+        if (text.includes('code') || text.includes('coder') || text.includes('starcoder')) return '💻';
 
-        return '🌐';
+        return '🤖';
     }
 
     /**

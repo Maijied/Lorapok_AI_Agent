@@ -5,23 +5,21 @@ on:
     branches: ["Website", "main"]
     paths:
       - "website/**"
+      - ".github/workflows/deploy-website.yml"
 
-  # Allow manual trigger
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -30,13 +28,30 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: website/package.json
+
+      - name: Install Website Dependencies
+        run: |
+          cd website
+          npm ci
+
+      - name: Build Website with Vite
+        run: |
+          cd website
+          npm run build
+
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Website Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: website
+          path: website/dist
 
       - name: Deploy to GitHub Pages
         id: deployment

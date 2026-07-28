@@ -173,8 +173,8 @@ async function handleChat(input, context, options = {}) {
         console.log(await renderMarkdown(cleanContent));
 
         // Render dynamic token consumption footer bar
-        const activeModelMeta = agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null;
-        const maxCtx = activeModelMeta?.contextLength || 1000000;
+        const modelMeta = activeModelMeta || (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null);
+        const maxCtx = modelMeta?.contextLength || 1000000;
         const currentModelUsed = sessionData.modelUsage?.[activeModelId]?.total || totalTokens;
         const remainingTokens = Math.max(0, maxCtx - currentModelUsed);
 

@@ -173,15 +173,21 @@ async function handleChat(input, context, options = {}) {
         console.log(await renderMarkdown(cleanContent));
 
         // Render dynamic token consumption footer bar
-        const termWidth = process.stdout.columns || 80;
-        const cacheTag = response.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
-        const contextLenStr = activeModelMeta?.contextLength ? ` | Context: ${(activeModelMeta.contextLength / 1000).toFixed(0)}k` : '';
-        const modelTotalStr = sessionData.modelUsage?.[activeModelId]?.total ? sessionData.modelUsage[activeModelId].total.toLocaleString() : totalTokens.toLocaleString();
+        const activeModelMeta = agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null;
+        const maxCtx = activeModelMeta?.contextLength || 1000000;
+        const currentModelUsed = sessionData.modelUsage?.[activeModelId]?.total || totalTokens;
+        const remainingTokens = Math.max(0, maxCtx - currentModelUsed);
 
-        const boxen = require('boxen');
-        const tokenBar = chalk.cyan(`📊 Tokens: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) + chalk.gray(`  (Model Session Total: ${modelTotalStr}${contextLenStr})`);
+        const remStr = remainingTokens >= 1000000 ? `${(remainingTokens / 1000000).toFixed(2)}M` : `${Math.round(remainingTokens / 1000)}k`;
+        const maxCtxStr = maxCtx >= 1000000 ? `${(maxCtx / 1000000).toFixed(1)}M` : `${Math.round(maxCtx / 1000)}k`;
+        const pctLeft = ((remainingTokens / maxCtx) * 100).toFixed(0);
+
+        const cacheTag = response.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
+        const tokenBar = chalk.cyan(`📊 Tokens: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Turn Total`) +
+                         chalk.yellow(`  [Tokens Left: ${remStr} / ${maxCtxStr} (${pctLeft}%)]`);
         const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
 
+        const boxen = require('boxen');
         const usageBox = boxen(`${modelLabel}\n${tokenBar}`, {
             padding: { top: 0, bottom: 0, left: 2, right: 2 },
             margin: { top: 1, bottom: 1 },

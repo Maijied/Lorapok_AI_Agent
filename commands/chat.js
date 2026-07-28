@@ -222,15 +222,50 @@ async function handleChat(input, context, options = {}) {
  * @returns {Promise<{ success: boolean, content?: string, error?: string }>} Analysis result
  */
 async function handleAnalyze(context) {
-    const { agent } = context;
+    const { agent, config } = context;
+    const boxen = require('boxen');
+
     try {
         const result = await withCancellation('Analyzing project structure & architecture...', (signal) =>
             agent.analyzeProject({ signal })
         );
 
         if (result && result.content) {
-            console.log('\n' + chalk.cyan.bold('🔍 PROJECT ANALYSIS RESULT:'));
-            console.log(await renderMarkdown(result.content));
+            const activeModelId = config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash';
+            const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
+            const activeModelMeta = allModels ? allModels[activeModelId] : null;
+            const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
+            const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
+
+            const headerText =
+                chalk.bold.cyan('🔬 LORAPOK CODEBASE ARCHITECTURE & ANALYSIS') + '\n' +
+                chalk.gray('──────────────────────────────────────────────────────────────') + '\n' +
+                chalk.yellow(`🧠 Active Engine: ${displayName}`) + '  │  ' + chalk.green.bold('🟢 Status: Analysis Complete');
+
+            const headerBox = boxen(headerText, {
+                padding: { top: 0, bottom: 0, left: 2, right: 2 },
+                margin: { top: 1, bottom: 1 },
+                borderStyle: 'double',
+                borderColor: 'cyan'
+            });
+
+            console.log(headerBox);
+
+            const renderedMarkdown = await renderMarkdown(result.content);
+            console.log(renderedMarkdown);
+
+            const footerText =
+                chalk.cyan.bold('💡 Recommended Action:') + chalk.white(' Use ') + chalk.yellow.bold('/chat') + chalk.white(' to discuss findings or ') + chalk.yellow.bold('/plan') + chalk.white(' to generate implementation roadmap.');
+
+            const footerBox = boxen(footerText, {
+                padding: { top: 0, bottom: 0, left: 2, right: 2 },
+                margin: { top: 1, bottom: 1 },
+                borderStyle: 'round',
+                borderColor: 'green'
+            });
+
+            console.log(footerBox);
+
             return { success: true, content: result.content };
         }
         if (result && result.aborted) {

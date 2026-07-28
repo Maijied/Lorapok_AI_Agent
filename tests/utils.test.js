@@ -48,7 +48,8 @@ describe('utils.js Command Safety and CWD Tracking', () => {
         let testDir;
 
         beforeEach(() => {
-            testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lorapok-cwd-test-'));
+            const rawDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lorapok-cwd-test-'));
+            testDir = fs.realpathSync(rawDir);
             setCwd(testDir);
         });
 

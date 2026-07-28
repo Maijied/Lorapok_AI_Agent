@@ -299,7 +299,7 @@ class FileManager {
             const readRes = this.readFile(filePath);
             if (!readRes.success) return readRes;
 
-            const allLines = readRes.data.split('\n');
+            const allLines = readRes.data.replace(/\r/g, '').split('\n');
             const totalLines = allLines.length;
 
             let startLine = parseInt(options.startLine, 10);
@@ -462,7 +462,7 @@ class FileManager {
                 const readRes = this.readFile(item.path);
                 if (!readRes.success || typeof readRes.data !== 'string') continue;
 
-                const lines = readRes.data.split('\n');
+                const lines = readRes.data.replace(/\r/g, '').split('\n');
                 for (let i = 0; i < lines.length; i++) {
                     if (matches.length >= limit) break;
                     if (regex.test(lines[i])) {

@@ -108,7 +108,7 @@ describe('Google AI Studio Provider Support', () => {
         const googleModels = await modelManager.fetchGoogleModels(null);
         expect(googleModels['gemini-3.6-flash']).toBeDefined();
         expect(googleModels['gemini-3.6-flash'].provider).toBe('google-ai-studio');
-        expect(googleModels['gemini-2.5-flash']).toBeDefined();
+        expect(googleModels['gemini-3.5-flash-lite']).toBeDefined();
     });
 
     test('should execute chat API call using Google AI Studio OpenAI-compatible endpoint', async () => {

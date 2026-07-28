@@ -73,18 +73,6 @@ export const ecosystemProjects = [
     stats: 'Agent Mesh Network'
   },
   {
-    id: 'turbovec',
-    name: 'Turbovec',
-    badge: 'Vector Search',
-    tagline: 'Ultra-Fast Vector Embedding & Similarity Search Index',
-    description: 'High-speed CJS/Native vector similarity search engine for RAG applications and semantic code search.',
-    url: 'https://github.com/Maijied/turbovec',
-    github: 'https://github.com/Maijied/turbovec',
-    category: 'AI & Agents',
-    icon: '⚡',
-    stats: 'Vector Search Index'
-  },
-  {
     id: 'larvox',
     name: 'Larvox Engine',
     badge: 'Sensory Computing',

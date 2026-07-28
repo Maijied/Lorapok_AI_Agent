@@ -286,6 +286,162 @@ class FileManager {
     }
 
     /**
+     * View file content with line range slicing and line numbers.
+     * @param {string} filePath - Relative or absolute path
+     * @param {Object} [options={}] - Options { startLine, endLine }
+     * @returns {{ success: boolean, data?: { content: string, startLine: number, endLine: number, totalLines: number }, error?: string }} Result
+     */
+    viewFile(filePath, options = {}) {
+        try {
+            const readRes = this.readFile(filePath);
+            if (!readRes.success) return readRes;
+
+            const allLines = readRes.data.split('\n');
+            const totalLines = allLines.length;
+
+            let startLine = parseInt(options.startLine, 10);
+            let endLine = parseInt(options.endLine, 10);
+
+            if (isNaN(startLine) || startLine < 1) startLine = 1;
+            if (isNaN(endLine) || endLine > totalLines) endLine = totalLines;
+            if (endLine < startLine) endLine = startLine;
+
+            const selectedLines = allLines.slice(startLine - 1, endLine);
+            const linePaddedWidth = String(endLine).length;
+
+            const numberedLines = selectedLines.map((line, idx) => {
+                const lineNum = String(startLine + idx).padStart(linePaddedWidth, ' ');
+                return `${lineNum}: ${line}`;
+            });
+
+            return {
+                success: true,
+                data: {
+                    content: numberedLines.join('\n'),
+                    rawContent: selectedLines.join('\n'),
+                    startLine,
+                    endLine,
+                    totalLines
+                }
+            };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    }
+
+    /**
+     * Perform surgical string replacement inside a file.
+     * @param {string} filePath - Target file path
+     * @param {string} targetContent - Exact string snippet to find
+     * @param {string} replacementContent - New string snippet to put in place
+     * @param {Object} [options={}] - Replacement options { allowMultiple }
+     * @returns {{ success: boolean, data?: { path: string, replacedCount: number }, error?: string }} Result
+     */
+    replaceFileContent(filePath, targetContent, replacementContent, options = {}) {
+        try {
+            const readRes = this.readFile(filePath);
+            if (!readRes.success) return readRes;
+
+            const current = readRes.data;
+            if (!current.includes(targetContent)) {
+                return {
+                    success: false,
+                    error: `❌ Target content block not found in ${filePath}`
+                };
+            }
+
+            let updated;
+            let replacedCount = 0;
+
+            if (options.allowMultiple) {
+                const parts = current.split(targetContent);
+                replacedCount = parts.length - 1;
+                updated = parts.join(replacementContent);
+            } else {
+                updated = current.replace(targetContent, replacementContent);
+                replacedCount = 1;
+            }
+
+            const writeRes = this.writeFile(filePath, updated);
+            if (!writeRes.success) return writeRes;
+
+            return {
+                success: true,
+                data: {
+                    path: filePath,
+                    replacedCount
+                }
+            };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    }
+
+    /**
+     * High-performance grep search across project workspace.
+     * @param {string} query - Text or regex pattern to find
+     * @param {string} [searchPath='.'] - Search directory path
+     * @param {Object} [options={}] - Options { isRegex, caseInsensitive, includes, matchPerLine, limit }
+     * @returns {{ success: boolean, data?: Array<{ filename: string, lineNumber: number, lineContent: string }>, error?: string }} Results
+     */
+    grepSearch(query, searchPath = '.', options = {}) {
+        try {
+            const {
+                isRegex = false,
+                caseInsensitive = true,
+                includes = [],
+                matchPerLine = true,
+                limit = 50
+            } = options;
+
+            const listRes = this.listFiles(searchPath, { recursive: true });
+            if (!listRes.success) return listRes;
+
+            const matches = [];
+            const flags = caseInsensitive ? 'i' : '';
+            const regex = isRegex
+                ? new RegExp(query, flags)
+                : new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+
+            for (const item of listRes.data) {
+                if (item.type !== 'file') continue;
+                if (matches.length >= limit) break;
+
+                if (includes.length > 0) {
+                    const ext = path.extname(item.path).slice(1);
+                    if (!includes.some(inc => inc.endsWith(ext) || item.path.includes(inc))) {
+                        continue;
+                    }
+                }
+
+                const readRes = this.readFile(item.path);
+                if (!readRes.success || typeof readRes.data !== 'string') continue;
+
+                const lines = readRes.data.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    if (matches.length >= limit) break;
+                    if (regex.test(lines[i])) {
+                        if (matchPerLine) {
+                            matches.push({
+                                filename: item.path,
+                                lineNumber: i + 1,
+                                lineContent: lines[i].trim()
+                            });
+                        } else {
+                            matches.push({ filename: item.path });
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return { success: true, data: matches };
+        } catch (err) {
+            return { success: false, error: err.message || String(err) };
+        }
+    }
+
+    /**
      * Search files by regex pattern string.
      * @param {string} pattern - Search pattern
      * @param {string} [dirPath='.'] - Base directory path
@@ -305,3 +461,4 @@ class FileManager {
 }
 
 module.exports = FileManager;
+

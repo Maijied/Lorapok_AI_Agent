@@ -1,7 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (.agents/BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-07-28 | Version: 1.0.0 | Test Suite: 17/17 Passed (161 Tests)*
+> *Last Synced: 2026-07-28 | Version: 1.0.0 | Test Suite: 17/17 Passed (164 Tests)*
 
 ---
 
@@ -9,10 +9,12 @@
 **Lorapok AI Agent** is an enterprise-grade, action-oriented AI Coding Agent featuring:
 - **CLI Engine**: Interactive terminal UI (`bin/lorapok.js`, `index.js`) built with Boxen, Figlet, Ora, Enquirer, and Marked.
 - **REST API Server**: Express server (`server.js`) with CORS, file upload handling (`multer`), and session logging.
+- **File Tool Primitives**: High-performance `grepSearch`, line-bounded `viewFile`, surgical `replaceFileContent`, `write_to_file`, and `listDir` in `services/FileManager.js`.
 - **Token-Saving Cache Engine**: Persistent SHA-256 response caching (`lib/cache.js`) tracking tokens saved and decreasing latency.
 - **Collapsible Bash Execution Box**: Framed bash execution box (`commands/utils.js`) displaying live duration, exit status, and collapsible output.
 - **Agent Runtimes**: Dual execution capability (Native Node.js >= 18 and Docker Compose container fallback).
 - **Core Integrations**: Multi-provider LLM support (Perplexity, OpenAI), Git repository management (`services/GitManager.js`), file system operations (`services/FileManager.js`), and action rerun execution (`services/ActionsManager.js`).
+
 
 ---
 

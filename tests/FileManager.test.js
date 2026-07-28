@@ -61,4 +61,36 @@ describe('FileManager', () => {
         expect(res.data).toContain('src');
         expect(res.data).toContain('index.js');
     });
+
+    test('should view file with line number range', () => {
+        const fileContent = 'line 1\nline 2\nline 3\nline 4';
+        fs.writeFileSync(path.join(testDir, 'range.txt'), fileContent);
+        const res = fm.viewFile('range.txt', { startLine: 2, endLine: 3 });
+        expect(res.success).toBe(true);
+        expect(res.data.startLine).toBe(2);
+        expect(res.data.endLine).toBe(3);
+        expect(res.data.content).toContain('2: line 2');
+        expect(res.data.content).toContain('3: line 3');
+    });
+
+    test('should surgically replace file content snippet', () => {
+        const fileContent = 'const val = "OLD_VALUE";';
+        fs.writeFileSync(path.join(testDir, 'code.js'), fileContent);
+        const res = fm.replaceFileContent('code.js', 'OLD_VALUE', 'NEW_VALUE');
+        expect(res.success).toBe(true);
+        expect(res.data.replacedCount).toBe(1);
+        expect(fs.readFileSync(path.join(testDir, 'code.js'), 'utf8')).toBe('const val = "NEW_VALUE";');
+    });
+
+    test('should search pattern across files with grepSearch', () => {
+        fs.writeFileSync(path.join(testDir, 'a.js'), 'function targetFunc() { return 42; }');
+        fs.writeFileSync(path.join(testDir, 'b.js'), 'console.log("no match");');
+        const res = fm.grepSearch('targetFunc', '.');
+        expect(res.success).toBe(true);
+        expect(res.data).toHaveLength(1);
+        expect(res.data[0].filename).toBe('a.js');
+        expect(res.data[0].lineNumber).toBe(1);
+        expect(res.data[0].lineContent).toContain('targetFunc');
+    });
 });
+

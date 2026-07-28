@@ -216,7 +216,7 @@ async function handleModelSelection(agent, config) {
                     { name: 'audio', message: '🎙️ Audio & Voice Synthesis' },
                     { name: 'video', message: '🎬 Video Generation' },
                     { name: 'openweights', message: '🦙 Open Weights & Open Source' },
-                    { name: 'fast', message: '⚡ Fast & Lightweight' },
+                    { name: 'fast', message: '🚀 Fast & Lightweight' },
                     { name: 'general', message: '🌐 General Intelligence' },
                     { name: 'back', message: '🔙 Back to Main Menu' }
                 ],

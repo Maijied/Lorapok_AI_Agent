@@ -224,16 +224,23 @@ async function handleChat(input, context, options = {}) {
 async function handleAnalyze(context) {
     const { agent } = context;
     try {
-        const result = await withCancellation('Analyzing project...', (signal) =>
+        const result = await withCancellation('Analyzing project structure & architecture...', (signal) =>
             agent.analyzeProject({ signal })
         );
 
-        if (result && !result.aborted) {
+        if (result && result.content) {
+            console.log('\n' + chalk.cyan.bold('🔍 PROJECT ANALYSIS RESULT:'));
             console.log(await renderMarkdown(result.content));
             return { success: true, content: result.content };
         }
-        return { success: false, error: 'Analysis cancelled.' };
+        if (result && result.aborted) {
+            console.log(chalk.yellow('\n⚠️ Analysis cancelled by user.\n'));
+            return { success: false, error: 'Analysis cancelled.' };
+        }
+        console.log(chalk.red('\n❌ Project analysis produced no output.\n'));
+        return { success: false, error: 'No content' };
     } catch (err) {
+        console.log(chalk.red(`\n❌ Project Analysis Error: ${err.message || String(err)}\n`));
         return { success: false, error: err.message || String(err) };
     }
 }

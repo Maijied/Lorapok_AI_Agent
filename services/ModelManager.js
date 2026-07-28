@@ -21,7 +21,7 @@ const CATEGORIES = {
     AUDIO: { id: 'audio', name: '🎙️ Audio & Voice Synthesis', description: 'Text-to-speech, audio generation, and voice synthesis.' },
     VIDEO: { id: 'video', name: '🎬 Video Generation', description: 'Video creation and motion generation models.' },
     OPENWEIGHTS: { id: 'openweights', name: '🦙 Open Weights & Open Source', description: 'Open-weights models like Gemma, Llama, and Mistral.' },
-    FAST: { id: 'fast', name: '⚡ Fast & Lightweight', description: 'High speed, low latency, ideal for quick iterations and minor tasks.' },
+    FAST: { id: 'fast', name: '🚀 Fast & Lightweight', description: 'High speed, low latency, ideal for quick iterations and minor tasks.' },
     GENERAL: { id: 'general', name: '🌐 General Intelligence', description: 'All-round strong performance across versatile multimodal tasks.' }
 };
 

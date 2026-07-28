@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { ecosystemProjects, ecosystemLinks } from '../data/ecosystemProjects';
 
-const categories = ['All Products', 'AI & Agents', 'Developer Tools', 'Productivity & Media'];
+const categories = ['All Products', 'AI & Agents', 'Developer Tools', 'Productivity & Extensions', 'Media & Entertainment'];
 
 export default function Ecosystem() {
   const [activeCategory, setActiveCategory] = useState('All Products');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filtered = activeCategory === 'All Products'
-    ? ecosystemProjects
-    : ecosystemProjects.filter(p => p.category === activeCategory);
+  const filtered = ecosystemProjects.filter(p => {
+    const matchesCategory = activeCategory === 'All Products' || p.category === activeCategory;
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.tagline.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <section className="ecosystem" id="ecosystem">
@@ -19,7 +24,7 @@ export default function Ecosystem() {
             The <span className="gradient-text">Lorapok Labs</span> Universe
           </h2>
           <p className="section-subtitle" style={{ margin: '0 auto' }}>
-            Explore 18+ open-source products, AI tools, and developer platforms engineered by{' '}
+            Explore {ecosystemProjects.length}+ open-source products, AI systems, developer tools, and cybernetic apps built by{' '}
             <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer">
               {ecosystemLinks.developerName}
             </a>{' '}
@@ -27,17 +32,40 @@ export default function Ecosystem() {
           </p>
         </div>
 
-        {/* Category Filter Tabs */}
-        <div className="providers-tabs" style={{ marginTop: '2.5rem', marginBottom: '2.5rem' }}>
-          {categories.map(cat => (
-            <button
-              key={cat}
-              className={`provider-tab-btn ${activeCategory === cat ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat} ({cat === 'All Products' ? ecosystemProjects.length : ecosystemProjects.filter(p => p.category === cat).length})
-            </button>
-          ))}
+        {/* Search Bar & Category Filter Tabs */}
+        <div style={{ marginTop: '2.5rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
+          <input
+            type="text"
+            placeholder="🔍 Search 30+ Lorapok products & repos..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              maxWidth: '450px',
+              width: '100%',
+              padding: '0.75rem 1.25rem',
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-cyan)',
+              borderRadius: 'var(--radius-full)',
+              color: 'var(--text-primary)',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '0.92rem',
+              outline: 'none',
+              backdropFilter: 'blur(12px)',
+              boxShadow: 'var(--shadow-glass)'
+            }}
+          />
+
+          <div className="providers-tabs" style={{ marginTop: 0, marginBottom: 0 }}>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                className={`provider-tab-btn ${activeCategory === cat ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {cat} ({cat === 'All Products' ? ecosystemProjects.length : ecosystemProjects.filter(p => p.category === cat).length})
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Products Grid */}
@@ -72,6 +100,12 @@ export default function Ecosystem() {
             </div>
           ))}
         </div>
+
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+            No products found matching "{searchQuery}". Try clearing search.
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', marginTop: '4rem' }}>
           <a

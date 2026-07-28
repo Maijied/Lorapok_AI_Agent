@@ -115,4 +115,24 @@ npm run build
         expect(actions).toHaveLength(1);
         expect(actions[0].description).toBe('Build project');
     });
+
+    test('should parse EXECUTE BASH and RUN BASH actions', () => {
+        const content = `
+ACTION: EXECUTE BASH: git status
+ACTION: RUN BASH: ls -la
+`;
+        const actions = agent.parseActions(content);
+        expect(actions).toHaveLength(2);
+        expect(actions[0]).toEqual({
+            type: 'COMMAND',
+            description: 'git status',
+            content: ''
+        });
+        expect(actions[1]).toEqual({
+            type: 'COMMAND',
+            description: 'ls -la',
+            content: ''
+        });
+    });
 });
+

@@ -309,15 +309,18 @@ async function executeFileActions(actions, context) {
  */
 async function executeShellAction(action, context, bypassMode = false) {
     const { ui, config } = context;
-    ui.showCommand(action.description, action.content);
+    const commandText = (action.content && action.content.trim()) ? action.content.trim() : (action.description || '').trim();
+    const displayDescription = action.description && action.description !== commandText ? action.description : `Execute command: ${commandText}`;
 
-    const cmdKey = action.content.trim().split(/\s+/)[0];
+    ui.showCommand(displayDescription, commandText);
+
+    const cmdKey = commandText.trim().split(/\s+/)[0];
     let choice = 'once';
     let bypassAll = false;
 
-    if (!bypassMode && !allowedCommands.has(cmdKey) && !allowedCommands.has(action.content.trim())) {
+    if (!bypassMode && !allowedCommands.has(cmdKey) && !allowedCommands.has(commandText)) {
         const confirm = new Select({
-            message: `Allow command: ${action.content.trim()}?`,
+            message: `Allow command: ${commandText}?`,
             choices: [
                 { name: 'once', message: '🟢 Yes, allow this time' },
                 { name: 'project', message: `📁 Yes, and always allow '${cmdKey}' in this project` },
@@ -331,7 +334,7 @@ async function executeShellAction(action, context, bypassMode = false) {
 
         if (selected === 'project') {
             allowedCommands.add(cmdKey);
-            allowedCommands.add(action.content.trim());
+            allowedCommands.add(commandText);
             console.log(chalk.green(`\n✔ Added '${cmdKey}' to allowed commands for this project.`));
             choice = 'once';
         } else if (selected === 'bypass') {
@@ -349,7 +352,7 @@ async function executeShellAction(action, context, bypassMode = false) {
 
     if (choice === 'no') return { success: false, aborted: true };
 
-    const result = executeCommand(action.content);
+    const result = executeCommand(commandText);
     if (result.success) {
         console.log(ui.formatSuccess(`Command executed.`));
         return { success: true, bypassAll };
@@ -358,6 +361,7 @@ async function executeShellAction(action, context, bypassMode = false) {
         return { success: false, error: result.error, bypassAll };
     }
 }
+
 
 module.exports = {
     showActionsMenu,

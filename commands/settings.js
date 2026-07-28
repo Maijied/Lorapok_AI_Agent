@@ -261,8 +261,14 @@ async function handleModelSelection(agent, config) {
         const choices = filteredModelKeys.map(id => {
             const item = models[id];
             const statusIcon = item.available ? chalk.green('🟢') : chalk.gray('🔒');
+            
+            // Clean duplicate provider suffix from model display name
+            const cleanName = (item.name || id)
+                .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
+                .trim();
+
             let providerTag = chalk.magenta('[Perplexity]');
-            if (item.provider === 'google-ai-studio') providerTag = chalk.cyan('[Google AI Studio]');
+            if (item.provider === 'google-ai-studio') providerTag = chalk.cyan('[Google]');
             if (item.provider === 'openrouter') providerTag = chalk.blue('[OpenRouter]');
             const tierTag = item.tier === 'free' ? chalk.green('(Free)') : chalk.yellow('(Pro)');
             
@@ -271,17 +277,17 @@ async function handleModelSelection(agent, config) {
                 limitTag = chalk.gray(` ⚡ ${item.rateLimit}`);
             } else if (item.contextLength) {
                 const ctxK = Math.round(item.contextLength / 1000);
-                limitTag = chalk.gray(` ⚡ ${ctxK >= 1000 ? `${(ctxK/1000).toFixed(1)}M` : `${ctxK}k`} ctx`);
+                limitTag = chalk.gray(` ⚡ ${ctxK >= 1000 ? `${(ctxK/1000).toFixed(0)}M` : `${ctxK}k`} ctx`);
             }
 
             let resetTag = '';
             if (item.resetWindow) {
-                resetTag = chalk.dim(` 🕒 ${item.resetWindow}`);
+                resetTag = chalk.dim(` ⏱️ ${item.resetWindow}`);
             }
 
             return {
                 name: id,
-                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}${limitTag}${resetTag}`
+                message: `${statusIcon} ${cleanName} ${providerTag} ${tierTag}${limitTag}${resetTag}`
             };
         });
         

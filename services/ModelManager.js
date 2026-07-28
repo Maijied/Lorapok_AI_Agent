@@ -177,7 +177,7 @@ class ModelManager {
                         contextLength: item.inputTokenLimit || null,
                         outputTokenLimit: item.outputTokenLimit || null,
                         rateLimit: dynamicLimit,
-                        resetWindow: '1m (RPM) / 00:00 UTC (RPD)',
+                        resetWindow: '1m/24h',
                         description: item.description || '',
                         tier: (modelId.includes('flash') || modelId.includes('lite') || modelId.includes('nano')) ? 'free' : 'pro'
                     };
@@ -216,11 +216,11 @@ class ModelManager {
                     const icon = this.getModelIcon(item.id, item.name);
                     const displayName = item.name || item.id;
 
-                    const ctx = item.context_length ? (item.context_length >= 1000000 ? `${(item.context_length / 1000000).toFixed(1)}M` : `${Math.round(item.context_length / 1000)}k`) : null;
+                    const ctx = item.context_length ? (item.context_length >= 1000000 ? `${(item.context_length / 1000000).toFixed(0)}M` : `${Math.round(item.context_length / 1000)}k`) : null;
                     const pPrice = item.pricing?.prompt ? (parseFloat(item.pricing.prompt) * 1000000) : 0;
                     const cPrice = item.pricing?.completion ? (parseFloat(item.pricing.completion) * 1000000) : 0;
                     const isFree = (pPrice === 0 && cPrice === 0) || item.id.endsWith(':free');
-                    const priceTag = isFree ? 'Free' : `$${pPrice.toFixed(2)}/M in`;
+                    const priceTag = isFree ? 'Free' : `$${pPrice.toFixed(2)}/M`;
                     const dynamicLimit = ctx ? `${ctx} ctx | ${priceTag}` : priceTag;
 
                     models[item.id] = {
@@ -230,7 +230,7 @@ class ModelManager {
                         provider: 'openrouter',
                         contextLength: item.context_length || null,
                         rateLimit: dynamicLimit,
-                        resetWindow: isFree ? '1m / 24h' : 'Per Request',
+                        resetWindow: isFree ? '1m/24h' : 'Realtime',
                         description: item.description || '',
                         pricing: item.pricing || null,
                         tier: isFree ? 'free' : 'pro'

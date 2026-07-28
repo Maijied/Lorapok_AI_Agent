@@ -162,7 +162,7 @@ async function handleModelSelection(agent, config) {
     const isInteractive = process.stdout.isTTY;
     let spinner = null;
     if (isInteractive) {
-        spinner = ora('Fetching available models from OpenRouter API & Perplexity...').start();
+        spinner = ora('Fetching available models from Google AI Studio, OpenRouter API & Perplexity...').start();
     } else {
         console.log(chalk.cyan('Fetching available models...'));
     }
@@ -187,7 +187,7 @@ async function handleModelSelection(agent, config) {
             choices: [
                 { name: 'ready', message: '🟢 View Ready Models (Available Without Credit Errors)' },
                 { name: 'category', message: '📁 Browse by Domain / Category' },
-                { name: 'provider', message: '🏢 Browse by AI Provider (Perplexity, OpenRouter)' },
+                { name: 'provider', message: '🏢 Browse by AI Provider (Google AI Studio, Perplexity, OpenRouter)' },
                 { name: 'tier', message: '💰 Browse by Pricing Tier (Free, Pro)' },
                 { name: 'all', message: '🌐 View All Supported Models' },
                 { name: 'back', message: '🔙 Back to Settings' }

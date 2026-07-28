@@ -38,7 +38,7 @@
     "devops"
   ],
   "author": "Lorapok Labs <https://lorapok.tech>",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "axios": "^1.6.0",
     "boxen": "^5.1.2",

@@ -1,21 +1,25 @@
-MIT License
+Lorapok AI Software License Agreement
+Copyright (c) 2026 Lorapok Labs (https://lorapok.tech). All Rights Reserved.
 
-Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+PROPRIETARY AND CONFIDENTIAL SOFTWARE LICENSE
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This Software ("Lorapok AI Agent") and associated source code, binaries, UI assets, and documentation are proprietary products of Lorapok Labs. The codebase is NOT open-source software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. LICENSE GRANT & TIERS
+Lorapok Labs offers access to Lorapok AI services under distinct service tiers (Free Tier and Premium Tier):
+- Free Tier: Provides access to standard AI chat, command execution, and file editing capabilities with standard quota limits.
+- Premium Tier: Provides access to advanced AI models, token optimization engines, priority execution queues, and enhanced repository automation tools.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. RESTRICTIONS
+You may not:
+a) Copy, modify, adapt, translate, reverse engineer, decompile, disassemble, or create derivative works based on this software or codebase.
+b) Distribute, sell, lease, rent, sublicense, assign, or otherwise transfer any rights in or to the Software or codebase to any third party.
+c) Remove, alter, or obscure any proprietary notices, copyright notices, or labels on the Software.
+
+3. OWNERSHIP
+Lorapok Labs retains all rights, title, interest, and intellectual property rights in and to the Software, source code, design systems, algorithms, trademarks, and associated materials.
+
+4. DISCLAIMER OF WARRANTY & LIMITATION OF LIABILITY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL LORAPOK LABS OR ITS CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF OR INABILITY TO USE THE SOFTWARE.
+
+For licensing inquiries or enterprise agreements, visit https://lorapok.tech.

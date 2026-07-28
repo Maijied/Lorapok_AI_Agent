@@ -19,8 +19,9 @@
 
 [![CI Pipeline](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/lorapok-ai.svg)](https://www.npmjs.com/package/lorapok-ai)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org)
+
 
 </div>
 
@@ -195,9 +196,15 @@ We welcome contributions! Please consult our [CONTRIBUTING.md](CONTRIBUTING.md) 
 
 ---
 
-## 📄 License
+## 📄 License & Product Tiers
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+Lorapok AI is a proprietary product of Lorapok Labs. **The codebase is closed-source and proprietary.**
+
+### Service Tiers
+- 🆓 **Free Tier**: Standard AI chat, file editing, git workflow execution, and interactive CLI features.
+- ⚡ **Premium Tier**: Access to high-throughput reasoning models, advanced context caching, priority execution queues, and enterprise repo automation tools.
+
+For licensing details and commercial inquiries, see the [LICENSE](LICENSE) file or visit [https://lorapok.tech](https://lorapok.tech).
 
 ---
 
@@ -210,3 +217,4 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 Copyright (c) 2026 Lorapok Labs. All rights reserved.
 
 </div>
+

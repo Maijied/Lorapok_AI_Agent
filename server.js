@@ -1,7 +1,7 @@
 /**
  * Lorapok AI Coding Agent
  * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
- * Licensed under the MIT License
+ * Proprietary & Confidential. All Rights Reserved.
  */
 'use strict';
 

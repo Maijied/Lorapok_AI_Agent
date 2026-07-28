@@ -123,11 +123,48 @@ async function handleChat(input, context, options = {}) {
             return { success: false, error: 'Request cancelled by user.' };
         }
 
-        // Aggregate token stats
-        if (response.usage && sessionData.tokens) {
-            sessionData.tokens.prompt += response.usage.prompt_tokens || 0;
-            sessionData.tokens.completion += response.usage.completion_tokens || 0;
-            sessionData.tokens.total += response.usage.total_tokens || 0;
+        // Active model metadata & token calculation
+        const activeModelId = config.getModel();
+        const allModels = agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
+        const activeModelMeta = allModels ? allModels[activeModelId] : null;
+        const icon = activeModelMeta?.icon || (agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
+        const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
+
+        let promptTokens = response.usage?.prompt_tokens || 0;
+        let completionTokens = response.usage?.completion_tokens || 0;
+        let totalTokens = response.usage?.total_tokens || 0;
+
+        if (!totalTokens && response.content) {
+            promptTokens = Math.max(10, Math.ceil((processedInput.length + projectInfo.length) / 4));
+            completionTokens = Math.max(5, Math.ceil(response.content.length / 4));
+            totalTokens = promptTokens + completionTokens;
+        }
+
+        // Aggregate token stats per model and session
+        if (sessionData) {
+            if (!sessionData.tokens) {
+                sessionData.tokens = { prompt: 0, completion: 0, total: 0 };
+            }
+            sessionData.tokens.prompt += promptTokens;
+            sessionData.tokens.completion += completionTokens;
+            sessionData.tokens.total += totalTokens;
+
+            if (!sessionData.modelUsage) {
+                sessionData.modelUsage = {};
+            }
+            if (!sessionData.modelUsage[activeModelId]) {
+                sessionData.modelUsage[activeModelId] = {
+                    name: displayName,
+                    prompt: 0,
+                    completion: 0,
+                    total: 0,
+                    requests: 0
+                };
+            }
+            sessionData.modelUsage[activeModelId].prompt += promptTokens;
+            sessionData.modelUsage[activeModelId].completion += completionTokens;
+            sessionData.modelUsage[activeModelId].total += totalTokens;
+            sessionData.modelUsage[activeModelId].requests += 1;
         }
 
         console.log(chalk.cyan.bold('\n🐛 LORAPOK:'));
@@ -135,13 +172,18 @@ async function handleChat(input, context, options = {}) {
         const cleanContent = ui.hideLongCodeBlocks(response.content);
         console.log(await renderMarkdown(cleanContent));
 
-        // Render model footer tag
-        const modelName = config.getModel();
+        // Render dynamic token consumption footer bar
         const termWidth = process.stdout.columns || 80;
         const cacheTag = response.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
-        const modelLabel = chalk.gray(`🧠 Using ${modelName}`) + cacheTag;
-        const padLen = Math.max(0, termWidth - modelLabel.replace(/\u001b\[\d+m/g, '').length - 2);
-        console.log(' '.repeat(padLen) + modelLabel + '\n');
+        const contextLenStr = activeModelMeta?.contextLength ? ` | Context: ${(activeModelMeta.contextLength / 1000).toFixed(0)}k` : '';
+        const modelTotalStr = sessionData.modelUsage?.[activeModelId]?.total ? sessionData.modelUsage[activeModelId].total.toLocaleString() : totalTokens.toLocaleString();
+
+        const tokenBar = chalk.gray(`📊 Tokens: `) + chalk.cyan(`${promptTokens} in + ${completionTokens} out = ${totalTokens} total`) + chalk.gray(` (Model Total: ${modelTotalStr}${contextLenStr})`);
+        const modelLabel = `${displayName} ${cacheTag}`;
+
+        console.log(chalk.gray('─'.repeat(Math.min(termWidth, 80))));
+        console.log(`🧠 ${chalk.bold(modelLabel)}  •  ${tokenBar}\n`);
+
 
 
         // Parse & execute file/shell action blocks

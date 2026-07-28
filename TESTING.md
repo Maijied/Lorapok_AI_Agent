@@ -9,6 +9,17 @@ npm run setup
 - **Check**: Does the Docker build complete without errors?
 - **Check**: Is the `lorapok` command available globally?
 
+### API Key Configuration Check
+```bash
+# Perplexity API Key (Get at https://www.perplexity.ai/settings/api)
+export PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxx
+
+# OpenRouter API Key (Get at https://openrouter.ai/keys)
+export OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx
+```
+- **Check**: Does `lorapok settings` load models from OpenRouter and Perplexity?
+
+
 ## 2. Interactive UI Verification
 Run `lorapok` to enter the primary chat mode.
 

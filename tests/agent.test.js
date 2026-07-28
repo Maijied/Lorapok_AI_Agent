@@ -103,4 +103,32 @@ describe('LorapokCodingAgent', () => {
 
         expect(axios.post).not.toHaveBeenCalled();
     });
+
+    test('should route OpenRouter models to OpenRouter API endpoint with correct headers', async () => {
+        agent.config.setOpenRouterApiKey('sk-or-v1-mock-key');
+
+        axios.post.mockResolvedValue({
+            data: {
+                choices: [{ message: { content: 'OpenRouter response' } }]
+            }
+        });
+
+        const response = await agent.callPerplexityAPI([{ role: 'user', content: 'test' }], 'anthropic/claude-3.5-sonnet');
+        expect(response.success).toBe(true);
+        expect(response.content).toBe('OpenRouter response');
+
+        expect(axios.post).toHaveBeenCalledWith(
+            'https://openrouter.ai/api/v1/chat/completions',
+            expect.objectContaining({
+                model: 'anthropic/claude-3.5-sonnet'
+            }),
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    'Authorization': 'Bearer sk-or-v1-mock-key',
+                    'HTTP-Referer': 'https://lorapok.tech',
+                    'X-Title': 'Lorapok AI Agent'
+                })
+            })
+        );
+    });
 });

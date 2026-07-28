@@ -82,6 +82,7 @@ async function showSystemMenu(context) {
             { name: 'files', message: '    📁 Workspace Files Browser' },
 
             { role: 'heading', message: chalk.cyan.bold('\n  📊 SYSTEM') },
+            { name: 'guide', message: '    📖 How to Use (User Guide & Workflow)' },
             { name: 'logs', message: '    📊 View Application Logs' },
             { name: 'help', message: '    ❓ Help & Command Guide' },
             { name: 'clear', message: '    🧹 Clear Screen' },
@@ -94,9 +95,11 @@ async function showSystemMenu(context) {
 
     if (cmd === 'exit') return { success: true, exit: true, mode: 'chat' };
     if (cmd === 'chat') return { success: true, mode: 'chat' };
+    if (cmd === 'guide') { TerminalUI.showHowToUse(); await new Input({ message: 'Press Enter to return ⏎ ‣' }).run().catch(() => null); return { success: true, mode: 'guide' }; }
     if (cmd === 'help') { showHelp(); return { success: true, mode: 'help' }; }
     if (cmd === 'clear') { clearScreen(); return { success: true, mode: 'chat' }; }
     if (cmd === 'logs') { await showLogs(); return { success: true, mode: 'logs' }; }
+
     if (cmd === 'analyze') { await handleAnalyze(context); return { success: true, mode: 'analyze' }; }
     if (cmd === 'plan') {
         const obj = await new Input({ message: 'What is the objective?' }).run().catch(() => null);
@@ -160,6 +163,13 @@ async function dispatchSlashCommand(input, context) {
             showHelp();
             return { success: true };
 
+        case 'guide':
+        case 'howtouse':
+        case 'manual':
+            TerminalUI.showHowToUse();
+            return { success: true };
+
+
         case 'clear':
             clearScreen();
             return { success: true };
@@ -207,7 +217,9 @@ async function dispatchSlashCommand(input, context) {
             return { success: true };
 
         case 'model':
-            return handleModelCommand(args[0], context);
+        case 'models':
+            return handleModelCommand(args, context);
+
 
         case 'bypass':
         case 'yolo': {

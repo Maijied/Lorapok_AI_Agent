@@ -41,8 +41,10 @@ const sessionData = {
     count: 0,
     successRate: 100,
     startTime: Date.now(),
-    tokens: { prompt: 0, completion: 0, total: 0 }
+    tokens: { prompt: 0, completion: 0, total: 0 },
+    modelUsage: {}
 };
+
 
 let ctrlCCount = 0;
 let ctrlCTimer = null;
@@ -389,12 +391,17 @@ const pkg = require('./package.json');
 program
     .name('lorapok')
     .version(`${pkg.name} v${pkg.version}\nBuilt with 🐛 by Lorapok Labs (https://lorapok.tech)`, '-v, --version', 'output the current version')
+    .option('-m, --model <modelName>', 'Set active LLM model for the session')
     .option('-y, --yes, --bypass, --yolo', 'Enable Auto-Approve bypass mode (auto-applies file actions & shell commands)')
     .action((options) => {
+        if (options.model) {
+            process.env.LORAPOK_MODEL = options.model;
+        }
         if (options.yes || options.bypass || options.yolo) {
             process.env.LORAPOK_AUTO_APPROVE = 'true';
         }
         main();
     });
+
 
 program.parse(process.argv);

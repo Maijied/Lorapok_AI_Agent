@@ -103,7 +103,7 @@ function renderTokenUsageBox(context, response, activeModelIdOverride) {
     const { agent, config, sessionData } = context;
     const boxen = require('boxen');
 
-    const activeModelId = activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
+    const activeModelId = response?.model || activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
     const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
     const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
     const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
@@ -225,9 +225,9 @@ async function handleAnalyze(context) {
         );
 
         if (result && result.content) {
-            const activeModelId = config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash';
+            const activeModelId = result.model || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
             const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
-            const activeModelMeta = allModels ? allModels[activeModelId] : null;
+            const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
             const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
             const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
 
@@ -260,7 +260,7 @@ async function handleAnalyze(context) {
 
             console.log(footerBox);
 
-            // Render token usage box after analysis completion
+            // Render token usage box after analysis completion using actual executed model
             renderTokenUsageBox(context, result, activeModelId);
 
             return { success: true, content: result.content };

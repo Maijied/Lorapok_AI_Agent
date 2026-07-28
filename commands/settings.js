@@ -11,6 +11,254 @@ const os = require('os');
 const path = require('path');
 const { Select, Input } = require('enquirer');
 const TerminalUI = require('../lib/ui');
+const boxen = require('boxen');
+const GithubAuth = require('../services/GithubAuth');
+
+async function openBrowserUrl(url) {
+    const ghAuth = new GithubAuth();
+    return await ghAuth.openBrowser(url);
+}
+
+function getOpenRouterInstructions() {
+    return [
+        chalk.cyan.bold('🌐 How to Create an OpenRouter API Key:\n'),
+        chalk.white('1. Open your browser and navigate to:'),
+        chalk.underline.yellow('   https://openrouter.ai/keys'),
+        '',
+        chalk.white('2. Sign in or create a free OpenRouter account.'),
+        chalk.white('3. Click ') + chalk.green('"Create Key"') + chalk.white(' (or "Add API Key").'),
+        chalk.white('4. Enter a name for the key (e.g. ') + chalk.yellow('Lorapok-Agent') + chalk.white(').'),
+        chalk.white('5. Copy the generated key (starts with ') + chalk.cyan('sk-or-v1-...') + chalk.white(').'),
+        chalk.white('6. Paste the key into Lorapok CLI settings.')
+    ].join('\n');
+}
+
+function getPerplexityInstructions() {
+    return [
+        chalk.magenta.bold('🟣 How to Create a Perplexity API Key:\n'),
+        chalk.white('1. Open your browser and navigate to:'),
+        chalk.underline.yellow('   https://www.perplexity.ai/settings/api'),
+        '',
+        chalk.white('2. Sign in to your Perplexity AI account.'),
+        chalk.white('3. Go to API Settings and click ') + chalk.green('"Generate API Key"') + chalk.white('.'),
+        chalk.white('4. Add payment / credit balance if required by Perplexity.'),
+        chalk.white('5. Copy the generated key (starts with ') + chalk.cyan('pplx-...') + chalk.white(').'),
+        chalk.white('6. Paste the key into Lorapok CLI settings.')
+    ].join('\n');
+}
+
+async function handleApiKeySettings(config) {
+    const keyMenu = new Select({
+        message: '🔑 Select API Key Provider to Update:',
+        choices: [
+            { name: 'openrouter', message: '🌐 OpenRouter API Key (https://openrouter.ai/keys)' },
+            { name: 'perplexity', message: '🟣 Perplexity API Key (https://www.perplexity.ai/settings/api)' },
+            { name: 'instructions', message: '📖 View Detailed Key Creation Instructions' },
+            { name: 'back', message: '🔙 Back' }
+        ],
+        result(name) { return this.map(name)[name]; }
+    });
+
+    const subChoice = await keyMenu.run().catch(() => 'back');
+    if (subChoice === 'back') return;
+
+    if (subChoice === 'instructions') {
+        console.log('\n' + boxen(getOpenRouterInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
+        console.log('\n' + boxen(getPerplexityInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'magenta' }));
+        return;
+    }
+
+    if (subChoice === 'openrouter') {
+        const url = 'https://openrouter.ai/keys';
+        console.log('\n' + boxen(getOpenRouterInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'cyan' }));
+        
+        const openAns = await new Select({
+            message: 'Open https://openrouter.ai/keys in your browser now?',
+            choices: [
+                { name: 'open', message: '🌐 Yes, open browser' },
+                { name: 'skip', message: '⏩ Skip opening, I will paste my key' }
+            ],
+            result(name) { return this.map(name)[name]; }
+        }).run().catch(() => 'skip');
+
+        if (openAns === 'open') {
+            await openBrowserUrl(url);
+            console.log(chalk.gray('Opening browser to https://openrouter.ai/keys...'));
+        }
+
+        const keyRes = await new Input({ message: '🔑 Enter/Paste OpenRouter API Key:' }).run().catch(() => null);
+        if (keyRes && keyRes.trim()) {
+            config.setOpenRouterApiKey(keyRes.trim());
+            console.log(TerminalUI.formatSuccess('OpenRouter API Key saved successfully.'));
+        }
+    } else if (subChoice === 'perplexity') {
+        const url = 'https://www.perplexity.ai/settings/api';
+        console.log('\n' + boxen(getPerplexityInstructions(), { padding: 1, borderStyle: 'round', borderColor: 'magenta' }));
+        
+        const openAns = await new Select({
+            message: 'Open https://www.perplexity.ai/settings/api in your browser now?',
+            choices: [
+                { name: 'open', message: '🌐 Yes, open browser' },
+                { name: 'skip', message: '⏩ Skip opening, I will paste my key' }
+            ],
+            result(name) { return this.map(name)[name]; }
+        }).run().catch(() => 'skip');
+
+        if (openAns === 'open') {
+            await openBrowserUrl(url);
+            console.log(chalk.gray('Opening browser to https://www.perplexity.ai/settings/api...'));
+        }
+
+        const keyRes = await new Input({ message: '🔑 Enter/Paste Perplexity API Key:' }).run().catch(() => null);
+        if (keyRes && keyRes.trim()) {
+            config.setPerplexityApiKey(keyRes.trim());
+            console.log(TerminalUI.formatSuccess('Perplexity API Key saved successfully.'));
+        }
+    }
+}
+
+async function handleModelSelection(agent, config) {
+    const ora = require('ora');
+    const isInteractive = process.stdout.isTTY;
+    let spinner = null;
+    if (isInteractive) {
+        spinner = ora('Fetching available models from OpenRouter API & Perplexity...').start();
+    } else {
+        console.log(chalk.cyan('Fetching available models...'));
+    }
+
+    let models = {};
+    try {
+        models = await agent.checkAvailableModels();
+        if (spinner) spinner.stop();
+    } catch (e) {
+        if (spinner) spinner.fail('Failed to fetch models: ' + e.message);
+        else console.log(chalk.red('Failed to fetch models: ' + e.message));
+        return;
+    }
+
+    const totalCount = Object.keys(models).length;
+    const availableCount = Object.values(models).filter(m => m.available).length;
+    console.log(chalk.cyan(`\n🧠 Loaded ${totalCount} dynamic models from API (${availableCount} available with active keys).\n`));
+
+    while (true) {
+        const mainMenu = new Select({
+            message: '🧠 Model Selection & Configuration',
+            choices: [
+                { name: 'ready', message: '🟢 View Ready Models (Available Without Credit Errors)' },
+                { name: 'category', message: '📁 Browse by Domain / Category' },
+                { name: 'provider', message: '🏢 Browse by AI Provider (Perplexity, OpenRouter)' },
+                { name: 'tier', message: '💰 Browse by Pricing Tier (Free, Pro)' },
+                { name: 'all', message: '🌐 View All Supported Models' },
+                { name: 'back', message: '🔙 Back to Settings' }
+            ],
+            result(name) { return this.map(name)[name]; }
+        });
+
+        const filterMode = await mainMenu.run().catch(() => 'back');
+        if (filterMode === 'back') return;
+
+        let filteredModelKeys = Object.keys(models);
+        let menuTitle = '';
+
+        if (filterMode === 'ready') {
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].available);
+            menuTitle = 'Ready Models';
+        } else if (filterMode === 'category') {
+            const categoryMenu = new Select({
+                message: '📁 Select Category:',
+                choices: [
+                    { name: 'coding', message: '💻 Coding & Engineering' },
+                    { name: 'reasoning', message: '🔬 Complex Logic & Reasoning' },
+                    { name: 'research', message: '🔍 Web Research & Search' },
+                    { name: 'fast', message: '⚡ Fast & Lightweight' },
+                    { name: 'back', message: '🔙 Back' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const cat = await categoryMenu.run().catch(() => 'back');
+            if (cat === 'back') continue;
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].category === cat);
+            menuTitle = `Category: ${cat}`;
+        } else if (filterMode === 'provider') {
+            const provMenu = new Select({
+                message: '🏢 Select Provider:',
+                choices: [
+                    { name: 'perplexity', message: '🟣 Perplexity AI' },
+                    { name: 'openrouter', message: '🔵 OpenRouter' },
+                    { name: 'back', message: '🔙 Back' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const prov = await provMenu.run().catch(() => 'back');
+            if (prov === 'back') continue;
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].provider === prov);
+            menuTitle = `Provider: ${prov}`;
+        } else if (filterMode === 'tier') {
+            const tierMenu = new Select({
+                message: '💰 Select Pricing Tier:',
+                choices: [
+                    { name: 'free', message: '🆓 Free Models' },
+                    { name: 'pro', message: '💎 Pro / Paid Models' },
+                    { name: 'back', message: '🔙 Back' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const tier = await tierMenu.run().catch(() => 'back');
+            if (tier === 'back') continue;
+            filteredModelKeys = filteredModelKeys.filter(id => models[id].tier === tier);
+            menuTitle = `Tier: ${tier}`;
+        } else {
+            menuTitle = 'All Models';
+        }
+
+        if (filteredModelKeys.length === 0) {
+            console.log(chalk.yellow(`\n⚠️ No models found for ${menuTitle}.\n`));
+            continue;
+        }
+
+        const choices = filteredModelKeys.map(id => {
+            const item = models[id];
+            const statusIcon = item.available ? chalk.green('🟢') : chalk.gray('🔒');
+            const providerTag = item.provider === 'openrouter' ? chalk.cyan('[OpenRouter]') : chalk.magenta('[Perplexity]');
+            const tierTag = item.tier === 'free' ? chalk.green('(Free)') : chalk.yellow('(Pro)');
+            return {
+                name: id,
+                message: `${statusIcon} ${item.name} ${providerTag} ${tierTag}`
+            };
+        });
+        
+        choices.push({ name: 'back', message: '🔙 Back to Filter Menu' });
+
+        const modelSelect = new Select({
+            message: `🧠 Select from ${menuTitle} (${filteredModelKeys.length} found):`,
+            choices
+        });
+
+        const model = await modelSelect.run().catch(() => 'back');
+        if (model === 'back') continue;
+
+        if (model) {
+            const selectedModel = models[model];
+            const confirm = new Select({
+                message: `Switch active AI model to '${selectedModel?.name || model}'?`,
+                choices: [
+                    { name: 'save', message: '🟢 Switch & Save Model' },
+                    { name: 'reject', message: '❌ Reject / Cancel' }
+                ],
+                result(name) { return this.map(name)[name]; }
+            });
+            const ans = await confirm.run().catch(() => 'reject');
+            if (ans === 'save') {
+                config.setModel(model);
+                console.log(TerminalUI.formatSuccess(`AI Model updated to ${selectedModel?.name || model}.`));
+                return;
+            } else {
+                console.log(chalk.yellow('\n⚠️ Model change rejected. Kept current model.\n'));
+            }
+        }
+    }
+}
 
 /**
  * Display settings interactive selection menu.
@@ -19,6 +267,7 @@ const TerminalUI = require('../lib/ui');
  * @returns {Promise<{ success: boolean, message?: string }>} Execution result status
  */
 async function showSettings(agent, config) {
+
     const select = new Select({
         name: 'setting',
         message: 'Settings & Preferences:',
@@ -49,7 +298,6 @@ async function showSettings(agent, config) {
         return { success: true };
     }
 
-
     if (choice === 'name') {
         const currentName = config.getUserName() || 'Developer';
         const nameRes = await new Input({
@@ -75,33 +323,9 @@ async function showSettings(agent, config) {
             }
         }
     } else if (choice === 'model') {
-        const models = await agent.checkAvailableModels();
-        const modelSelect = new Select({
-            message: '🧠 Select LLM Model:',
-            choices: Object.keys(models).map(id => ({
-                name: id,
-                message: `🧠 ${models[id].name}`
-            }))
-        });
-        const model = await modelSelect.run().catch(() => null);
-        if (model) {
-            const confirm = new Select({
-                message: `Switch active AI model to '${models[model]?.name || model}'?`,
-                choices: [
-                    { name: 'save', message: '🟢 Switch & Save Model' },
-                    { name: 'reject', message: '❌ Reject / Cancel' }
-                ],
-                result(name) { return this.map(name)[name]; }
-            });
-            const ans = await confirm.run().catch(() => 'reject');
-            if (ans === 'save') {
-                config.setModel(model);
-                console.log(TerminalUI.formatSuccess(`AI Model updated to ${models[model]?.name || model}.`));
-            } else {
-                console.log(chalk.yellow('\n⚠️ Model change rejected. Kept current model.'));
-            }
-        }
+        await handleModelSelection(agent, config);
     } else if (choice === 'language') {
+
         const langRes = await new Input({ message: '🌐 Default Language:' }).run().catch(() => null);
         if (langRes) {
             const confirm = new Select({
@@ -121,24 +345,7 @@ async function showSettings(agent, config) {
             }
         }
     } else if (choice === 'key') {
-        const keyRes = await new Input({ message: '🔑 New API Key:' }).run().catch(() => null);
-        if (keyRes) {
-            const confirm = new Select({
-                message: 'Update API Key?',
-                choices: [
-                    { name: 'save', message: '🟢 Save New API Key' },
-                    { name: 'reject', message: '❌ Reject / Cancel' }
-                ],
-                result(name) { return this.map(name)[name]; }
-            });
-            const ans = await confirm.run().catch(() => 'reject');
-            if (ans === 'save') {
-                config.setApiKey(keyRes.trim());
-                console.log(TerminalUI.formatSuccess('API Key updated successfully.'));
-            } else {
-                console.log(chalk.yellow('\n⚠️ API Key change rejected.'));
-            }
-        }
+        await handleApiKeySettings(config);
     } else if (choice === 'theme') {
         await TerminalUI.previewThemes(config);
     }
@@ -199,20 +406,91 @@ async function showLogs() {
 /**
  * Slash command handler for switching active LLM model (`/model <modelId>`).
  * @param {string} modelId - Target model identifier
- * @param {Object} context - CommandContext containing { config, ui }
+/**
+ * Slash command handler for inspecting, switching, or listing LLM models (`/model [subcommand/modelId]`).
+ * @param {Array<string>|string} [args] - Subcommands ('info', 'list', 'set') or target model ID
+ * @param {Object} context - CommandContext containing { agent, config, ui, sessionData }
  * @returns {Promise<{ success: boolean, model?: string, error?: string }>} Command result
  */
-async function handleModelCommand(modelId, context) {
-    const { config, ui } = context;
-    if (!modelId) {
-        console.log(chalk.cyan(`Current model: ${config.getModel()}`));
+async function handleModelCommand(args, context) {
+    const { agent, config, ui, sessionData } = context;
+    const sub = Array.isArray(args) ? args[0] : args;
+    const targetModel = Array.isArray(args) ? (args[1] || args[0]) : args;
+
+    if (!sub || sub === '') {
+        await handleModelSelection(agent, config);
         return { success: true, model: config.getModel() };
     }
 
-    config.setModel(modelId.trim());
-    console.log(ui.formatSuccess(`Active model changed to ${modelId.trim()}`));
-    return { success: true, model: modelId.trim() };
+    const cleanSub = String(sub).toLowerCase().trim();
+
+    if (cleanSub === 'info') {
+        const activeModelId = config.getModel();
+        const allModels = agent?.modelManager ? agent.modelManager.cache.get('allModels') : null;
+        const meta = allModels ? allModels[activeModelId] : null;
+        const icon = meta?.icon || (agent?.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
+
+        const usageInfo = sessionData?.modelUsage?.[activeModelId] || { requests: 0, prompt: 0, completion: 0, total: 0 };
+
+        console.log(chalk.cyan.bold('\n🧠 ACTIVE LLM MODEL INFO\n'));
+        console.log(`  Model ID:        ${chalk.white.bold(activeModelId)}`);
+        console.log(`  Display Name:    ${meta?.name || `${icon} ${activeModelId}`}`);
+        console.log(`  Provider:        ${meta?.provider === 'openrouter' ? chalk.cyan('OpenRouter API') : chalk.magenta('Perplexity API')}`);
+        console.log(`  Category:        ${meta?.category ? meta.category.toUpperCase() : 'General'}`);
+        console.log(`  Context Window:  ${meta?.contextLength ? `${(meta.contextLength / 1000).toFixed(0)}k tokens` : 'N/A'}`);
+        console.log(`  Session Reqs:    ${chalk.yellow(usageInfo.requests)} requests`);
+        console.log(`  Tokens Used:     ${chalk.green(usageInfo.total.toLocaleString())} tokens\n`);
+        return { success: true, model: activeModelId };
+    }
+
+    if (cleanSub === 'list' || cleanSub === 'ls') {
+        const ora = require('ora');
+        let spinner = null;
+        if (process.stdout.isTTY) {
+            spinner = ora('Fetching available models...').start();
+        }
+        let models = {};
+        try {
+            models = await agent.checkAvailableModels();
+            if (spinner) spinner.stop();
+        } catch (e) {
+            if (spinner) spinner.fail('Failed to fetch models: ' + e.message);
+            return { success: false, error: e.message };
+        }
+
+        console.log(chalk.cyan.bold(`\n🧠 AVAILABLE LLM MODELS (${Object.keys(models).length} TOTAL)\n`));
+        const categories = ['coding', 'reasoning', 'research', 'fast', 'general'];
+        const Table = require('cli-table3');
+
+        categories.forEach(cat => {
+            const catModels = Object.keys(models).filter(id => models[id].category === cat);
+            if (catModels.length === 0) return;
+
+            const table = new Table({
+                head: [chalk.cyan('Model ID'), chalk.cyan('Provider'), chalk.cyan('Context'), chalk.cyan('Status')],
+                style: { head: [], border: ['gray'] }
+            });
+
+            catModels.slice(0, 8).forEach(id => {
+                const item = models[id];
+                const status = item.available ? chalk.green('🟢 Ready') : chalk.gray('🔒 Key needed');
+                const provider = item.provider === 'openrouter' ? chalk.cyan('OpenRouter') : chalk.magenta('Perplexity');
+                const ctx = item.contextLength ? `${(item.contextLength / 1000).toFixed(0)}k` : 'N/A';
+                table.push([chalk.bold(item.name || id), provider, ctx, status]);
+            });
+
+            console.log(chalk.yellow.bold(`📁 Category: ${cat.toUpperCase()} (${catModels.length} models)`));
+            console.log(table.toString() + '\n');
+        });
+        return { success: true };
+    }
+
+    const nextModel = (cleanSub === 'set' && targetModel) ? targetModel : sub;
+    config.setModel(String(nextModel).trim());
+    console.log(ui.formatSuccess(`Active model changed to ${String(nextModel).trim()}`));
+    return { success: true, model: String(nextModel).trim() };
 }
+
 
 /**
  * Slash command handler for inspecting or setting config entries (`/config [key] [value]`).

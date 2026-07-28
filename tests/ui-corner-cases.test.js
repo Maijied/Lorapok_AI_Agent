@@ -255,3 +255,32 @@ describe('TerminalUI.getBranding corner cases', () => {
         }).not.toThrow();
     });
 });
+
+describe('TerminalUI.showInteractionSummary corner cases', () => {
+    test('1. Should render session recap with multi-model breakdown without throwing', () => {
+        const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const mockData = {
+            id: 'TEST1234',
+            count: 3,
+            successRate: 100,
+            tokens: { prompt: 500, completion: 300, total: 800 },
+            modelUsage: {
+                'anthropic/claude-3.5-sonnet': { name: '🎭 Claude 3.5 Sonnet', requests: 2, prompt: 300, completion: 200, total: 500 },
+                'sonar-pro': { name: '🎯 Sonar Pro', requests: 1, prompt: 200, completion: 100, total: 300 }
+            }
+        };
+
+        expect(() => TerminalUI.showInteractionSummary(mockData)).not.toThrow();
+        expect(spyLog).toHaveBeenCalled();
+        spyLog.mockRestore();
+    });
+
+    test('2. Should render showHowToUse guide without throwing', () => {
+        const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+        expect(() => TerminalUI.showHowToUse()).not.toThrow();
+        expect(spyLog).toHaveBeenCalled();
+        spyLog.mockRestore();
+    });
+});
+
+

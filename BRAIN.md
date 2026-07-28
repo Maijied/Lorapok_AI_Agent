@@ -1,7 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-07-28 | Version: 1.0.0 | Test Suite: 17/17 Passed (165 Tests)*
+> *Last Synced: 2026-07-28 | Version: 1.0.0 | Test Suite: 18/18 Passed (175 Tests)*
 
 ---
 
@@ -48,7 +48,8 @@ Lorapok AI Agent Workspace
 │   ├── ActionsManager.js        # Action queue & execution tracking
 │   ├── FileManager.js           # Safe file operations & path checking
 │   ├── GitManager.js            # Git command execution wrapper
-│   └── GithubAuth.js            # OAuth token management
+│   ├── GithubAuth.js            # OAuth token management
+│   └── ModelManager.js          # Model API routing & configuration mapping
 ├── server.js                    # Express REST API backend
 ├── website/ & LorapokAiBuild/   # Frontend web UI & GitHub Pages build
 ├── tests/                       # Jest test suite (17 suites, 161 tests)
@@ -68,8 +69,8 @@ Lorapok AI Agent Workspace
 ## 📊 Live Metrics & Verification Snapshot
 - **Active Node Target**: Node.js >= 18.0.0
 - **Test Runner**: Jest v29.7.0 (`npm test`)
-- **Test Suites**: 16 Passed, 16 Total
-- **Total Tests**: 155 Passed, 155 Total
+- **Test Suites**: 18 Passed, 18 Total
+- **Total Tests**: 175 Passed, 175 Total
 - **Docker Support**: Docker Compose with automatic fallback to local Node.js.
 
 ---
@@ -77,8 +78,9 @@ Lorapok AI Agent Workspace
 ## 🌿 Git Branch Matrix
 | Branch | Status | Primary Purpose / Feature Scope |
 |---|---|---|
-| `main` | Production Active | Core production branch, 155/155 tests passing |
+| `main` | Production Active | Core production branch, 175/175 tests passing |
 | `Beta-V2` | Active Feature | V2 enhancements, corner-case test suites, website builds |
+| `LLM-Support/OpenRouter-Support` | Feature Branch | Hierarchical Model Selection UI, Provider Support, Tier Display |
 | `git-features-integration` | Feature Branch | Startup logo animation, version display, smart action reruns |
 | `ui-polish-and-functionality-improvement` | Feature Branch | Settings themes, exit summaries, documentation updates |
 | `bash-command-support-update-language-support` | Docs Branch | 60+ language support documentation |

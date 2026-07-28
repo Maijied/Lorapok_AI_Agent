@@ -103,14 +103,17 @@ rm -rf ~/.lorapok
 
 ## 🎯 Quick Start Guide
 
-1. **Set your Perplexity API Key:**
+1. **Set your API Key (Perplexity AI or OpenRouter):**
    ```bash
-   # Via Environment Variable
-   export PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxx
+   # Option A: OpenRouter API Key (Access Claude 3.5 Sonnet, GPT-4o, DeepSeek R1, Llama 3)
+   # Get key at: https://openrouter.ai/keys
+   export OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx
 
-   # Or add to a local .env file
-   echo "PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxx" > .env
+   # Option B: Perplexity AI API Key (Access Sonar, Sonar Pro, Reasoning models)
+   # Get key at: https://www.perplexity.ai/settings/api
+   export PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxx
    ```
+
 
 2. **Launch Lorapok CLI:**
    ```bash
@@ -146,6 +149,8 @@ Lorapok stores user settings in `~/.lorapok/config.json`. You can modify setting
 | `/chat` | `chat`, `Enter` | Interactive AI coding chat mode |
 | `/plan` | `plan` | Trigger Plan → Tasks → Code execution workflow |
 | `/analyze` | `analyze` | Perform deep project structure analysis |
+| `/model` | `models` | Switch, list (`/model list`), or inspect (`/model info`) active LLM model |
+| `/cache` | `cache` | Inspect, toggle, or clear LLM response cache |
 | `/git` | `git` | Open Git operations & authentication menu |
 | `/actions` | `ci`, `actions` | Monitor and trigger GitHub Actions workflows |
 | `/files` | `files` | Display visual project file tree |
@@ -154,6 +159,7 @@ Lorapok stores user settings in `~/.lorapok/config.json`. You can modify setting
 | `/clear` | `clear` | Clear terminal screen |
 | `/help` | `?`, `help` | Display command reference |
 | `/exit` | `exit`, `/q` | Exit Lorapok session |
+
 
 ---
 

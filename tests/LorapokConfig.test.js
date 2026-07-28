@@ -44,6 +44,19 @@ describe('LorapokConfig', () => {
         expect(config.getApiKey()).toBe('pplx-dirty-key');
     });
 
+    test('should save and load OpenRouter API key', () => {
+        config.setOpenRouterApiKey('sk-or-v1-testkey');
+        expect(config.getOpenRouterApiKey()).toBe('sk-or-v1-testkey');
+
+        const config2 = new LorapokConfig();
+        expect(config2.getOpenRouterApiKey()).toBe('sk-or-v1-testkey');
+    });
+
+    test('should clean dirty OpenRouter API keys (whitespace and quotes)', () => {
+        config.setOpenRouterApiKey('  "sk-or-v1-dirtykey"  ');
+        expect(config.getOpenRouterApiKey()).toBe('sk-or-v1-dirtykey');
+    });
+
     test('should save and load model', () => {
         config.setModel('sonar-pro');
         expect(config.getModel()).toBe('sonar-pro');
@@ -54,9 +67,12 @@ describe('LorapokConfig', () => {
 
     test('should persist to correct directory', () => {
         config.setApiKey('abc');
+        config.setOpenRouterApiKey('sk-or-v1-xyz');
         const configPath = path.join(testHome, '.lorapok', 'config.json');
         expect(fs.existsSync(configPath)).toBe(true);
         const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         expect(data.apiKey).toBe('abc');
+        expect(data.openrouterApiKey).toBe('sk-or-v1-xyz');
     });
 });
+

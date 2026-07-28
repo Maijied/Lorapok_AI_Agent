@@ -6,7 +6,7 @@
 ## Core Architecture & Stack
 - **Runtime**: Node.js >= 18.0.0 (Supports native execution and Docker container fallback).
 - **Core CLI Engine**: `index.js`, `lib/agent.js`, `lib/agent-enhanced.js`
-- **Services**: `services/GitManager.js`, `services/FileManager.js`, `services/ActionsManager.js`, `services/GithubAuth.js`
+- **Services**: `services/GitManager.js`, `services/FileManager.js`, `services/ActionsManager.js`, `services/GithubAuth.js`, `services/ModelManager.js`
 - **Commands**: `commands/actions.js`, `commands/auth.js`, `commands/chat.js`, `commands/git.js`, `commands/settings.js`, `commands/system.js`, `commands/utils.js`, `commands/workflow.js`
 - **Web API**: `server.js` (Express + CORS + Multer)
 - **Terminal UI**: `lib/ui.js`, `lib/renderer.js` (Chalk, Boxen, Ora, Enquirer, Figlet, Marked)
@@ -30,6 +30,7 @@
 - `Beta-V2`: Feature branch for v2 enhancements, expanded corner-case testing, and futuristic web features.
 - `git-features-integration`: Feature branch for enhanced Git actions and action rerun workflows.
 - `ui-polish-and-functionality-improvement`: Branch for UI polish, exit summaries, and theme standardization.
+- `LLM-Support/OpenRouter-Support`: Branch for multi-provider API model routing and dynamic UI selection logic.
 
 ---
 

@@ -1,69 +1,61 @@
 import React from 'react';
+import LarvaLogo from './LarvaLogo';
 import { ecosystemLinks } from '../data/ecosystemProjects';
 
 const socialCards = [
   {
-    name: 'GitHub',
-    url: 'https://github.com/maijied',
-    displayUrl: 'github.com/maijied',
-    icon: '🐙',
-    badge: 'Developer'
+    name: 'GitHub Org',
+    url: ecosystemLinks.githubOrg,
+    displayUrl: 'github.com/Lorapok',
+    icon: '🐙'
   },
   {
-    name: 'LinkedIn',
+    name: 'Developer GitHub',
+    url: ecosystemLinks.developerGithub,
+    displayUrl: 'github.com/maijied',
+    icon: '👤'
+  },
+  {
+    name: 'LinkedIn Showcase',
     url: 'https://linkedin.com/showcase/lorapok/',
     displayUrl: 'linkedin.com/showcase/lorapok/',
-    icon: '💼',
-    badge: 'Showcase'
+    icon: '💼'
   },
   {
     name: 'Product Hunt',
     url: 'https://www.producthunt.com/products/lorapok-atlas-api-directory',
     displayUrl: 'producthunt.com/products/lorapok...',
-    icon: '🚀',
-    badge: 'Product'
+    icon: '🚀'
   },
   {
-    name: 'Reddit',
+    name: 'Reddit Community',
     url: 'https://reddit.com/r/LorapokLabs/',
     displayUrl: 'reddit.com/r/LorapokLabs/',
-    icon: '💬',
-    badge: 'Community'
+    icon: '💬'
   },
   {
     name: 'Instagram',
     url: 'https://instagram.com/lorapoklabs/',
     displayUrl: 'instagram.com/lorapoklabs/',
-    icon: '📷',
-    badge: 'Media'
+    icon: '📷'
   },
   {
     name: 'Facebook',
     url: 'https://facebook.com/lorapoklabs',
     displayUrl: 'facebook.com/lorapoklabs',
-    icon: '👥',
-    badge: 'Social'
+    icon: '👥'
   },
   {
-    name: 'Wellfound',
+    name: 'Wellfound Profile',
     url: 'https://wellfound.com/u/maizied',
     displayUrl: 'wellfound.com/u/maizied',
-    icon: '💼',
-    badge: 'Profile'
+    icon: '💼'
   },
   {
-    name: 'Portfolio',
+    name: 'Developer Portfolio',
     url: 'https://maijied.github.io/Maijied',
     displayUrl: 'maijied.github.io/Maijied',
-    icon: '🌐',
-    badge: 'Website'
-  },
-  {
-    name: 'OSS Ecosystem',
-    url: 'https://lorapok.github.io',
-    displayUrl: 'lorapok.github.io',
-    icon: '📦',
-    badge: 'Ecosystem'
+    icon: '🌐'
   }
 ];
 
@@ -72,7 +64,7 @@ export default function Footer() {
     <footer className="footer" id="footer" style={{ background: '#030711', borderTop: '1px solid var(--border-glass)', padding: '5rem 2rem 2.5rem' }}>
       <div className="container">
 
-        {/* ── Typography Section Header ── */}
+        {/* ── Section Header ── */}
         <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
           <div
             style={{
@@ -108,7 +100,7 @@ export default function Footer() {
             Products that feel alive, built with precision.
           </p>
 
-          {/* Mono Code Snippet Banner */}
+          {/* Mono Code Banner */}
           <div
             style={{
               display: 'inline-block',
@@ -126,29 +118,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ── Top Pill Buttons Row (SS1) ── */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '3.5rem' }}>
-          <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
-            &lt;/&gt; Org
-          </a>
-          <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem', borderColor: '#10B981', color: '#10B981' }}>
-            🌐 Founder
-          </a>
-          <a href="https://gravatar.com/maijied" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
-            🌐 Gravatar
-          </a>
-          <a href="https://reddit.com/r/LorapokLabs/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
-            🌐 Reddit
-          </a>
-          <a href="https://twitter.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
-            🌐 X
-          </a>
-          <a href="mailto:contact@lorapok.tech" className="btn btn-secondary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.86rem' }}>
-            ✉️ Email
-          </a>
-        </div>
-
-        {/* ── Social Cards Grid (SS2) ── */}
+        {/* ── De-duplicated Social Grid Cards (Single Unified Row) ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '4rem' }}>
           {socialCards.map((card) => (
             <a
@@ -197,11 +167,8 @@ export default function Footer() {
         {/* ── Main Footer Grid ── */}
         <div className="footer-grid" style={{ marginBottom: '3.5rem' }}>
           <div>
-            <div className="footer-brand">
-              <img src="assets/logo.png" alt="Lorapok AI" />
-              <span className="footer-brand-name">
-                Lorapok <span className="gradient-text">AI</span>
-              </span>
+            <div className="footer-brand" style={{ marginBottom: '1rem' }}>
+              <LarvaLogo size={42} showText={true} />
             </div>
             <p className="footer-description">
               Independent Open-Source Ecosystem. Building the Future. One Line at a Time. Experimental developer tools with a signature Biological UI aesthetic.
@@ -221,27 +188,30 @@ export default function Footer() {
           <div>
             <h4 className="footer-heading">Resources</h4>
             <div className="footer-links">
-              <a href={ecosystemLinks.githubOrg} className="footer-link" target="_blank" rel="noopener noreferrer">GitHub Org</a>
-              <a href={ecosystemLinks.npmPackage} className="footer-link" target="_blank" rel="noopener noreferrer">npm Package</a>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/CHANGELOG.md" className="footer-link" target="_blank" rel="noopener noreferrer">Changelog</a>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/LICENSE" className="footer-link" target="_blank" rel="noopener noreferrer">MIT License</a>
+              <a href={ecosystemLinks.githubOrg} className="footer-link" target="_blank" rel="noopener noreferrer">GitHub Organization 🐙</a>
+              <a href={ecosystemLinks.npmPackage} className="footer-link" target="_blank" rel="noopener noreferrer">npm Package Registry 📦</a>
+              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/CHANGELOG.md" className="footer-link" target="_blank" rel="noopener noreferrer">Release Changelog 📋</a>
+              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/LICENSE" className="footer-link" target="_blank" rel="noopener noreferrer">MIT License 📜</a>
             </div>
           </div>
 
           <div>
             <h4 className="footer-heading">Contact &amp; Support</h4>
             <div className="footer-links">
-              <a href="mailto:contact@lorapok.tech" className="footer-link">contact@lorapok.tech</a>
-              <a href="mailto:maijied@gmail.com" className="footer-link">maijied@gmail.com</a>
-              <a href={ecosystemLinks.developerGithub} className="footer-link" target="_blank" rel="noopener noreferrer">@Maijied GitHub</a>
+              <a href="mailto:lorapoklabs@gmail.com" className="footer-link" style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                lorapoklabs@gmail.com ✉️
+              </a>
+              <a href="mailto:contact@lorapok.tech" className="footer-link">contact@lorapok.tech ✉️</a>
+              <a href="mailto:maijied@gmail.com" className="footer-link">maijied@gmail.com ✉️</a>
+              <a href={ecosystemLinks.developerGithub} className="footer-link" target="_blank" rel="noopener noreferrer">@Maijied GitHub 👤</a>
             </div>
           </div>
         </div>
 
-        {/* ── Bottom Bar with Country Badge & Social Icons (SS3) ── */}
+        {/* ── Bottom Footer Bar ── */}
         <div className="footer-bottom">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '1.2rem' }}>🌐</span>
+            <span style={{ fontSize: '1.2rem' }}>🐛</span>
             <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
               Lorapok Labs · Bangladesh
             </span>
@@ -257,7 +227,7 @@ export default function Footer() {
             <a href="https://twitter.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Twitter / X">
               🐦
             </a>
-            <a href="mailto:contact@lorapok.tech" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Email">
+            <a href="mailto:lorapoklabs@gmail.com" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Email">
               ✉️
             </a>
             <a href="https://linkedin.com/showcase/lorapok/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="LinkedIn">
@@ -268,9 +238,6 @@ export default function Footer() {
             </a>
             <a href="https://instagram.com/lorapoklabs/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Instagram">
               📷
-            </a>
-            <a href="https://facebook.com/lorapoklabs" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} title="Facebook">
-              👥
             </a>
           </div>
         </div>

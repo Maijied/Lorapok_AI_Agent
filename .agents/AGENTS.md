@@ -17,4 +17,5 @@ This file provides context and rules for AI agents operating within the `Lorapok
 - **Docker Fallback**: Maintain backwards compatibility with Docker compose environments (`docker-compose.yml`, `Dockerfile`).
 - **Interactive Shell Handling**: Respect CLI non-interactive modes when running under automated environments or CI.
 - **Token Efficiency**: Use targeted line-range file reads (`StartLine`/`EndLine`), chunked edits, and `BRAIN.md` lookup to conserve prompt context tokens.
+- **NPM Cache Cleanup**: Always execute `npm cache clean --force` after completing tasks and test verifications to optimize workspace and system cache.
 

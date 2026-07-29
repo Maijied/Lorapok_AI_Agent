@@ -1,6 +1,12 @@
 <div align="center">
 
-<img src="assets/lorapok-larva-logo.svg" alt="Lorapok AI Cybernetic Larva Logo" width="160" />
+<img src="assets/lorapok-larva-logo.svg" alt="Lorapok AI Logo" width="130" />
+
+</div>
+
+---
+
+<div align="center">
 
 ```
 ██╗      ██████╗ ██████╗  █████╗ ██████╗  ██████╗ ██╗  ██╗     █████╗ ██╗
@@ -11,21 +17,32 @@
 ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
 ```
 
-# 🐛 Lorapok AI
+# Lorapok AI Coding Agent
 
-**Autonomous, action-oriented AI coding agent for terminal engineering & full-stack development.**
+### ◆ Lorapok · Open Source Intelligence
 
-*Plan. Code. Execute. Commit. Deploy — directly from your terminal.*
+*The world's most versatile terminal-first autonomous AI coding agent — 25+ curated LLMs, live terminal execution, automated test suite verification, and git orchestration.*
 
-[![CI Pipeline](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/lorapok-ai.svg)](https://www.npmjs.com/package/lorapok-ai)
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org)
+<br />
 
+[![Live App](https://img.shields.io/badge/LIVE_DEMO-ai.lorapok.tech-00FF88?style=for-the-badge&logo=react)](https://ai.lorapok.tech)
+[![GitHub Pages](https://img.shields.io/badge/GITHUB_PAGES-v2.0-00E5FF?style=for-the-badge)](https://ai.lorapok.tech)
+[![npm version](https://img.shields.io/badge/NPM-v1.2.0-7C3AED?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/lorapok-ai)
+[![Unit Tests](https://img.shields.io/badge/TESTS-186_PASSING-00FF88?style=for-the-badge)](https://github.com/Maijied/Lorapok_AI_Agent)
+[![License](https://img.shields.io/badge/LICENSE-MIT-green?style=for-the-badge)](LICENSE)
+[![Node.js](https://img.shields.io/badge/NODE.JS-%3E%3D18.0.0-339933?style=for-the-badge&logo=node.js)](https://nodejs.org)
+
+<br />
+
+→ [**Open Live App**](https://ai.lorapok.tech) · [**Report Bug**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**Request Feature**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**Contribute**](https://github.com/Maijied/Lorapok_AI_Agent)
 
 </div>
 
 ---
+
+## ⚡ What is Lorapok AI Agent?
+
+**Lorapok AI Agent** is an autonomous, action-oriented CLI (`bin/lorapok.js`) and REST API (`server.js`) engine built for terminal engineering and full-stack development. It plans, scaffolds code, executes test suites, inspects Git diffs, and orchestrates multi-provider AI models across **Google Gemini (3.6/3.5/2.0)**, **OpenRouter (Multi-LLM)** & **Perplexity AI**.
 
 ## 🌟 Feature Matrix
 

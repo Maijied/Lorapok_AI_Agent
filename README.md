@@ -1,21 +1,35 @@
 <div align="center">
 
-<img src="assets/lorapok-larva-logo.svg" alt="Lorapok AI Logo" width="130" />
-
-</div>
-
----
-
-<div align="center">
-
-```
+<table border="0" width="100%">
+  <tr>
+    <td align="left" valign="middle">
+      <pre>
 ██╗      ██████╗ ██████╗  █████╗ ██████╗  ██████╗ ██╗  ██╗     █████╗ ██╗
 ██║     ██╔═══██╗██╔══██╗██╔══██╗██╔══██╗██╔═══██╗██║ ██╔╝    ██╔══██╗██║
 ██║     ██║   ██║██████╔╝███████║██████╔╝██║   ██║█████╔╝     ███████║██║
 ██║     ██║   ██║██╔══██╗██╔══██║██╔═══╝ ██║   ██║██╔═██╗     ██╔══██║██║
 ███████╗╚██████╔╝██║  ██║██║  ██║██║     ╚██████╔╝██║  ██╗    ██║  ██║██║
 ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
-```
+      </pre>
+      <div align="left">
+        <code><b>[ SYSTEM ONLINE ]</b></code> — <b>Mohammad Maizied Hasan Majumder</b> · <a href="https://ai.lorapok.tech">ai.lorapok.tech</a>
+        <br />
+        <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>Beta v2.0</b></sub>
+      </div>
+    </td>
+    <td align="right" valign="middle" width="180">
+      <a href="https://ai.lorapok.tech" target="_blank">
+        <img src="assets/lorapok-larva-logo.svg" alt="Lorapok AI Cybernetic Larva Logo" width="150" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+</div>
+
+---
+
+<div align="center">
 
 # Lorapok AI Coding Agent
 
@@ -25,16 +39,16 @@
 
 <br />
 
-[![Live App](https://img.shields.io/badge/LIVE_DEMO-ai.lorapok.tech-00FF88?style=for-the-badge&logo=react)](https://ai.lorapok.tech)
-[![GitHub Pages](https://img.shields.io/badge/GITHUB_PAGES-v2.0-00E5FF?style=for-the-badge)](https://ai.lorapok.tech)
-[![npm version](https://img.shields.io/badge/NPM-v1.2.0-7C3AED?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/lorapok-ai)
+[![Live App](https://img.shields.io/badge/LIVE_APP-ai.lorapok.tech-00FF88?style=for-the-badge&logo=react)](https://ai.lorapok.tech)
+[![Beta Release](https://img.shields.io/badge/RELEASE-v2.0.0--beta-7C3AED?style=for-the-badge)](https://ai.lorapok.tech)
+[![npm version](https://img.shields.io/badge/NPM-v1.2.0-00E5FF?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/lorapok-ai)
 [![Unit Tests](https://img.shields.io/badge/TESTS-186_PASSING-00FF88?style=for-the-badge)](https://github.com/Maijied/Lorapok_AI_Agent)
 [![License](https://img.shields.io/badge/LICENSE-MIT-green?style=for-the-badge)](LICENSE)
 [![Node.js](https://img.shields.io/badge/NODE.JS-%3E%3D18.0.0-339933?style=for-the-badge&logo=node.js)](https://nodejs.org)
 
 <br />
 
-→ [**Open Live App**](https://ai.lorapok.tech) · [**Report Bug**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**Request Feature**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**Contribute**](https://github.com/Maijied/Lorapok_AI_Agent)
+→ [**🌐 Open Live App (ai.lorapok.tech)**](https://ai.lorapok.tech) · [**🐛 Report Bug**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**✨ Request Feature**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**🤝 Contribute**](https://github.com/Maijied/Lorapok_AI_Agent)
 
 </div>
 

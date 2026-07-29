@@ -195,7 +195,7 @@ export default function Footer() {
               <a href="https://maijied.github.io/Lorapok-Labs-Bible/#/" target="_blank" rel="noopener noreferrer" className="footer-link">📖 Lorapok Labs Bible</a>
               <a href={ecosystemLinks.githubOrg} target="_blank" rel="noopener noreferrer" className="footer-link">🐙 GitHub Org</a>
               <a href={ecosystemLinks.developerGithub} target="_blank" rel="noopener noreferrer" className="footer-link">👤 Developer Portfolio</a>
-              <a href="mailto:lorapoklabs@gmail.com" className="footer-link" style={{ color: '#00FF88', fontWeight: 700 }}>✉️ lorapoklabs@gmail.com</a>
+              <a href="mailto:lorapokdev@gmail.com" className="footer-link" style={{ color: '#00FF88', fontWeight: 700 }}>✉️ lorapokdev@gmail.com</a>
             </div>
           </div>
         </div>

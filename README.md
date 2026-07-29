@@ -12,7 +12,7 @@
 ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
       </pre>
       <div align="left">
-        <code><b>[ SYSTEM ONLINE ]</b></code> — <b>Mohammad Maizied Hasan Majumder</b> · <a href="https://ai.lorapok.tech">ai.lorapok.tech</a>
+        <code><b>[ SYSTEM ONLINE ]</b></code> — <b>Lorapok Labs</b> · 🌐 <a href="https://ai.lorapok.tech" target="_blank"><b>https://ai.lorapok.tech</b></a>
         <br />
         <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>Beta v2.0</b></sub>
       </div>
@@ -39,8 +39,8 @@
 
 <br />
 
-[![Live App](https://img.shields.io/badge/LIVE_APP-ai.lorapok.tech-00FF88?style=for-the-badge&logo=react)](https://ai.lorapok.tech)
-[![Beta Release](https://img.shields.io/badge/RELEASE-v2.0.0--beta-7C3AED?style=for-the-badge)](https://ai.lorapok.tech)
+[![Live Web Application](https://img.shields.io/badge/LIVE_URL-ai.lorapok.tech-00FF88?style=for-the-badge&logo=googlechrome&logoColor=white)](https://ai.lorapok.tech)
+[![Beta Release](https://img.shields.io/badge/RELEASE-v2.0.0--beta-7C3AED?style=for-the-badge&logo=git)](https://ai.lorapok.tech)
 [![npm version](https://img.shields.io/badge/NPM-v1.2.0-00E5FF?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/lorapok-ai)
 [![Unit Tests](https://img.shields.io/badge/TESTS-186_PASSING-00FF88?style=for-the-badge)](https://github.com/Maijied/Lorapok_AI_Agent)
 [![License](https://img.shields.io/badge/LICENSE-MIT-green?style=for-the-badge)](LICENSE)
@@ -48,7 +48,7 @@
 
 <br />
 
-→ [**🌐 Open Live App (ai.lorapok.tech)**](https://ai.lorapok.tech) · [**🐛 Report Bug**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**✨ Request Feature**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**🤝 Contribute**](https://github.com/Maijied/Lorapok_AI_Agent)
+→ [**🌐 Open Live App (https://ai.lorapok.tech)**](https://ai.lorapok.tech) · [**🐛 Report Bug**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**✨ Request Feature**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**🤝 Contribute**](https://github.com/Maijied/Lorapok_AI_Agent)
 
 </div>
 

@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import AgenticSimulation from './AgenticSimulation';
 
 const phrases = [
-  'Plan. Code. Execute.',
-  'Commit. Deploy. Ship.',
-  'Analyze. Refactor. Test.',
-  'Debug. Optimize. Scale.'
+  'Lorapok AI — Autonomous Coding Agent',
+  'Plan. Scaffold. Execute. Commit.',
+  'Multi-Engine AI Architecture — 25+ LLMs',
+  'Zero-Config CLI — Instant Setup',
+  'Silent Background Bottleneck Optimization',
+  'Automated Test Suite Execution'
 ];
 
 export default function Hero({ showToast }) {
@@ -18,14 +20,14 @@ export default function Hero({ showToast }) {
   // Typewriter effect
   useEffect(() => {
     const currentPhrase = phrases[textIndex];
-    let speed = isDeleting ? 40 : 75;
+    let speed = isDeleting ? 30 : 60;
 
     if (!isDeleting && charIndex === currentPhrase.length) {
-      speed = 2200; // Pause at full phrase
+      speed = 2500; // Pause at full phrase
     } else if (isDeleting && charIndex === 0) {
       setIsDeleting(false);
       setTextIndex((prev) => (prev + 1) % phrases.length);
-      speed = 400;
+      speed = 300;
     }
 
     const timer = setTimeout(() => {
@@ -46,7 +48,7 @@ export default function Hero({ showToast }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Canvas particle background
+  // Canvas particle background with ultra-subtle floating code symbols (No collisions)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -66,11 +68,11 @@ export default function Hero({ showToast }) {
       reset() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.35;
-        this.vy = (Math.random() - 0.5) * 0.35;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
         this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
-        this.opacity = Math.random() * 0.15 + 0.05;
-        this.size = Math.random() * 6 + 10;
+        this.opacity = Math.random() * 0.08 + 0.03; // Ultra-subtle background opacity
+        this.size = Math.random() * 4 + 11;
         this.life = Math.random() * 500 + 300;
         this.age = 0;
       }
@@ -91,7 +93,7 @@ export default function Hero({ showToast }) {
       }
     }
 
-    const count = Math.min(45, Math.floor(window.innerWidth / 35));
+    const count = Math.min(35, Math.floor(window.innerWidth / 40));
     for (let i = 0; i < count; i++) particles.push(new Particle());
 
     let animationFrameId;
@@ -112,118 +114,113 @@ export default function Hero({ showToast }) {
   const currentText = phrases[textIndex].substring(0, charIndex);
 
   return (
-    <section className="hero" id="hero" style={{ flexDirection: 'column', gap: '2rem' }}>
+    <section className="hero" id="hero" style={{ flexDirection: 'column', gap: '2.5rem', paddingTop: 'calc(var(--nav-height) + 2.5rem)', paddingBottom: '5rem' }}>
       <div className="hero-gradient-orb purple" />
       <div className="hero-gradient-orb cyan" />
       <canvas ref={canvasRef} className="hero-canvas" />
 
-      {/* Top Center Single-Line Typewriter Banner */}
+      {/* Top Center Typewriter Banner (Generous Spacing & Beta Badge) */}
       <div
         style={{
           textAlign: 'center',
           position: 'relative',
           zIndex: 2,
-          maxWidth: '900px',
+          maxWidth: '960px',
           width: '100%',
-          margin: '0 auto',
-          padding: '0 1.5rem',
-          overflow: 'hidden'
+          margin: '0 auto 1.5rem',
+          padding: '0 1.5rem'
         }}
       >
-        <div className="hero-badge" style={{ marginBottom: '1rem' }}>
+        <div className="hero-badge" style={{ marginBottom: '1rem', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid var(--border-purple)' }}>
           <span className="pulse-dot" />
-          A Product of Lorapok Labs
+          A Product of Lorapok Labs · <span style={{ color: 'var(--accent-cyan)', fontWeight: 800 }}>Beta v2.0</span>
         </div>
 
-        {/* Single-Line Typewriter Text Container */}
+        {/* Responsive Typewriter Container */}
         <div
           style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 'clamp(1.5rem, 3.8vw, 2.8rem)',
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            minHeight: '3.4rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
-            minHeight: '3.5rem'
+            width: '100%'
           }}
         >
-          <span className="gradient-text">{currentText}</span>
-          <span
-            className="term-cursor"
+          <div
             style={{
-              height: '0.95em',
-              width: 4,
-              display: 'inline-block',
-              background: '#22D3EE',
-              boxShadow: '0 0 10px #22D3EE',
-              flexShrink: 0
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: 'clamp(0.95rem, 2.2vw, 1.8rem)',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              maxWidth: '100%'
             }}
-          />
+          >
+            <span className="gradient-text">{currentText}</span>
+            <span
+              className="term-cursor"
+              style={{
+                height: '0.9em',
+                width: 4,
+                display: 'inline-block',
+                background: '#22D3EE',
+                boxShadow: '0 0 10px #22D3EE',
+                flexShrink: 0
+              }}
+            />
+          </div>
         </div>
       </div>
 
       {/* 2-Column Hero Content Grid */}
-      <div className="hero-content">
-        {/* Left Column: Title & Actions */}
+      <div className="hero-content" style={{ marginTop: '1rem', gap: '4rem' }}>
+        {/* Left Column: Title & Install Action */}
         <div className="hero-text">
-          <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)' }}>
+          <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', lineHeight: 1.15, marginBottom: '1.25rem' }}>
             <span style={{ color: 'var(--text-primary)' }}>
               Autonomous Agentic Coding Simulation
             </span>
           </h1>
 
-          <p className="hero-subtitle">
+          <p className="hero-subtitle" style={{ fontSize: '1.1rem', lineHeight: 1.7, marginBottom: '2rem' }}>
             <span className="lorapok-brand-font" style={{ color: 'var(--text-primary)' }}>Lorapok AI</span> is your autonomous terminal-first coding agent built on LLDP.
             Scaffolds code, executes test suites, inspects Git diffs, and orchestrates multi-provider AI models across Google Gemini, OpenRouter &amp; Perplexity AI.
           </p>
 
-          <div className="hero-actions">
-            <div className="install-box">
-              <span className="prompt">$</span>
-              <code>npm install -g lorapok-ai</code>
+          <div className="hero-actions" style={{ marginBottom: '2.5rem' }}>
+            <div className="install-box" style={{ padding: '0.85rem 1.25rem', width: '100%', maxWidth: '380px', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span className="prompt">$</span>
+                <code>npm install -g lorapok-ai</code>
+              </div>
               <button
                 className={`copy-btn ${copied ? 'copied' : ''}`}
                 onClick={handleCopy}
                 title="Copy to clipboard"
+                style={{ fontSize: '1rem' }}
               >
                 📋
               </button>
             </div>
-            <a
-              href="https://github.com/Maijied/Lorapok_AI_Agent"
-              className="btn btn-secondary"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-              </svg>
-              GitHub Repo
-            </a>
           </div>
 
-          {/* Upgraded Professional Engineering Metrics */}
+          {/* Upgraded 3 Stat Metrics */}
           <div className="hero-stats">
             <div>
-              <div className="hero-stat-value">186+</div>
-              <div className="hero-stat-label">Unit Tests Passing</div>
+              <div className="hero-stat-value">LLDP</div>
+              <div className="hero-stat-label">Agentic Protocol</div>
             </div>
             <div>
-              <div className="hero-stat-value">3</div>
-              <div className="hero-stat-label">Core AI Engines</div>
+              <div className="hero-stat-value">100%</div>
+              <div className="hero-stat-label">Open Source &amp; Free</div>
             </div>
             <div>
-              <div className="hero-stat-value">25+</div>
-              <div className="hero-stat-label">LLM Models Supported</div>
-            </div>
-            <div>
-              <div className="hero-stat-value">0ms</div>
-              <div className="hero-stat-label">Direct CLI Latency</div>
+              <div className="hero-stat-value">v1.2.0</div>
+              <div className="hero-stat-label">Latest Engine Version</div>
             </div>
           </div>
         </div>

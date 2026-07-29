@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Lorapok AI Logo" width="180" />
+<img src="assets/lorapok-larva-logo.svg" alt="Lorapok AI Cybernetic Larva Logo" width="160" />
 
 ```
 ██╗      ██████╗ ██████╗  █████╗ ██████╗  ██████╗ ██╗  ██╗     █████╗ ██╗

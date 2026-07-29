@@ -60,18 +60,7 @@ export const ecosystemProjects = [
     icon: '🛡️',
     stats: 'Automated Red Team'
   },
-  {
-    id: 'agentsmesh',
-    name: 'AgentsMesh',
-    badge: 'Multi-Agent Mesh',
-    tagline: 'Multi-Agent Communication Protocol & Pub/Sub Mesh',
-    description: 'Inter-agent pub/sub messaging protocol allowing multiple AI agents to collaborate autonomously across machines.',
-    url: 'https://github.com/Maijied/AgentsMesh',
-    github: 'https://github.com/Maijied/AgentsMesh',
-    category: 'AI & Agents',
-    icon: '🕸️',
-    stats: 'Agent Mesh Network'
-  },
+
   {
     id: 'larvox',
     name: 'Larvox Engine',

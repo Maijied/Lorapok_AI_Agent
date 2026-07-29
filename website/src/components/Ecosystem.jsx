@@ -6,6 +6,7 @@ const categories = ['All Products', 'AI & Agents', 'Developer Tools', 'Productiv
 export default function Ecosystem() {
   const [activeCategory, setActiveCategory] = useState('All Products');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const filtered = ecosystemProjects.filter(p => {
     const matchesCategory = activeCategory === 'All Products' || p.category === activeCategory;
@@ -14,6 +15,10 @@ export default function Ecosystem() {
                           p.tagline.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  // Display top 3 unless expanded, searching, or filtering by category
+  const shouldTruncate = !isExpanded && searchQuery === '' && activeCategory === 'All Products';
+  const displayedProjects = shouldTruncate ? filtered.slice(0, 3) : filtered;
 
   return (
     <section className="ecosystem" id="ecosystem">
@@ -60,7 +65,10 @@ export default function Ecosystem() {
               <button
                 key={cat}
                 className={`provider-tab-btn ${activeCategory === cat ? 'active' : ''}`}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  setActiveCategory(cat);
+                  setIsExpanded(true); // Auto expand when user filters by category
+                }}
               >
                 {cat} ({cat === 'All Products' ? ecosystemProjects.length : ecosystemProjects.filter(p => p.category === cat).length})
               </button>
@@ -70,7 +78,7 @@ export default function Ecosystem() {
 
         {/* Products Grid */}
         <div className="ecosystem-grid">
-          {filtered.map(proj => (
+          {displayedProjects.map(proj => (
             <div key={proj.id} className="eco-card glass-card glass-card-interactive">
               <div>
                 <div className="eco-header">
@@ -101,19 +109,50 @@ export default function Ecosystem() {
           ))}
         </div>
 
+        {/* Animated Collapsible Show All / Show Less Button */}
+        {searchQuery === '' && activeCategory === 'All Products' && (
+          <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="btn btn-primary"
+              style={{
+                padding: '0.85rem 2.2rem',
+                fontSize: '0.98rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-cyan))',
+                boxShadow: '0 0 25px var(--accent-purple-glow)',
+                gap: '0.6rem',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {isExpanded ? (
+                <>
+                  <span>Show Top Products</span>
+                  <span style={{ fontSize: '0.85rem' }}>▲</span>
+                </>
+              ) : (
+                <>
+                  <span>Show All Products ({ecosystemProjects.length})</span>
+                  <span style={{ fontSize: '0.85rem' }}>▼</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
             No products found matching "{searchQuery}". Try clearing search.
           </div>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+        <div style={{ textAlign: 'center', marginTop: '3.5rem' }}>
           <a
             href={ecosystemLinks.labsWebsite}
-            className="btn btn-primary"
+            className="btn btn-secondary"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ padding: '0.9rem 2.5rem', fontSize: '1.05rem' }}
+            style={{ padding: '0.85rem 2.2rem', fontSize: '0.98rem' }}
           >
             Visit Lorapok Labs Hub (lorapok.tech) 🌐
           </a>

@@ -14,60 +14,67 @@ export default function Navbar({ onOpenAdmin }) {
   }, []);
 
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
-      <div className="nav-container">
-        <a href="#" className="nav-brand">
-          <LarvaLogo size={40} showText={true} />
-        </a>
+    <>
+      {/* 45-Degree Angled Screen Corner Ribbon Badge */}
+      <div className="corner-beta-ribbon">
+        BETA V2
+      </div>
 
-        <div className="nav-links">
-          <a href="#features" className="nav-link">Features</a>
-          <a href="#how-it-works" className="nav-link">How It Works</a>
-          <a href="#providers" className="nav-link">Providers</a>
-          <a href="#api" className="nav-link">API</a>
-          <a href="#pricing" className="nav-link">Pricing</a>
-          <a href="#ecosystem" className="nav-link">Ecosystem</a>
-          <button onClick={onOpenAdmin} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-            Admin
+      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+        <div className="nav-container">
+          <a href="#" className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1.5rem' }}>
+            <LarvaLogo size={40} showText={true} />
+          </a>
+
+          <div className="nav-links">
+            <a href="#features" className="nav-link">Features</a>
+            <a href="#how-it-works" className="nav-link">How It Works</a>
+            <a href="#providers" className="nav-link">Providers</a>
+            <a href="#api" className="nav-link">API</a>
+            <a href="#pricing" className="nav-link">Pricing</a>
+            <a href="#ecosystem" className="nav-link">Ecosystem</a>
+            <button onClick={onOpenAdmin} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+              Admin
+            </button>
+          </div>
+
+          <a href="#install" className="btn btn-primary nav-cta desktop-only">
+            Get Started Free
+          </a>
+
+          <button
+            className={`nav-hamburger ${drawerOpen ? 'open' : ''}`}
+            onClick={() => setDrawerOpen(!drawerOpen)}
+            aria-label="Toggle Navigation"
+          >
+            <span />
+            <span />
+            <span />
           </button>
         </div>
 
-        <a href="#install" className="btn btn-primary nav-cta desktop-only">
-          Get Started Free
-        </a>
-
-        <button
-          className={`nav-hamburger ${drawerOpen ? 'open' : ''}`}
-          onClick={() => setDrawerOpen(!drawerOpen)}
-          aria-label="Toggle Navigation"
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-      </div>
-
-      {/* Mobile Nav Drawer */}
-      <div className={`nav-drawer ${drawerOpen ? 'open' : ''}`}>
-        <a href="#features" className="nav-link" onClick={() => setDrawerOpen(false)}>Features</a>
-        <a href="#how-it-works" className="nav-link" onClick={() => setDrawerOpen(false)}>How It Works</a>
-        <a href="#providers" className="nav-link" onClick={() => setDrawerOpen(false)}>Providers</a>
-        <a href="#api" className="nav-link" onClick={() => setDrawerOpen(false)}>API</a>
-        <a href="#pricing" className="nav-link" onClick={() => setDrawerOpen(false)}>Pricing</a>
-        <a href="#ecosystem" className="nav-link" onClick={() => setDrawerOpen(false)}>Ecosystem</a>
-        <button
-          onClick={() => { setDrawerOpen(false); onOpenAdmin(); }}
-          className="nav-link"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-        >
-          Admin Panel
-        </button>
-        <div style={{ marginTop: '1rem' }}>
-          <a href="#install" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setDrawerOpen(false)}>
-            Get Started Free
-          </a>
+        {/* Mobile Nav Drawer */}
+        <div className={`nav-drawer ${drawerOpen ? 'open' : ''}`}>
+          <a href="#features" className="nav-link" onClick={() => setDrawerOpen(false)}>Features</a>
+          <a href="#how-it-works" className="nav-link" onClick={() => setDrawerOpen(false)}>How It Works</a>
+          <a href="#providers" className="nav-link" onClick={() => setDrawerOpen(false)}>Providers</a>
+          <a href="#api" className="nav-link" onClick={() => setDrawerOpen(false)}>API</a>
+          <a href="#pricing" className="nav-link" onClick={() => setDrawerOpen(false)}>Pricing</a>
+          <a href="#ecosystem" className="nav-link" onClick={() => setDrawerOpen(false)}>Ecosystem</a>
+          <button
+            onClick={() => { setDrawerOpen(false); onOpenAdmin(); }}
+            className="nav-link"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+          >
+            Admin Panel
+          </button>
+          <div style={{ marginTop: '1rem' }}>
+            <a href="#install" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setDrawerOpen(false)}>
+              Get Started Free
+            </a>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }

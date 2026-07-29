@@ -126,7 +126,15 @@ export default function ResearchPhilosophy() {
         {/* Open Source Commitment & Future Vision Dual Banner */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
           {/* Open Source Commitment */}
-          <div className="glass-card" style={{ padding: '2.5rem', border: '1px solid var(--border-cyan)' }}>
+          <div
+            className="glass-card glass-card-interactive"
+            style={{
+              padding: '2.5rem',
+              border: '1px solid var(--border-cyan)',
+              background: 'rgba(15, 23, 42, 0.75)',
+              transition: 'all 0.3s ease'
+            }}
+          >
             <div className="section-badge" style={{ marginBottom: '1rem' }}>
               📜 Open Source Commitment
             </div>
@@ -142,7 +150,15 @@ export default function ResearchPhilosophy() {
           </div>
 
           {/* Future Vision */}
-          <div className="glass-card" style={{ padding: '2.5rem', border: '1px solid var(--border-purple)' }}>
+          <div
+            className="glass-card glass-card-interactive"
+            style={{
+              padding: '2.5rem',
+              border: '1px solid var(--border-purple)',
+              background: 'rgba(15, 23, 42, 0.75)',
+              transition: 'all 0.3s ease'
+            }}
+          >
             <div className="section-badge purple" style={{ marginBottom: '1rem' }}>
               🌌 Future Vision &amp; Biological UI
             </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { simulationScenarios } from '../data/simulationSteps';
+import LarvaLogo from './LarvaLogo';
 
 export default function AgenticSimulation() {
   const [activeScenarioId, setActiveScenarioId] = useState('refactor');
@@ -39,7 +40,7 @@ export default function AgenticSimulation() {
     return () => clearTimeout(timer);
   }, [currentLineIndex, isPlaying, scenario]);
 
-  // Auto-scroll to bottom of terminal
+  // Auto-scroll to bottom of terminal without expanding container height
   useEffect(() => {
     if (screenRef.current) {
       screenRef.current.scrollTop = screenRef.current.scrollHeight;
@@ -47,7 +48,7 @@ export default function AgenticSimulation() {
   }, [displayedLines]);
 
   return (
-    <div className="agent-terminal">
+    <div className="agent-terminal" style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
       {/* Chrome Header Bar */}
       <div className="terminal-header-bar">
         <div className="terminal-dots">
@@ -55,7 +56,7 @@ export default function AgenticSimulation() {
           <div className="terminal-dot yellow" />
           <div className="terminal-dot green" />
         </div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
           lorapok-ai — Agentic Coding Simulation
         </div>
         <div className="terminal-badge-live">
@@ -84,14 +85,44 @@ export default function AgenticSimulation() {
         </button>
       </div>
 
-      {/* Terminal Output Body */}
-      <div className="terminal-screen" ref={screenRef}>
-        {displayedLines.map((line, idx) => (
-          <div key={idx} className={`term-line ${line.type}`}>
-            {line.text}
-          </div>
-        ))}
-        <span className="term-cursor" />
+      {/* Terminal Output Body with Fixed Height (Zero Layout Shaking) & Animated Larva Background */}
+      <div
+        className="terminal-screen"
+        ref={screenRef}
+        style={{
+          position: 'relative',
+          height: '380px',
+          minHeight: '380px',
+          maxHeight: '380px',
+          overflowY: 'auto',
+          boxSizing: 'border-box'
+        }}
+      >
+        {/* Animated Cybernetic Larva Background Watermark */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            opacity: 0.12,
+            pointerEvents: 'none',
+            zIndex: 0,
+            filter: 'drop-shadow(0 0 15px #00FF88)'
+          }}
+        >
+          <LarvaLogo size={140} showText={false} />
+        </div>
+
+        {/* Console Text Lines */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {displayedLines.map((line, idx) => (
+            <div key={idx} className={`term-line ${line.type}`}>
+              {line.text}
+            </div>
+          ))}
+          <span className="term-cursor" />
+        </div>
       </div>
     </div>
   );

@@ -39,16 +39,21 @@
 
 <br />
 
-[![Live Web Application](https://img.shields.io/badge/LIVE_URL-ai.lorapok.tech-00FF88?style=for-the-badge&logo=googlechrome&logoColor=white)](https://ai.lorapok.tech)
-[![Beta Release](https://img.shields.io/badge/RELEASE-v2.0.0--beta-7C3AED?style=for-the-badge&logo=git)](https://ai.lorapok.tech)
-[![npm version](https://img.shields.io/badge/NPM-v1.2.0-00E5FF?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/lorapok-ai)
-[![Unit Tests](https://img.shields.io/badge/TESTS-186_PASSING-00FF88?style=for-the-badge)](https://github.com/Maijied/Lorapok_AI_Agent)
-[![License](https://img.shields.io/badge/LICENSE-MIT-green?style=for-the-badge)](LICENSE)
-[![Node.js](https://img.shields.io/badge/NODE.JS-%3E%3D18.0.0-339933?style=for-the-badge&logo=node.js)](https://nodejs.org)
+[![Live Web Application](https://img.shields.io/badge/LIVE_URL-ai.lorapok.tech-0D9488?style=for-the-badge&logo=googlechrome&logoColor=white)](https://ai.lorapok.tech)
+[![Beta Release](https://img.shields.io/badge/RELEASE-v2.0.0--beta-7C3AED?style=for-the-badge&logo=git&logoColor=white)](https://ai.lorapok.tech)
+[![npm version](https://img.shields.io/badge/NPM-v1.2.0-0284C7?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/lorapok-ai)
+[![Unit Tests](https://img.shields.io/badge/TESTS-186_PASSING-16A34A?style=for-the-badge&logo=jest&logoColor=white)](https://github.com/Maijied/Lorapok_AI_Agent)
+[![License](https://img.shields.io/badge/LICENSE-MIT-D97706?style=for-the-badge)](LICENSE)
+[![Node.js](https://img.shields.io/badge/NODE.JS-%3E%3D18.0.0-15803D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 
 <br />
 
-→ [**🌐 Open Live App (https://ai.lorapok.tech)**](https://ai.lorapok.tech) · [**🐛 Report Bug**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**✨ Request Feature**](https://github.com/Maijied/Lorapok_AI_Agent/issues) · [**🤝 Contribute**](https://github.com/Maijied/Lorapok_AI_Agent)
+<p align="center">
+  <a href="https://ai.lorapok.tech" target="_blank"><b>🌐 Open Live App (ai.lorapok.tech)</b></a> &nbsp;&bull;&nbsp;
+  <a href="https://github.com/Maijied/Lorapok_AI_Agent/issues" target="_blank"><b>🐛 Report Bug</b></a> &nbsp;&bull;&nbsp;
+  <a href="https://github.com/Maijied/Lorapok_AI_Agent/issues" target="_blank"><b>✨ Request Feature</b></a> &nbsp;&bull;&nbsp;
+  <a href="https://github.com/Maijied/Lorapok_AI_Agent" target="_blank"><b>🤝 Contribute</b></a>
+</p>
 
 </div>
 

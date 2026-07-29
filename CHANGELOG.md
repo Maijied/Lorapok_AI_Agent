@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.2.0...v1.3.0) (2026-07-29)
+
+
+### Features
+
+* **website:** add 32 Lorapok ecosystem products with live search & 4 categories ([8bbac25](https://github.com/Maijied/Lorapok_AI_Agent/commit/8bbac255062cd6b9b9a03aaab9205acf7c4072b2))
+* **website:** add animated cybernetic SVG logo, enforce single-line typewriter animation & upgrade hero metrics ([05bb9b7](https://github.com/Maijied/Lorapok_AI_Agent/commit/05bb9b764d86a2a86e573f84606201f2df689578))
+* **website:** Add Beta V2 release tags, 45-degree corner ribbon, animated larva SVG logo, collapsible ecosystem showcase, and updated documentation ([443333f](https://github.com/Maijied/Lorapok_AI_Agent/commit/443333fb5de082357474515636ba5c9fec742309))
+* **website:** add Cybernetic Black Soldier Fly Larva logo component, de-duplicate footer rows & update contact email ([0ff6102](https://github.com/Maijied/Lorapok_AI_Agent/commit/0ff6102eae7b0fc9e1279c458f38c103b8826ca2))
+* **website:** add global particle background, Cybernetic BSF Larva mascot, and Lorapok Research & Connect links ([a18bf85](https://github.com/Maijied/Lorapok_AI_Agent/commit/a18bf85aec050bd23bfd5dc2d7eede4779fb9ffc))
+* **website:** add Research & Philosophy section and redesign Footer matching SS1, SS2, and SS3 layouts ([12f5836](https://github.com/Maijied/Lorapok_AI_Agent/commit/12f58362a4fc76ad243ef36da4b7a11a111ca09b))
+* **website:** apply typography hierarchy & refine social links grid in Footer ([05bdefd](https://github.com/Maijied/Lorapok_AI_Agent/commit/05bdefdd3654d08314bc9938ad4a8379bbe558cc))
+* **website:** expand Product Ecosystem to 18 Lorapok Labs products with category filter tabs ([fcd6427](https://github.com/Maijied/Lorapok_AI_Agent/commit/fcd6427463db1f33041656f3f6a12f1b44a0428d))
+* **website:** hero typewriter animation, step card mini terminals, expanded multi-provider matrix & ecosystem placement ([d5829a0](https://github.com/Maijied/Lorapok_AI_Agent/commit/d5829a0c934154da5994c6cd9ba80c876277da23))
+* **website:** professional glassmorphic product website for Lorapok AI ([0bd7472](https://github.com/Maijied/Lorapok_AI_Agent/commit/0bd7472c9ebc2dd5ac8ae437189b8080b6978829))
+* **website:** redesign Cybernetic Larva widget into interactive Labs Hub modal & clean top nav ([506ab32](https://github.com/Maijied/Lorapok_AI_Agent/commit/506ab32a84ab49ee2244723bd52a364896ff30c0))
+* **website:** update brand logo & name to IntelliJ JetBrains Mono style and move typewriter animation to top center ([7c5510f](https://github.com/Maijied/Lorapok_AI_Agent/commit/7c5510f32d911daa249dc2ec4579fa98226b8e59))
+* **website:** upgrade website to Vite + React with Agentic Coding Simulation & Lorapok Labs Ecosystem ([d8f6664](https://github.com/Maijied/Lorapok_AI_Agent/commit/d8f666486168845e621b6a60b3f2bc630496002a))
+
+
+### Bug Fixes
+
+* **ci:** Remove environment protection constraint to enable GitHub Pages deployment on Website branch ([ed016c4](https://github.com/Maijied/Lorapok_AI_Agent/commit/ed016c43d09d3d30425328ebbad76a608c802b1f))
+* **website:** relocate mascot widget to bottom-right, enhance color scheme & add social/email links in footer ([3a4a8d2](https://github.com/Maijied/Lorapok_AI_Agent/commit/3a4a8d2b84310fe1f98942b93f2a8a69659a0ad3))
+* **website:** remove turbovec and deduplicate ecosystem products ([2469df0](https://github.com/Maijied/Lorapok_AI_Agent/commit/2469df01202954c9a6a8d061dcd51207b4727114))
+* **website:** resolve navbar header text overlapping and z-index layout issues ([efde6f6](https://github.com/Maijied/Lorapok_AI_Agent/commit/efde6f69473c151326311fbaef53b445a4938dc0))
+* **website:** restore complete glassmorphic CSS design system and standardize typography rules ([69a6498](https://github.com/Maijied/Lorapok_AI_Agent/commit/69a64980997e2e6a8d8d773842c854b794dc6853))
+
 ## [1.2.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.1.0...v1.2.0) (2026-07-28)
 
 

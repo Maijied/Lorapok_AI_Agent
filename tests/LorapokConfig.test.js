@@ -86,6 +86,25 @@ describe('LorapokConfig', () => {
         const config2 = new LorapokConfig();
         expect(config2.getLogoStyle()).toBe('cyber');
     });
+
+    test('should manage budget limit configurations', () => {
+        expect(config.getMaxCostUsd()).toBe(0);
+        expect(config.getMaxTokens()).toBe(0);
+        expect(config.getMaxToolCalls()).toBe(25);
+
+        config.setMaxCostUsd(5.5);
+        config.setMaxTokens(1000);
+        config.setMaxToolCalls(10);
+
+        expect(config.getMaxCostUsd()).toBe(5.5);
+        expect(config.getMaxTokens()).toBe(1000);
+        expect(config.getMaxToolCalls()).toBe(10);
+
+        const config2 = new LorapokConfig();
+        expect(config2.getMaxCostUsd()).toBe(5.5);
+        expect(config2.getMaxTokens()).toBe(1000);
+        expect(config2.getMaxToolCalls()).toBe(10);
+    });
 });
 
 

@@ -194,12 +194,12 @@ function renderTokenUsageBox(context, response, activeModelIdOverride) {
 /**
  * Handle primary LLM chat interaction, token usage tracking, and action block execution.
  * @param {string} input - Input message string
- * @param {Object} context - CommandContext containing { agent, config, sessionData, ui }
+ * @param {Object} context - CommandContext containing { agent, config, sessionData, ui, orchestrator, modeRouter, sessionManager }
  * @param {Object} [options={}] - Execution options (e.g. AbortSignal)
  * @returns {Promise<{ success: boolean, content?: string, usage?: Object, error?: string }>} Execution result
  */
 async function handleChat(input, context, options = {}) {
-    const { agent, config, sessionData, ui } = context;
+    const { agent, config, sessionData, ui, orchestrator, modeRouter, sessionManager } = context;
 
     if (!input || !input.trim()) {
         return { success: true, content: '' };
@@ -210,15 +210,37 @@ async function handleChat(input, context, options = {}) {
         const { processedInput } = handleFileMentions(input, agent);
         const projectInfo = getProjectOverviewContext(agent);
 
+        // Route the mode using ModeRouter
+        const currentMode = context.currentMode || 'chat';
+        let targetMode = currentMode;
+        if (modeRouter) {
+            const routeResult = modeRouter.route(processedInput, currentMode);
+            targetMode = routeResult.mode;
+        }
+
+        // Add message to new SessionManager
+        if (sessionManager) {
+            const { UnifiedMessage } = require('../lib/core/UnifiedMessage');
+            sessionManager.addMessage(UnifiedMessage.userText(processedInput));
+        }
+
         const startedAt = Date.now();
+        
+        // Dispatch the turn. We pass targetMode in options to potentially guide provider selection later
         const response = await withCancellation('Thinking...', (signal) =>
-            agent.chat(processedInput, null, { signal, fileTree: projectInfo, ...options })
+            agent.chat(processedInput, null, { signal, fileTree: projectInfo, mode: targetMode, ...options })
         );
 
         if (!response || response.aborted) {
             return { success: false, error: 'Request cancelled by user.' };
         }
         response.latencyMs = Date.now() - startedAt;
+
+        // Log assistant message to SessionManager
+        if (sessionManager) {
+            const { UnifiedMessage } = require('../lib/core/UnifiedMessage');
+            sessionManager.addMessage(UnifiedMessage.assistantText(response.content));
+        }
 
         const cleanContent = ui.hideLongCodeBlocks(response.content);
         const rendered = await renderMarkdown(cleanContent);
@@ -233,6 +255,7 @@ async function handleChat(input, context, options = {}) {
         // Parse & execute file/shell action blocks
         const actions = agent.parseActions(response.content);
         if (actions.length > 0) {
+            // Future step: orchestrator.processToolCalls(actions)
             await executeFileActions(actions, context);
             await promptSmartCommit(context);
         }

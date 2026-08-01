@@ -6,13 +6,13 @@
 ## Core Architecture & Stack
 - **Runtime**: Node.js >= 18.0.0 (Supports native execution and Docker container fallback).
 - **Core CLI Engine**: `index.js`, `lib/agent.js`, `lib/agent-enhanced.js`
-- **Services**: `services/GitManager.js`, `services/FileManager.js`, `services/ActionsManager.js`, `services/GithubAuth.js`, `services/ModelManager.js`, `services/ModelValidator.js`, `services/ModelCacheService.js`
+- **Services**: `services/Orchestrator.js`, `services/SessionManager.js`, `services/ModeRouter.js`, `services/GitManager.js`, `services/FileManager.js`, `services/ModelManager.js`
 - **Commands**: `commands/registry.js` (slash source of truth), `actions`, `auth`, `chat`, `git`, `settings`, `system`, `utils`, `workflow`
 - **Web API**: `server.js` (Express + CORS; validated `/api/models` views)
 - **Clients**: `packages/sdk`, `apps/website`
 - **Docs / Agents**: `Docs/`, `.agents/rules|hooks|automations|skills|steer|subagents`
 - **Terminal UI**: `lib/ui.js`, `lib/renderer.js` (Chalk, Boxen, Ora, Enquirer, Figlet, Marked)
-- **Test Runner**: Jest (`npm test`, 33 test suites, 333 tests)
+- **Test Runner**: Jest (`npm test`, 44 test suites, 570 tests)
 
 ---
 

@@ -4,8 +4,8 @@
 |------|------|
 | `bin/`, `index.js` | CLI entry |
 | `commands/` | Slash handlers + `registry.js` |
-| `lib/` | Agent, config, UI, cache |
-| `services/` | Model*, Git, File, Actions |
+| `lib/` | Agent, core schema, config, UI, cache |
+| `services/` | Orchestrator, Adapters, Model*, Git, File, Actions |
 | `server.js` | Express REST |
 | `packages/sdk/` | HTTP client for apps |
 | `apps/website/` | Static / marketing site |

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import MarketingBanner from './components/MarketingBanner';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
@@ -29,6 +30,8 @@ export default function App() {
       <GlobalParticleCanvas />
 
       <Navbar onOpenAdmin={() => setIsAdminOpen(true)} />
+      
+      <MarketingBanner />
 
       <main style={{ position: 'relative', zIndex: 1 }}>
         <Hero showToast={showToast} />

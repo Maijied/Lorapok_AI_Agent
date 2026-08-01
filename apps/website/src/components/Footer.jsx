@@ -77,7 +77,7 @@ export default function Footer() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1.4fr 1fr 1fr 1.1fr 1.1fr',
+            gridTemplateColumns: '1.4fr 1fr 1.1fr 1.1fr',
             gap: '2.5rem',
             marginBottom: '4rem',
             alignItems: 'start'
@@ -147,21 +147,6 @@ export default function Footer() {
               <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🔒 OAuth &amp; Security Manager</span>
               <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚡ Zero-Config CLI Engine</span>
               <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🔄 Git Branch &amp; PR Manager</span>
-            </div>
-          </div>
-
-          {/* Col 3: — RESOURCES (Purple Accent Heading) */}
-          <div>
-            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-purple-light)', letterSpacing: '0.12em', marginBottom: '1.25rem' }}>
-              — RESOURCES
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.88rem' }}>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent" target="_blank" rel="noopener noreferrer" className="footer-link">📖 Source Code</a>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent/issues" target="_blank" rel="noopener noreferrer" className="footer-link">🎯 Report Issue</a>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent" target="_blank" rel="noopener noreferrer" className="footer-link">🤝 Contribute</a>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/README.md" target="_blank" rel="noopener noreferrer" className="footer-link">📝 README.md</a>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer" className="footer-link">🤖 AGENTS.md</a>
-              <a href="https://github.com/Maijied/Lorapok_AI_Agent/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" className="footer-link">⚡ Changelog</a>
             </div>
           </div>
 

@@ -7,7 +7,6 @@ export const ecosystemProjects = [
     tagline: 'Autonomous Terminal & REST API Coding Agent',
     description: 'Action-oriented AI CLI engine that plans, writes, verifies, and commits code. Native support for Gemini, OpenRouter, and Perplexity.',
     url: 'https://ai.lorapok.tech',
-    github: 'https://github.com/Maijied/Lorapok_AI_Agent',
     category: 'AI & Agents',
     icon: '🤖',
     stats: '186 Tests · Free Tier'

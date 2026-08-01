@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 const installMethods = [
   { id: 'npm', label: 'npm (Global)', cmd: 'npm install -g lorapok-ai\nlorapok', desc: 'Installs the CLI globally so you can run lorapok from any directory.' },
   { id: 'npx', label: 'npx (Instant)', cmd: 'npx lorapok-ai', desc: 'Run Lorapok instantly without installing. Perfect for one-off sessions.' },
-  { id: 'docker', label: 'Docker Container', cmd: 'git clone https://github.com/Maijied/Lorapok_AI_Agent.git\ncd Lorapok_AI_Agent\nnpm run setup\nlorapok', desc: 'Runs inside an isolated Docker container with host volume mounting.' },
-  { id: 'source', label: 'From Source', cmd: 'git clone https://github.com/Maijied/Lorapok_AI_Agent.git\ncd Lorapok_AI_Agent\nnpm install\nnode bin/lorapok.js --local', desc: 'Fork and customize locally with hot-reloading for development.' }
+  { id: 'docker', label: 'Docker Container', cmd: 'docker pull lorapoklabs/lorapok-ai\ndocker run -it lorapoklabs/lorapok-ai', desc: 'Runs inside an isolated Docker container with host volume mounting.' },
+  { id: 'source', label: 'Local Development', cmd: 'npm install -g lorapok-ai\nlorapok --local', desc: 'Run locally for development.' }
 ];
 
 export default function CliCommands({ showToast }) {

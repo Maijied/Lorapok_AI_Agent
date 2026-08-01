@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.3.1...v1.4.0) (2026-08-01)
+
+
+### Features
+
+* refine model access layers, monorepo layout, and CI workflows ([8ac58ac](https://github.com/Maijied/Lorapok_AI_Agent/commit/8ac58ac8d8058d35e468a25d15e5f0996cfa8ea3))
+* refine model access layers, monorepo layout, and CI workflows ([a36d60e](https://github.com/Maijied/Lorapok_AI_Agent/commit/a36d60ef28682e9c5cc1e7be536783865acd4648))
+
 ## [1.3.2](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.3.1...v1.3.2) (2026-08-01)
 
 ### Features

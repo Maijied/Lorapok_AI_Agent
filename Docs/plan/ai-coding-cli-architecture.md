@@ -185,9 +185,12 @@ Task → Thinking Controller
 ```
 User input → Session context assembly (recent turns + explicitly referenced files)
     → Thinking (lightweight) → Model Router (text, auto/manual) → Provider call
-    → Stream response → Append to history → Trim history if over budget
+    → Stream response (intercept & extract <suggestions> tags silently) 
+    → Append to history → Trim history if over budget
+    → Display Response + Render "Suggested Next Questions"
+    → REPL (Supports standard manual text input or quick numeric selection [1-3] of suggestions)
 ```
-Corner cases: mid-chat file reference triggers a one-off context-store lookup without switching modes; provider swap mid-conversation re-serializes history through the new adapter; runaway user paste (huge blob) triggers a size guard offering to index it instead of inlining.
+Corner cases: mid-chat file reference triggers a one-off context-store lookup without switching modes; provider swap mid-conversation re-serializes history through the new adapter; runaway user paste (huge blob) triggers a size guard offering to index it instead of inlining. Suggested follow-ups are context-aware and generated in the same pass as the response to avoid latency penalties.
 
 ### 5.2 Plan Mode
 

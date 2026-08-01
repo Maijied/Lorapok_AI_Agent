@@ -12,7 +12,7 @@
 - **Clients**: `packages/sdk`, `apps/website`
 - **Docs / Agents**: `Docs/`, `.agents/rules|hooks|automations|skills|steer|subagents`
 - **Terminal UI**: `lib/ui.js`, `lib/renderer.js` (Chalk, Boxen, Ora, Enquirer, Figlet, Marked)
-- **Test Runner**: Jest (`npm test`, 33 test suites, 332 tests)
+- **Test Runner**: Jest (`npm test`, 33 test suites, 333 tests)
 
 ---
 

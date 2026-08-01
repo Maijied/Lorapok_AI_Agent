@@ -22,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **cli:** Fix response break — code boxes sized to panel; never wrapAnsi box borders (stops green TERMINAL bleed)
 * **cli:** Professional SESSION RECAP (aligned metrics + model usage) with animated exit sequence (TTY; skipped in CI)
 * **cli:** Header/theme alignment — shared 2-col gutter, framed hero+meta, welcome width match, path shorten `…/dir/name`
-* **tests:** 332 passing (33 suites)
+* **cli:** SESSION RECAP bye-bye cyber larva (animated) beside METRICS; refined `>_code;` emblem
+* **tests:** 333 passing (33 suites)
 
 ## [1.4.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.3.1...v1.4.0) (2026-08-01)
 

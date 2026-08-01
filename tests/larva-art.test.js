@@ -101,4 +101,20 @@ describe('Per-theme larva logos', () => {
         expect(plain).not.toMatch(/…sktop/);
         expect(plain).toMatch(/…\/Personal_Projects\/lorapok_ai_agent|lorapok_ai_agent/);
     });
+
+    test('bye-bye emblem is professional cyber larva with code badge', () => {
+        const { getByeByeEmblemLines, renderByeByeEmblem, getByeByeEmblemWidth } = require('../lib/larva-art');
+        const lines = getByeByeEmblemLines(0);
+        const plain = lines.join('\n');
+        expect(plain).toContain('{}');
+        expect(plain).toContain('>_code;');
+        expect(plain).toMatch(/bye bye/);
+        expect(plain).not.toMatch(/######/);
+        expect(getByeByeEmblemWidth()).toBeGreaterThan(10);
+        const theme = getTheme('Lorapok');
+        const colored = renderByeByeEmblem(1, theme).join('\n');
+        expect(colored.replace(/\u001b\[[0-9;]*m/g, '')).toMatch(/bye/);
+        // Frames differ (blink / caption)
+        expect(getByeByeEmblemLines(0).join('\n')).not.toBe(getByeByeEmblemLines(1).join('\n'));
+    });
 });

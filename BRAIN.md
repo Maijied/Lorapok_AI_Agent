@@ -1,7 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-08-01 | Version: 1.4.0 | Test Suite: 33/33 Passed (332 Tests)*
+> *Last Synced: 2026-08-01 | Version: 1.4.0 | Test Suite: 33/33 Passed (333 Tests)*
 
 ---
 
@@ -31,7 +31,7 @@ lorapok_ai_agent/
 ├── apps/website/      # marketing site
 ├── Docs/              # architecture, api, cli, providers
 ├── .agents/           # skills, steer, rules, hooks, automations
-└── tests/             # Jest (33 suites / 332 tests)
+└── tests/             # Jest (33 suites / 333 tests)
 ```
 
 See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
@@ -41,7 +41,7 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 ## 📊 Live Metrics
 
 - Node.js >= 18
-- Jest: **33 suites, 332 tests passing**
+- Jest: **33 suites, 333 tests passing**
 - Model sanitize: `ModelSanitizeService` + `ModelAccessService` + `ActiveModelService`
 - Secrets: `SecretsVault` AES-256-GCM; sessions: `SessionStore`; geek lines: `GeekLinesService`
 - Themes: default ANSI Shadow; Banner3 as **Banner** theme; dual-tone wordmark fill; cyber laptop vs classic + AI Coding badge
@@ -51,7 +51,7 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 - Model menus: Usable / Category(usable) / Provider(keyed free+paid) / Paid catalog; Perplexity Sonar seed = 4 models
 - Model status: `ModelManager.getTierLegend()` — distinct colors/icons in menus; printed by `/help` + `/guide`
 - Response view: `printAgentResponse` titled frame; H1–H4 color hierarchy; code boxes sized to panel (no border bleed)
-- Exit: `TerminalUI.exitSession` — larva spinner steps then aligned SESSION RECAP
+- Exit: `TerminalUI.exitSession` — larva spinner steps then aligned SESSION RECAP with animated bye-bye emblem
 - Workspace: `WorkspaceService`; npm package version: **1.4.0**
 
 ---

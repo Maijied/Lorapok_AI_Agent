@@ -280,6 +280,7 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
         expect(strip(joined)).toMatch(/MODEL USAGE/);
         expect(strip(joined)).toMatch(/TEST1234/);
         expect(strip(joined)).toMatch(/Total tokens/);
+        expect(strip(joined)).toMatch(/bye bye|_code/);
         // Values right-aligned: numeric columns share a common end column band
         const totalLine = strip(joined).split('\n').find(l => l.includes('Total tokens'));
         expect(totalLine).toBeTruthy();

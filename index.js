@@ -378,6 +378,8 @@ async function chatLoop() {
     const { SessionStore } = require('./services/SessionStore');
     const sessionStore = new SessionStore(config.configDir);
 
+    let lastSuggestions = [];
+
     while (true) {
         try {
             const theme = getTheme(config.getBrandingFont() || getDefaultThemeId());
@@ -402,7 +404,25 @@ async function chatLoop() {
             console.log(theme.statusBar(leftBits, rightBits));
             console.log(theme.rule());
 
+            if (lastSuggestions && lastSuggestions.length > 0) {
+                console.log(chalk.cyan('\n💡 Suggested Next Questions:'));
+                lastSuggestions.forEach((sq, i) => {
+                    console.log(`  ${chalk.gray(`[${i + 1}]`)} ${sq}`);
+                });
+                console.log();
+            }
+
             let input = await promptReplLine(theme);
+
+            if (input && /^[1-9]$/.test(input.trim()) && lastSuggestions && lastSuggestions.length > 0) {
+                const index = parseInt(input.trim(), 10) - 1;
+                if (lastSuggestions[index]) {
+                    input = lastSuggestions[index];
+                    console.log(chalk.gray(`> ${input}`));
+                }
+            }
+            
+            lastSuggestions = [];
 
             if (input === null) {
                 ctrlCCount++;
@@ -459,7 +479,10 @@ async function chatLoop() {
             const lowerInput = input.toLowerCase();
             if (lowerInput === 'exit' || lowerInput === 'quit' || lowerInput === '/q') break;
 
-            await handleChat(input, context);
+            const chatRes = await handleChat(input, context);
+            if (chatRes && chatRes.suggestedQuestions) {
+                lastSuggestions = chatRes.suggestedQuestions;
+            }
 
         } catch (err) {
             await handleError(err, agent, config);

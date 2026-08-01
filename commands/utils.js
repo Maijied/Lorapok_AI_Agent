@@ -71,14 +71,14 @@ function isCommandSafe(command) {
  * @param {number} [maxLines=25] - Threshold line count before folding
  * @returns {string} Formatted output string
  */
-function formatCollapsibleOutput(text, maxLines = 25) {
+function formatCollapsibleOutput(text, maxLines = 12) {
     if (!text) return '';
     const lines = text.split('\n');
     if (lines.length <= maxLines) return text.trim();
 
-    const top = lines.slice(0, 10).join('\n');
-    const bottom = lines.slice(-10).join('\n');
-    const hiddenCount = lines.length - 20;
+    const top = lines.slice(0, 2).join('\n');
+    const bottom = lines.slice(-2).join('\n');
+    const hiddenCount = lines.length - 4;
 
     return `${top}\n${chalk.gray(`\n  --- 📂 [Folded: ${hiddenCount} lines hidden | Full output captured] ---\n`)}\n${bottom}`.trim();
 }

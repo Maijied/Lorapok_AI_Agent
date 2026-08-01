@@ -257,7 +257,11 @@ async function handleChat(input, context, options = {}) {
         if (actions.length > 0) {
             // Future step: orchestrator.processToolCalls(actions)
             await executeFileActions(actions, context);
-            await promptSmartCommit(context);
+            
+            const hasFileEdits = actions.some(a => a.type !== 'COMMAND');
+            if (hasFileEdits) {
+                await promptSmartCommit(context);
+            }
         }
 
         return { success: true, content: response.content, usage: response.usage };

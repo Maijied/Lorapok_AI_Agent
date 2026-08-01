@@ -245,18 +245,7 @@ async function handleChat(input, context, options = {}) {
         let cleanContent = ui.hideLongCodeBlocks(response.content);
         
         // Extract suggested follow-up questions
-        let suggestedQuestions = [];
-        const suggestionsMatch = cleanContent.match(/<suggestions>([\s\S]*?)<\/suggestions>/i);
-        if (suggestionsMatch) {
-            const sqBlock = suggestionsMatch[1];
-            const sqRegex = /<sq>(.*?)<\/sq>/gi;
-            let match;
-            while ((match = sqRegex.exec(sqBlock)) !== null) {
-                if (match[1].trim()) suggestedQuestions.push(match[1].trim());
-            }
-            // Remove the suggestions block from the rendered output
-            cleanContent = cleanContent.replace(/<suggestions>[\s\S]*?<\/suggestions>/i, '').trim();
-        }
+        let suggestedQuestions = response.suggestedQuestions || [];
 
         const rendered = await renderMarkdown(cleanContent);
         if (ui && typeof ui.printAgentResponse === 'function') {

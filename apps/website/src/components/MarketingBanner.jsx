@@ -34,9 +34,16 @@ export default function MarketingBanner() {
       }} />
 
       <div className="container" style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-        <div className="hero-badge" style={{ marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-cyan)' }}>
-          <span className="pulse-dot" style={{ background: '#22D3EE', boxShadow: '0 0 10px #22D3EE' }} />
-          <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>BIG UPDATE — BETA RELEASE</span>
+        <div className="hero-badge" style={{ 
+          marginBottom: '1.5rem', 
+          background: 'rgba(34, 211, 238, 0.1)', 
+          border: '1px solid var(--border-cyan)',
+          animation: 'splashGlow 2s infinite ease-in-out',
+          padding: '8px 24px',
+          textShadow: '0 0 8px rgba(34, 211, 238, 0.9)'
+        }}>
+          <span className="pulse-dot" style={{ background: '#22D3EE', boxShadow: '0 0 12px #22D3EE' }} />
+          <span style={{ color: '#fff', fontWeight: 800, letterSpacing: '0.5px' }}>BIG UPDATE — BETA RELEASE</span>
         </div>
         
         <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', fontWeight: 800, marginBottom: '1rem', lineHeight: 1.2 }}>
@@ -53,8 +60,8 @@ export default function MarketingBanner() {
           maxWidth: '900px',
           borderRadius: '16px',
           overflow: 'hidden',
-          border: '1px solid var(--border-purple)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 40px rgba(124, 58, 237, 0.2)',
+          border: '2px solid var(--border-purple)',
+          animation: 'imgBorderGlow 3s infinite ease-in-out',
           marginBottom: '2rem'
         }}>
           <img 

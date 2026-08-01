@@ -1361,3 +1361,16 @@ code, pre {
     justify-content: center;
   }
 }
+
+/* ── Marketing Banner Animations ── */
+@keyframes splashGlow {
+  0% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.3), 0 0 20px rgba(124, 58, 237, 0.2); transform: scale(1); }
+  50% { box-shadow: 0 0 30px rgba(34, 211, 238, 0.9), 0 0 50px rgba(124, 58, 237, 0.7); transform: scale(1.08); }
+  100% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.3), 0 0 20px rgba(124, 58, 237, 0.2); transform: scale(1); }
+}
+
+@keyframes imgBorderGlow {
+  0% { box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 15px rgba(124, 58, 237, 0.4), 0 0 10px rgba(34, 211, 238, 0.3); }
+  50% { box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 50px rgba(124, 58, 237, 0.9), 0 0 30px rgba(34, 211, 238, 0.7); }
+  100% { box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 15px rgba(124, 58, 237, 0.4), 0 0 10px rgba(34, 211, 238, 0.3); }
+}

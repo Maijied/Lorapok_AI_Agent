@@ -24,6 +24,8 @@
 const COMMANDS = [
     { name: '/chat', section: 'core', description: 'Interactive AI chat', icon: '💬', handler: 'chat', inAutocomplete: true, inSystemMenu: true },
     { name: '/plan', section: 'core', description: 'Plan & execute multi-step objective', icon: '📝', handler: 'plan', inAutocomplete: true, inSystemMenu: true },
+    { name: '/agent', aliases: ['/agentic'], section: 'core', description: 'Autonomous agent mode (tools/fs/shell)', icon: '⚡', handler: 'agent', inAutocomplete: true, inSystemMenu: true },
+    { name: '/debug', section: 'core', description: 'Analysis and debug mode', icon: '🐛', handler: 'debug', inAutocomplete: true, inSystemMenu: true },
     { name: '/analyze', section: 'core', description: 'Deep repository audit', icon: '🔍', handler: 'analyze', inAutocomplete: true, inSystemMenu: true },
     { name: '/model', aliases: ['/models'], section: 'controls', description: 'View, switch, or list AI models', icon: '🧠', handler: 'model', inAutocomplete: true, inSystemMenu: true },
     { name: '/settings', section: 'controls', description: 'Customize themes & preferences', icon: '🎨', handler: 'settings', inAutocomplete: true, inSystemMenu: true },

@@ -333,6 +333,11 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
         const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
         expect(() => TerminalUI.showHowToUse()).not.toThrow();
         expect(spyLog).toHaveBeenCalled();
+        const joined = spyLog.mock.calls.map(c => String(c[0])).join('\n');
+        expect(joined).toMatch(/phrasing inference/i);
+        expect(joined).toMatch(/Plan/i);
+        expect(joined).toMatch(/Agent/i);
+        expect(joined).toMatch(/Debug/i);
         spyLog.mockRestore();
     });
 
@@ -346,6 +351,7 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
         expect(joined).toMatch(/daily limits/);
         expect(joined).toMatch(/RESPONSE VIEW/);
         expect(joined).toMatch(/H1/);
+        expect(joined).toMatch(/phrasing inference/i);
         spyLog.mockRestore();
     });
 

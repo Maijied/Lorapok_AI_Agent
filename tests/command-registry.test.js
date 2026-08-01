@@ -17,10 +17,19 @@ describe('Command registry', () => {
         expect(names).toContain('/sessions');
     });
 
+    test('includes new operational modes', () => {
+        const names = getCommands().map(c => c.name);
+        expect(names).toContain('/chat');
+        expect(names).toContain('/plan');
+        expect(names).toContain('/agent');
+        expect(names).toContain('/debug');
+    });
+
     test('aliases resolve via getCommandByName', () => {
         expect(getCommandByName('/models').handler).toBe('model');
         expect(getCommandByName('/yolo').handler).toBe('bypass');
         expect(getCommandByName('help').handler).toBe('help');
+        expect(getCommandByName('/agentic').handler).toBe('agent');
     });
 
     test('handlers cover registry entries', () => {

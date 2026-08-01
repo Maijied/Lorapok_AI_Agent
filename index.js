@@ -34,6 +34,13 @@ const { setCwd, handleError } = require('./commands/utils');
 const { handleChat } = require('./commands/chat');
 const { dispatchSlashCommand } = require('./commands/system');
 
+const { SessionManager } = require('./services/SessionManager');
+const { ModeRouter } = require('./services/ModeRouter');
+const { Orchestrator } = require('./services/Orchestrator');
+const { PolicyEngine } = require('./services/PolicyEngine');
+const { ModelRouter } = require('./services/ModelRouter');
+const { ToolRuntime, createBuiltinTools } = require('./services/ToolRuntime');
+
 let agent, config;
 
 /**
@@ -343,7 +350,29 @@ async function promptReplLine(theme) {
  */
 async function chatLoop() {
     const userName = config.getUserName() || 'Developer';
-    const context = { agent, config, sessionData, ui: TerminalUI };
+
+    const modelRouter = new ModelRouter(agent.modelManager);
+    const policyEngine = new PolicyEngine(config.getAutoApprove ? config.getAutoApprove() : false);
+    const toolRuntime = new ToolRuntime();
+    const builtins = createBuiltinTools(agent.projectRoot);
+    for (const t of Object.values(builtins)) toolRuntime.register(t);
+
+    const orchestrator = new Orchestrator({
+        modelRouter,
+        policyEngine,
+        toolRuntime,
+        budget: {
+            maxToolCalls: typeof config.getMaxToolCalls === 'function' ? config.getMaxToolCalls() : 25,
+            maxTokens: typeof config.getMaxTokens === 'function' ? config.getMaxTokens() : 0,
+            maxCostUsd: typeof config.getMaxCostUsd === 'function' ? config.getMaxCostUsd() : 0
+        },
+        maxRepeatedFailures: 3
+    });
+
+    const modeRouter = new ModeRouter();
+    const sessionManager = new SessionManager();
+
+    const context = { agent, config, sessionData, ui: TerminalUI, orchestrator, modeRouter, sessionManager };
     let currentMode = 'chat';
     const activeModelService = new ActiveModelService(agent.modelManager);
     const { SessionStore } = require('./services/SessionStore');
@@ -417,7 +446,7 @@ async function chatLoop() {
                 }
 
                 const rawCmd = targetCmd.replace(/^\//, '').trim().split(/\s+/)[0].toLowerCase();
-                if (['chat', 'plan', 'analyze', 'git', 'actions', 'files', 'status', 'commit', 'diff'].includes(rawCmd)) {
+                if (['chat', 'plan', 'analyze', 'agent', 'debug', 'git', 'actions', 'files', 'status', 'commit', 'diff'].includes(rawCmd)) {
                     currentMode = rawCmd;
                 }
 

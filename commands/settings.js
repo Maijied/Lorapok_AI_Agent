@@ -585,6 +585,32 @@ async function handleModelSelection(agent, config) {
     }
 }
 
+async function handleBudgetLimits(config) {
+    console.log(chalk.cyan.bold('\n⚖️  Orchestrator Budget Limits\n'));
+    
+    const costRes = await new Input({
+        message: 'Max Cost (USD) per task (0 for unlimited):',
+        initial: String(config.getMaxCostUsd())
+    }).run().catch(() => null);
+
+    const tokenRes = await new Input({
+        message: 'Max Tokens per task (0 for unlimited):',
+        initial: String(config.getMaxTokens())
+    }).run().catch(() => null);
+
+    const callsRes = await new Input({
+        message: 'Max Tool Calls per task:',
+        initial: String(config.getMaxToolCalls())
+    }).run().catch(() => null);
+
+    if (costRes != null && tokenRes != null && callsRes != null) {
+        config.setMaxCostUsd(costRes);
+        config.setMaxTokens(tokenRes);
+        config.setMaxToolCalls(callsRes);
+        console.log(TerminalUI.formatSuccess('Budget limits updated successfully.', config));
+    }
+}
+
 /**
  * Display settings interactive selection menu.
  * @param {Object} agent - Lorapok agent instance
@@ -605,6 +631,7 @@ async function showSettings(agent, config) {
                 menuChoice('model', '🧠', 'LLM model configuration'),
                 menuChoice('sessions', '📁', 'Session info'),
                 menuChoice('cache', '💾', 'Response cache'),
+                menuChoice('limits', '⚖️', 'Orchestrator budget limits'),
                 menuChoice('language', '🌐', 'Default language'),
                 menuChoice('theme', '🎨', 'CLI theme'),
                 menuChoice('logo', '🐛', 'Logo style (cyber / classic)'),
@@ -622,6 +649,11 @@ async function showSettings(agent, config) {
 
         if (choice === 'cache') {
             await handleCacheCommand(null, { agent, config, ui: TerminalUI });
+            continue;
+        }
+
+        if (choice === 'limits') {
+            await handleBudgetLimits(config);
             continue;
         }
 

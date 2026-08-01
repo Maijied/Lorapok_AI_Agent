@@ -1,7 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-08-01 | Version: 1.4.0 | Test Suite: 33/33 Passed (333 Tests)*
+> *Last Synced: 2026-08-01 | Version: 1.5.0 | Test Suite: 44/44 Passed (570 Tests)*
 
 ---
 
@@ -24,14 +24,14 @@
 lorapok_ai_agent/
 ├── bin/ lorapok.js
 ├── commands/          # registry.js + handlers
-├── lib/               # agent, config, ui, menu-format, cache
-├── services/          # Model*, Git, File, Actions
+├── lib/               # agent, core schema, config, ui, menu-format
+├── services/          # Orchestrator, ModeRouter, Adapters, Model*, Git, File
 ├── server.js
 ├── packages/sdk/      # HTTP client stub
 ├── apps/website/      # marketing site
 ├── Docs/              # architecture, api, cli, providers
 ├── .agents/           # skills, steer, rules, hooks, automations
-└── tests/             # Jest (33 suites / 333 tests)
+└── tests/             # Jest (44 suites / 570 tests)
 ```
 
 See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
@@ -41,7 +41,7 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 ## 📊 Live Metrics
 
 - Node.js >= 18
-- Jest: **33 suites, 333 tests passing**
+- Jest: **44 suites, 570 tests passing**
 - Model sanitize: `ModelSanitizeService` + `ModelAccessService` + `ActiveModelService`
 - Secrets: `SecretsVault` AES-256-GCM; sessions: `SessionStore`; geek lines: `GeekLinesService`
 - Themes: default ANSI Shadow; Banner3 as **Banner** theme; dual-tone wordmark fill; cyber laptop vs classic + AI Coding badge
@@ -52,7 +52,7 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 - Model status: `ModelManager.getTierLegend()` — distinct colors/icons in menus; printed by `/help` + `/guide`
 - Response view: `printAgentResponse` titled frame; H1–H4 color hierarchy; code boxes sized to panel (no border bleed)
 - Exit: `TerminalUI.exitSession` — larva spinner steps then aligned SESSION RECAP with animated bye-bye emblem
-- Workspace: `WorkspaceService`; npm package version: **1.4.0**
+- Workspace: `WorkspaceService`; npm package version: **1.5.0**
 
 ---
 

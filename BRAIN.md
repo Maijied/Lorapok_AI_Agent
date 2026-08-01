@@ -51,6 +51,8 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 - Model menus: Usable / Category(usable) / Provider(keyed free+paid) / Paid catalog; Perplexity Sonar seed = 4 models
 - Model status: `ModelManager.getTierLegend()` — distinct colors/icons in menus; printed by `/help` + `/guide`
 - Response view: `printAgentResponse` titled frame; H1–H4 color hierarchy; code boxes sized to panel (no border bleed)
+- Smart Chat UI: Suggested questions (`<suggestions>`) render seamlessly before the status bar to create a perfect iteration separator line.
+- Architecture: `currentMode` is explicitly tracked in `context` to ensure `handleChat` differentiates between `/chat`, `/agent`, and `/plan` modes, automatically injecting strong autonomous prompt directives when needed.
 - Exit: `TerminalUI.exitSession` — larva spinner steps then aligned SESSION RECAP with animated bye-bye emblem
 - Workspace: `WorkspaceService`; npm package version: **1.5.0**
 

@@ -400,10 +400,6 @@ async function chatLoop() {
             const modelLabel = modelStatus.shortName || 'model';
             const rightBits = theme.color('modelBadge', `${modelStatus.icon || '\u26A1'} ${modelLabel}`) +
                 theme.muted(' | ') + ctxColor(`${modelStatus.contextPct ?? 100}%`);
-            console.log(theme.rule());
-            console.log(theme.statusBar(leftBits, rightBits));
-            console.log(theme.rule());
-
             if (lastSuggestions && lastSuggestions.length > 0) {
                 console.log(chalk.cyan('\n💡 Suggested Next Questions:'));
                 lastSuggestions.forEach((sq, i) => {
@@ -411,6 +407,10 @@ async function chatLoop() {
                 });
                 console.log();
             }
+
+            console.log(theme.rule());
+            console.log(theme.statusBar(leftBits, rightBits));
+            console.log(theme.rule());
 
             let input = await promptReplLine(theme);
 
@@ -469,7 +469,8 @@ async function chatLoop() {
                 if (['chat', 'plan', 'analyze', 'agent', 'debug', 'git', 'actions', 'files', 'status', 'commit', 'diff'].includes(rawCmd)) {
                     currentMode = rawCmd;
                 }
-
+                
+                context.currentMode = currentMode;
                 const result = await dispatchSlashCommand(targetCmd, context);
                 if (result && result.mode) currentMode = result.mode;
                 if (result && result.exit) break;
@@ -481,6 +482,7 @@ async function chatLoop() {
 
             let nextInput = input;
             while (true) {
+                context.currentMode = currentMode;
                 const chatRes = await handleChat(nextInput, context);
                 
                 if (chatRes && chatRes.suggestedQuestions) {

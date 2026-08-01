@@ -279,10 +279,11 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
         expect(strip(joined)).toMatch(/METRICS/);
         expect(strip(joined)).toMatch(/MODEL USAGE/);
         expect(strip(joined)).toMatch(/TEST1234/);
-        expect(strip(joined)).toMatch(/Total tokens/);
-        expect(strip(joined)).toMatch(/bye bye|_code/);
+        expect(strip(joined)).toMatch(/Total/);
+        expect(strip(joined)).toMatch(/bye bye/);
+        expect(strip(joined)).toMatch(/_code/);
         // Values right-aligned: numeric columns share a common end column band
-        const totalLine = strip(joined).split('\n').find(l => l.includes('Total tokens'));
+        const totalLine = strip(joined).split('\n').find(l => /\bTotal\b/.test(l) && !/MODEL/.test(l));
         expect(totalLine).toBeTruthy();
         expect(totalLine).toMatch(/800/);
         spyLog.mockRestore();
@@ -323,8 +324,8 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
         expect(joined).toMatch(/gemini-flash-lite-latest/);
         expect(joined).toMatch(/1,234/);
         expect(joined).toMatch(/MODEL USAGE/);
-        const totalLine = joined.split('\n').find(l => /Total tokens/.test(l));
-        expect(totalLine).toMatch(/Total tokens\s+1,290/);
+        const totalLine = joined.split('\n').find(l => /\bTotal\b/.test(l) && /1,290/.test(l));
+        expect(totalLine).toMatch(/Total\s+1,290/);
         spyLog.mockRestore();
     });
 

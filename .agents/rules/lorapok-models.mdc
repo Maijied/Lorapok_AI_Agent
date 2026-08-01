@@ -1,0 +1,12 @@
+---
+description: Model catalog and menu invariants
+globs: services/Model*.js,commands/settings.js,lib/agent.js
+alwaysApply: false
+---
+
+# Model Rules
+
+- Sanitize only in `ModelManager` / `ModelValidator`
+- Usable menus = no paymentRequired + available + not failed
+- Paid catalog = paymentRequired only; Google free-API is usable
+- Never select inaccessible models via CLI or API

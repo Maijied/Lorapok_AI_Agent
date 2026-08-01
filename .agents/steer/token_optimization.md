@@ -7,7 +7,7 @@
    - Do not request full file dumps of files larger than 100 lines unless required for comprehensive refactoring.
 
 2. **Incremental File Mutations**:
-   - Prefer `replace_file_content` over `write_to_file` when editing existing code.
+   - Prefer `replace_file_content` or `multi_replace_file_content` over `write_to_file` when editing existing code.
    - Limit `TargetContent` to the smallest unique block necessary to anchor the change.
 
 3. **Centralized Knowledge Index**:

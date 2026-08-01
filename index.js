@@ -96,13 +96,33 @@ async function initialization() {
         process.env.GITHUB_TOKEN = existingToken;
     }
 
-    const apiKey = config.getApiKey();
-    if (!apiKey) {
+    const hasAnyKey = Boolean(
+        config.getApiKey() ||
+        (typeof config.getGoogleApiKey === 'function' && config.getGoogleApiKey()) ||
+        (typeof config.getOpenRouterApiKey === 'function' && config.getOpenRouterApiKey()) ||
+        (typeof config.getPerplexityApiKey === 'function' && config.getPerplexityApiKey()) ||
+        process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY ||
+        process.env.OPENROUTER_API_KEY || process.env.PERPLEXITY_API_KEY
+    );
+    if (!hasAnyKey) {
         console.log(TerminalUI.formatError('No API key found.'));
-        const prompt = new Input({ message: 'Enter your Perplexity API Key:' });
-        const newKey = await prompt.run();
+        console.log(chalk.gray('  Add GEMINI_API_KEY, OPENROUTER_API_KEY, or PERPLEXITY_API_KEY — or enter one below.'));
+        const keyType = new Select({
+            message: 'Which provider key will you add?',
+            choices: [
+                { name: 'google', message: '✨ Google AI Studio (GEMINI_API_KEY)' },
+                { name: 'openrouter', message: '🔵 OpenRouter' },
+                { name: 'perplexity', message: '🟣 Perplexity' }
+            ]
+        });
+        const which = await keyType.run().catch(() => 'google');
+        const prompt = new Input({ message: 'Paste API key:' });
+        const newKey = await prompt.run().catch(() => null);
         if (!newKey) process.exit(1);
-        config.setApiKey(newKey.trim());
+        const trimmed = newKey.trim();
+        if (which === 'google' && typeof config.setGoogleApiKey === 'function') config.setGoogleApiKey(trimmed);
+        else if (which === 'openrouter' && typeof config.setOpenRouterApiKey === 'function') config.setOpenRouterApiKey(trimmed);
+        else config.setApiKey(trimmed);
     }
 
     if (config.isFirstRun()) {
@@ -163,10 +183,11 @@ async function initialization() {
  */
 async function promptSlashAutoComplete() {
     const { AutoComplete } = require('enquirer');
+    const { getAutocompleteChoices } = require('./commands/registry');
     const prompt = new AutoComplete({
         name: 'command',
         message: 'Select Slash Command:',
-        limit: 12,
+        limit: 14,
         styles: {
             underline: str => str,
             em: chalk.cyan.bold
@@ -175,34 +196,9 @@ async function promptSlashAutoComplete() {
             return this.state.index === i ? chalk.cyan.bold('❯ ') : '  ';
         },
         suggest(input, choices) {
-            return choices.filter(c => c.message.toLowerCase().includes(input.toLowerCase()));
+            return choices.filter(c => !c.role && c.message.toLowerCase().includes(input.toLowerCase()));
         },
-        choices: [
-            { role: 'heading', message: chalk.cyan.bold('  🤖 CORE AI') },
-            { name: '/chat', message: `    💬 ${chalk.bold('/chat')}      ${chalk.gray('‣ Interactive AI chat')}` },
-            { name: '/plan', message: `    📝 ${chalk.bold('/plan')}      ${chalk.gray('‣ Plan & execute multi-step objective')}` },
-            { name: '/analyze', message: `    🔍 ${chalk.bold('/analyze')}   ${chalk.gray('‣ Deep repository audit')}` },
-
-            { role: 'heading', message: chalk.cyan.bold('\n  🚀 CONTROLS') },
-            { name: '/bypass', message: `    🚀 ${chalk.bold('/bypass')}    ${chalk.gray('‣ Toggle Auto-Approve mode')}` },
-            { name: '/cache', message: `    ⚡ ${chalk.bold('/cache')}     ${chalk.gray('‣ Token-saving response cache stats & controls')}` },
-            { name: '/settings', message: `    🎨 ${chalk.bold('/settings')}  ${chalk.gray('‣ Customize themes & preferences')}` },
-
-
-            { role: 'heading', message: chalk.cyan.bold('\n  🔗 DEVOPS & GIT') },
-            { name: '/git', message: `    🔗 ${chalk.bold('/git')}       ${chalk.gray('‣ Git operations manager')}` },
-            { name: '/status', message: `    📊 ${chalk.bold('/status')}    ${chalk.gray('‣ View git working tree status')}` },
-            { name: '/commit', message: `    💾 ${chalk.bold('/commit')}    ${chalk.gray('‣ Smart AI git commit')}` },
-            { name: '/diff', message: `    🔍 ${chalk.bold('/diff')}      ${chalk.gray('‣ View git diff changes')}` },
-            { name: '/actions', message: `    ⚡ ${chalk.bold('/actions')}   ${chalk.gray('‣ GitHub Actions explorer')}` },
-            { name: '/files', message: `    📁 ${chalk.bold('/files')}     ${chalk.gray('‣ Workspace files browser')}` },
-
-            { role: 'heading', message: chalk.cyan.bold('\n  📊 SYSTEM') },
-            { name: '/logs', message: `    📊 ${chalk.bold('/logs')}      ${chalk.gray('‣ View application & error logs')}` },
-            { name: '/help', message: `    ❓ ${chalk.bold('/help')}      ${chalk.gray('‣ Show CLI command guide')}` },
-            { name: '/clear', message: `    🧹 ${chalk.bold('/clear')}     ${chalk.gray('‣ Clear terminal screen')}` },
-            { name: '/exit', message: `    ❌ ${chalk.bold('/exit')}      ${chalk.gray('‣ Exit Lorapok')}` }
-        ],
+        choices: getAutocompleteChoices(chalk),
         result(name) { return this.map(name)[name]; }
     });
     return await prompt.run().catch(() => null);

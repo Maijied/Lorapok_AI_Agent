@@ -13,6 +13,7 @@ const { Select, Input } = require('enquirer');
 const TerminalUI = require('../lib/ui');
 const boxen = require('boxen');
 const GithubAuth = require('../services/GithubAuth');
+const modelCacheService = require('../services/ModelCacheService');
 
 async function openBrowserUrl(url) {
     const ghAuth = new GithubAuth();
@@ -177,18 +178,34 @@ async function handleModelSelection(agent, config) {
         return;
     }
 
-    const totalCount = Object.keys(models).length;
-    const availableCount = Object.values(models).filter(m => m.available).length;
-    console.log(chalk.cyan(`\n🧠 Loaded ${totalCount} dynamic models from API (${availableCount} available with active keys).\n`));
+    const mm = agent.modelManager;
+    const accessibleKeys = mm.getUsableModelIds(models);
+    const paidKeys = mm.getPaidCatalogIds(models);
+    console.log(chalk.cyan(`\n🧠 Loaded ${Object.keys(models).length} models — ${chalk.green(accessibleKeys.length + ' free accessible')} | ${chalk.yellow(paidKeys.length + ' paid')} (see 💰 Paid Catalog).\n`));
+
+    const getTierLabel = (item, hasAccess, showCatalog) => {
+        const label = mm.getTierLabel(item, hasAccess, showCatalog);
+        if (label.includes('No Key')) return chalk.gray(label);
+        if (label.includes('Free Tier')) return chalk.green(label);
+        if (label.includes('Rate Limited')) return chalk.blue(label);
+        return chalk.yellow(label);
+    };
+
+    const getStatusIcon = (item, hasAccess, showCatalog) => {
+        const icon = mm.getStatusIcon(item, hasAccess, showCatalog);
+        if (icon === '🔒') return chalk.gray(icon);
+        if (icon === '🟢') return chalk.green(icon);
+        if (icon === '🔵') return chalk.blue(icon);
+        return chalk.yellow(icon);
+    };
 
     while (true) {
         const mainMenu = new Select({
             message: '🧠 Model Selection & Configuration',
             choices: [
-                { name: 'ready', message: '🟢 View Ready Models (Available Without Credit Errors)' },
+                { name: 'ready', message: '🟢 Currently Usable (Accessible With Your Active Keys)' },
                 { name: 'category', message: '📁 Browse by Domain / Category' },
-                { name: 'provider', message: '🏢 Browse by AI Provider (Google AI Studio, Perplexity, OpenRouter)' },
-                { name: 'tier', message: '💰 Browse by Pricing Tier (Free, Pro)' },
+                { name: 'provider', message: '🏢 Browse by AI Provider' },
                 { name: 'all', message: '🌐 View All Supported Models' },
                 { name: 'back', message: '🔙 Back to Settings' }
             ],
@@ -198,42 +215,22 @@ async function handleModelSelection(agent, config) {
         const filterMode = await mainMenu.run().catch(() => 'back');
         if (filterMode === 'back') return;
 
-        // Helper to check if model is free tier across all providers
-        const isFreeTier = (m) => {
-            if (!m) return false;
-            if (m.tier === 'pro') return false;
-            if (m.tier === 'free') return true;
-            const rateStr = String(m.rateLimit || '').toLowerCase();
-            const nameStr = String(m.name || m.id || '').toLowerCase();
-            if (rateStr.includes('free') || nameStr.includes(':free') || nameStr.includes('/free')) return true;
-            if (rateStr.includes('$') || rateStr.includes('pro tier')) return false;
-            if (m.provider === 'google-ai-studio') return true;
-            return false;
-        };
-
-        // Filter free available models for standard selection across all providers (no credit purchase required)
-        const freeAvailableKeys = Object.keys(models).filter(id => {
-            const m = models[id];
-            return m && m.available === true && isFreeTier(m);
-        });
-
-        let filteredModelKeys = [...freeAvailableKeys];
+        let filteredModelKeys = [];
         let menuTitle = '';
+        let showAllPaidCatalog = false;
 
         if (filterMode === 'ready') {
-            filteredModelKeys = [...freeAvailableKeys];
-            menuTitle = 'Ready Free Models';
+            filteredModelKeys = mm.getUsableModelIds(models);
+            menuTitle = 'Currently Usable Models';
+
         } else if (filterMode === 'category') {
             const categoryMenu = new Select({
-                message: '📁 Select Category:',
+                message: '📁 Select Category (chat-compatible models only):',
                 choices: [
                     { name: 'coding', message: '💻 Coding & Engineering' },
                     { name: 'reasoning', message: '🔬 Complex Logic & Reasoning' },
                     { name: 'research', message: '🔍 Web Research & Search' },
                     { name: 'agent', message: '🤖 Autonomous Agents & Tools' },
-                    { name: 'image', message: '🎨 Image & Visual Generation' },
-                    { name: 'audio', message: '🎙️ Audio & Voice Synthesis' },
-                    { name: 'video', message: '🎬 Video Generation' },
                     { name: 'openweights', message: '🦙 Open Weights & Open Source' },
                     { name: 'fast', message: '🚀 Fast & Lightweight' },
                     { name: 'general', message: '🌐 General Intelligence' },
@@ -243,93 +240,140 @@ async function handleModelSelection(agent, config) {
             });
             const cat = await categoryMenu.run().catch(() => 'back');
             if (cat === 'back') continue;
-            filteredModelKeys = freeAvailableKeys.filter(id => models[id].category === cat);
+            filteredModelKeys = mm.getModelsByCategoryView(models, cat);
             menuTitle = `Category: ${cat}`;
+
         } else if (filterMode === 'provider') {
+            const usable = mm.getUsableModelIds(models);
+            const accessibleProviders = [...new Set(usable.map(id => models[id].provider))].filter(Boolean);
+            if (accessibleProviders.length === 0) {
+                console.log(chalk.yellow('\n⚠️  No accessible providers found.'));
+                console.log(chalk.gray('   Add an API key in Settings → Update API Key to browse by provider.'));
+                console.log(chalk.gray('   Google AI Studio (free): https://aistudio.google.com/app/apikey'));
+                console.log(chalk.gray('   OpenRouter (free tier): https://openrouter.ai/keys'));
+                console.log(chalk.gray('   Perplexity AI: https://www.perplexity.ai/settings/api\n'));
+                continue;
+            }
+            const providerChoices = accessibleProviders.map(p => {
+                let pName = p;
+                if (p === 'google-ai-studio') pName = '✨ Google AI Studio';
+                else if (p === 'perplexity') pName = '🟣 Perplexity AI';
+                else if (p === 'openrouter') pName = '🔵 OpenRouter';
+                else pName = `🏢 ${p.charAt(0).toUpperCase() + p.slice(1)}`;
+                return { name: p, message: pName };
+            });
+            providerChoices.push({ name: 'back', message: '🔙 Back to Main Menu' });
+
             const provMenu = new Select({
-                message: '🏢 Select Provider:',
-                choices: [
-                    { name: 'google-ai-studio', message: '✨ Google AI Studio (Free Models)' },
-                    { name: 'perplexity', message: '🟣 Perplexity AI (Free Models)' },
-                    { name: 'openrouter', message: '🔵 OpenRouter (Free Models)' },
-                    { name: 'back', message: '🔙 Back to Main Menu' }
-                ],
+                message: '🏢 Select Provider (Active keys only):',
+                choices: providerChoices,
                 result(name) { return this.map(name)[name]; }
             });
             const prov = await provMenu.run().catch(() => 'back');
             if (prov === 'back') continue;
-            filteredModelKeys = freeAvailableKeys.filter(id => models[id].provider === prov);
+            filteredModelKeys = mm.getModelsByProviderView(models, prov);
             menuTitle = `Provider: ${prov}`;
-        } else if (filterMode === 'tier') {
-            const tierMenu = new Select({
-                message: '💰 Select Pricing Tier:',
+
+        } else if (filterMode === 'all') {
+            const allSubMenu = new Select({
+                message: '🌐 View All Supported Models:',
                 choices: [
-                    { name: 'free', message: '🆓 Free Models (No Purchase Required)' },
-                    { name: 'pro', message: '💎 Pro / Paid Credit Models' },
+                    { name: 'usable', message: '🟢 Currently Usable (Accessible With Your Keys)' },
+                    { name: 'paid', message: '💰 Paid / Pro Tier Catalog (All — For Reference & Purchasing)' },
                     { name: 'back', message: '🔙 Back to Main Menu' }
                 ],
                 result(name) { return this.map(name)[name]; }
             });
-            const tier = await tierMenu.run().catch(() => 'back');
-            if (tier === 'back') continue;
-            if (tier === 'free') {
-                filteredModelKeys = freeAvailableKeys;
+            const subAll = await allSubMenu.run().catch(() => 'back');
+            if (subAll === 'back') continue;
+
+            if (subAll === 'usable') {
+                filteredModelKeys = mm.getUsableModelIds(models);
+                menuTitle = 'Currently Usable Models';
             } else {
-                filteredModelKeys = Object.keys(models).filter(id => !isFreeTier(models[id]));
+                filteredModelKeys = mm.getPaidCatalogIds(models);
+                menuTitle = 'Paid / Pro Tier Model Catalog';
+                showAllPaidCatalog = true;
             }
-            menuTitle = `Tier: ${tier}`;
-        } else {
-            filteredModelKeys = Object.keys(models);
-            menuTitle = 'All Supported Models (Includes Paid & Credit-Required Models)';
         }
 
         if (filteredModelKeys.length === 0) {
-            console.log(chalk.yellow(`\n⚠️ No models found for ${menuTitle}.\n`));
+            console.log(chalk.yellow(`\n⚠️  No models found for ${menuTitle}.`));
+            if (menuTitle.startsWith('Category:')) {
+                console.log(chalk.gray('   No accessible models in this category yet.'));
+                console.log(chalk.gray('   Try adding API keys, or use /refresh-models to re-check.\n'));
+            } else if (menuTitle.startsWith('Currently')) {
+                console.log(chalk.gray('   Add an API key in Settings → Update API Key to unlock models.\n'));
+            }
             continue;
         }
 
-        const choices = filteredModelKeys.map(id => {
+        const seenNames = new Set();
+        const choices = [];
+        for (const id of filteredModelKeys) {
             const item = models[id];
-            const isPaidCreditModel = !isFreeTier(item);
-            const statusIcon = item.available ? (isPaidCreditModel ? chalk.yellow('💳') : chalk.green('🟢')) : chalk.red('🔴');
-            
-            // Clean duplicate provider suffix from model display name
+            const hasKeyAccess = item.available === true;
+
+            const statusIcon = getStatusIcon(item, hasKeyAccess, showAllPaidCatalog);
+            const tierTag = getTierLabel(item, hasKeyAccess, showAllPaidCatalog);
+
             const cleanName = (item.name || id)
                 .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
                 .trim();
 
+            const dedupKey = `${cleanName}-${item.provider}`;
+            if (seenNames.has(dedupKey)) continue;
+            seenNames.add(dedupKey);
+
             let providerTag = chalk.magenta('[Perplexity]');
             if (item.provider === 'google-ai-studio') providerTag = chalk.cyan('[Google]');
             if (item.provider === 'openrouter') providerTag = chalk.blue('[OpenRouter]');
-            const tierTag = isPaidCreditModel ? chalk.yellow('(Credit Purchase Required)') : chalk.green('(Free Tier)');
-            
-            let limitTag = '';
+
+            let catTag = chalk.gray('[GENERAL]');
+            if (item.category) {
+                const cats = Array.isArray(item.category) ? item.category : [item.category];
+                const chatCats = cats.filter(c => !['audio', 'image', 'video'].includes(c));
+                if (chatCats.length > 0) {
+                    const catStr = chatCats.map(c => c.toUpperCase()).join(', ');
+                    catTag = chalk.gray(`[${catStr}]`);
+                }
+            }
+
+            let limits = [];
             if (item.contextLength) {
                 const ctxK = Math.round(item.contextLength / 1000);
                 const ctxStr = ctxK >= 1000 ? `${(ctxK / 1000).toFixed(1)}M` : `${ctxK}k`;
-                limitTag = chalk.gray(` ⚡ Token Limit: ${ctxStr}`);
-                if (item.rateLimit) {
-                    limitTag += chalk.gray(` (${item.rateLimit})`);
-                }
-            } else if (item.rateLimit) {
-                limitTag = chalk.gray(` ⚡ Token Limit: ${item.rateLimit}`);
+                limits.push(`⚡ Ctx: ${ctxStr}`);
             }
-
-            let resetTag = '';
+            if (item.rateLimit) {
+                limits.push(`📊 ${item.rateLimit}`);
+            }
             if (item.resetWindow) {
-                resetTag = chalk.dim(` ⏱️ ${item.resetWindow}`);
+                limits.push(`⏱️ Reset: ${item.resetWindow}`);
+            }
+            const limitTag = limits.length > 0 ? chalk.gray(` | ${limits.join(' | ')}`) : '';
+
+            let disabledReason = false;
+            if (showAllPaidCatalog && !hasKeyAccess) {
+                let keyUrl = 'https://openrouter.ai/keys';
+                if (item.provider === 'perplexity') keyUrl = 'https://www.perplexity.ai/settings/api';
+                if (item.provider === 'google-ai-studio') keyUrl = 'https://aistudio.google.com/app/apikey';
+                disabledReason = `(Add key at ${keyUrl})`;
+            } else if (!hasKeyAccess && !showAllPaidCatalog) {
+                disabledReason = '(Missing API Key)';
             }
 
-            return {
+            choices.push({
                 name: id,
-                message: `${statusIcon} ${cleanName} ${providerTag} ${tierTag}${limitTag}${resetTag}`
-            };
-        });
-        
+                message: `${statusIcon} ${cleanName} ${providerTag} ${catTag} ${tierTag}${limitTag}`,
+                disabled: disabledReason || false
+            });
+        }
+
         choices.push({ name: 'back', message: '🔙 Back to Filter Menu' });
 
         const modelSelect = new Select({
-            message: `🧠 Select from ${menuTitle} (${filteredModelKeys.length} found):`,
+            message: `🧠 Select from ${menuTitle} (${filteredModelKeys.length} models):`,
             choices
         });
 
@@ -341,15 +385,20 @@ async function handleModelSelection(agent, config) {
             const cleanSelectedName = (selectedModel?.name || model)
                 .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
                 .trim();
-            const isSelectedPaid = !isFreeTier(selectedModel);
+            if (!mm.canSelectModel(model, models) && !(showAllPaidCatalog && selectedModel?.available)) {
+                console.log(chalk.red(`\n❌ Model '${cleanSelectedName}' is not accessible with your current keys.\n`));
+                continue;
+            }
 
+            const isSelectedPaid = !mm.isFreeTier(selectedModel);
             if (isSelectedPaid) {
                 let purchaseUrl = 'https://openrouter.ai/keys';
                 if (selectedModel?.provider === 'perplexity') purchaseUrl = 'https://www.perplexity.ai/settings/api';
-                if (selectedModel?.provider === 'google-ai-studio') purchaseUrl = 'https://aistudio.google.com/app/plan';
-
-                console.log(chalk.yellow(`\n💳 PAID / CREDIT MODEL NOTICE: '${cleanSelectedName}' requires paid credits.`));
-                console.log(chalk.cyan(`   To purchase credits for this model, visit: ${purchaseUrl}\n`));
+                console.log(chalk.yellow(`\n💳 PAID MODEL: '${cleanSelectedName}' requires credits or a paid plan.`));
+                console.log(chalk.cyan(`   To purchase credits: ${purchaseUrl}\n`));
+            } else if (selectedModel?.provider === 'google-ai-studio' && selectedModel?.rateLimited) {
+                console.log(chalk.blue(`\n🔵 RATE LIMITED MODEL: '${cleanSelectedName}' is accessible with your free Google AI Studio key.`));
+                console.log(chalk.gray(`   Lower rate limits apply. Upgrade plan at: https://aistudio.google.com/app/plan\n`));
             }
 
             const confirm = new Select({
@@ -366,7 +415,7 @@ async function handleModelSelection(agent, config) {
                 console.log(TerminalUI.formatSuccess(`AI Model updated to ${cleanSelectedName}.`));
                 return;
             } else {
-                console.log(chalk.yellow('\n⚠️ Model change rejected. Kept current model.\n'));
+                console.log(chalk.yellow('\n⚠️  Model change rejected. Kept current model.\n'));
             }
         }
     }
@@ -547,9 +596,22 @@ async function handleModelCommand(args, context) {
         console.log(chalk.cyan.bold('\n🧠 ACTIVE LLM MODEL INFO\n'));
         console.log(`  Model ID:        ${chalk.white.bold(activeModelId)}`);
         console.log(`  Display Name:    ${meta?.name || `${icon} ${activeModelId}`}`);
-        console.log(`  Provider:        ${meta?.provider === 'openrouter' ? chalk.cyan('OpenRouter API') : chalk.magenta('Perplexity API')}`);
-        console.log(`  Category:        ${meta?.category ? meta.category.toUpperCase() : 'General'}`);
+        let providerLabel = chalk.gray(meta?.provider || 'unknown');
+        if (meta?.provider === 'openrouter') providerLabel = chalk.cyan('OpenRouter API');
+        else if (meta?.provider === 'perplexity') providerLabel = chalk.magenta('Perplexity API');
+        else if (meta?.provider === 'google-ai-studio') providerLabel = chalk.green('Google AI Studio');
+        else if (agent?.modelManager) {
+            const p = agent.modelManager.getProviderForModel(activeModelId);
+            if (p === 'google-ai-studio') providerLabel = chalk.green('Google AI Studio');
+            else if (p === 'openrouter') providerLabel = chalk.cyan('OpenRouter API');
+            else providerLabel = chalk.magenta('Perplexity API');
+        }
+        console.log(`  Provider:        ${providerLabel}`);
+        const displayCat = meta?.category ? (Array.isArray(meta.category) ? meta.category.map(c => c.toUpperCase()).join(', ') : meta.category.toUpperCase()) : 'General';
+        console.log(`  Category:        ${displayCat}`);
         console.log(`  Context Window:  ${meta?.contextLength ? `${(meta.contextLength / 1000).toFixed(0)}k tokens` : 'N/A'}`);
+        if (meta?.rateLimit) console.log(`  Rate Limit:      ${meta.rateLimit}`);
+        if (meta?.resetWindow) console.log(`  Reset Window:    ${meta.resetWindow}`);
         console.log(`  Session Reqs:    ${chalk.yellow(usageInfo.requests)} requests`);
         console.log(`  Tokens Used:     ${chalk.green(usageInfo.total.toLocaleString())} tokens\n`);
         return { success: true, model: activeModelId };
@@ -570,12 +632,13 @@ async function handleModelCommand(args, context) {
             return { success: false, error: e.message };
         }
 
-        console.log(chalk.cyan.bold(`\n🧠 AVAILABLE LLM MODELS (${Object.keys(models).length} TOTAL)\n`));
-        const categories = ['coding', 'reasoning', 'research', 'fast', 'general'];
+        const usableIds = agent.modelManager.getUsableModelIds(models);
+        console.log(chalk.cyan.bold(`\n🧠 CURRENTLY USABLE MODELS (${usableIds.length})\n`));
+        const categories = agent.modelManager.getChatCategoryIds();
         const Table = require('cli-table3');
 
         categories.forEach(cat => {
-            const catModels = Object.keys(models).filter(id => models[id].category === cat);
+            const catModels = agent.modelManager.getModelsByCategoryView(models, cat);
             if (catModels.length === 0) return;
 
             const table = new Table({
@@ -583,10 +646,13 @@ async function handleModelCommand(args, context) {
                 style: { head: [], border: ['gray'] }
             });
 
-            catModels.slice(0, 8).forEach(id => {
+            catModels.slice(0, 12).forEach(id => {
                 const item = models[id];
-                const status = item.available ? chalk.green('🟢 Ready') : chalk.gray('🔒 Key needed');
-                const provider = item.provider === 'openrouter' ? chalk.cyan('OpenRouter') : chalk.magenta('Perplexity');
+                const status = chalk.green('🟢 Ready');
+                let provider = chalk.gray(item.provider || '');
+                if (item.provider === 'openrouter') provider = chalk.cyan('OpenRouter');
+                else if (item.provider === 'perplexity') provider = chalk.magenta('Perplexity');
+                else if (item.provider === 'google-ai-studio') provider = chalk.green('Google');
                 const ctx = item.contextLength ? `${(item.contextLength / 1000).toFixed(0)}k` : 'N/A';
                 table.push([chalk.bold(item.name || id), provider, ctx, status]);
             });
@@ -598,9 +664,20 @@ async function handleModelCommand(args, context) {
     }
 
     const nextModel = (cleanSub === 'set' && targetModel) ? targetModel : sub;
-    config.setModel(String(nextModel).trim());
-    console.log(ui.formatSuccess(`Active model changed to ${String(nextModel).trim()}`));
-    return { success: true, model: String(nextModel).trim() };
+    const modelId = String(nextModel).trim();
+    try {
+        const models = await agent.checkAvailableModels();
+        if (!agent.modelManager.canSelectModel(modelId, models)) {
+            console.log(chalk.red(`\n❌ Cannot select '${modelId}' — not accessible with your keys or not a usable chat model.`));
+            console.log(chalk.gray('   Use /model for the interactive picker, or /refresh-models to refresh the catalog.\n'));
+            return { success: false, error: 'Model not accessible' };
+        }
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+    config.setModel(modelId);
+    console.log(ui.formatSuccess(`Active model changed to ${modelId}`));
+    return { success: true, model: modelId };
 }
 
 
@@ -633,8 +710,23 @@ async function handleConfigCommand(key, value, context) {
     }
 
     const cleanVal = value.trim();
-    if (cleanKey === 'model') config.setModel(cleanVal);
-    else if (cleanKey === 'language') config.setLanguage(cleanVal);
+    if (cleanKey === 'model') {
+        const { agent } = context;
+        if (agent && typeof agent.checkAvailableModels === 'function') {
+            try {
+                const models = await agent.checkAvailableModels();
+                if (!agent.modelManager.canSelectModel(cleanVal, models)) {
+                    console.log(ui.formatError
+                        ? ui.formatError(`Cannot set model '${cleanVal}' — not accessible.`)
+                        : chalk.red(`Cannot set model '${cleanVal}' — not accessible.`));
+                    return { success: false, error: 'Model not accessible' };
+                }
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        }
+        config.setModel(cleanVal);
+    } else if (cleanKey === 'language') config.setLanguage(cleanVal);
     else if (cleanKey === 'username' || cleanKey === 'name') config.setUserName(cleanVal);
 
     console.log(ui.formatSuccess(`Updated config ${cleanKey} = ${cleanVal}`));

@@ -9,8 +9,9 @@ description: Skill for building, configuring, and verifying Model Context Protoc
 Model Context Protocol (MCP) allows Lorapok AI Agent to expose and consume external tools, resources, and prompt templates standardizing agent capabilities.
 
 ## Architecture & Config
-- Project MCP config file: `mcp.json` / `.agents/mcp.json`.
-- Exposing filesystem access, git automation, command execution, and search capabilities.
+- Project MCP config file: `mcp.json` / `.agents/mcp.json` (keep identical).
+- **Enabled servers today:** `filesystem`, `git` only.
+- Do not document command-execution or search servers as active unless added to `mcp.json`.
 
 ## Standards
 - Tool names must be lower_snake_case.

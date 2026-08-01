@@ -1,3 +1,10 @@
+/**
+ * Lorapok AI Coding Agent
+ * Copyright (c) 2026 Lorapok Labs (https://lorapok.tech)
+ * Licensed under the MIT License
+ */
+'use strict';
+
 const modelValidator = require('../services/ModelValidator');
 const modelCacheService = require('../services/ModelCacheService');
 
@@ -6,34 +13,76 @@ describe('ModelValidator Service', () => {
         modelCacheService.clearCache();
     });
 
-    test('should dynamically identify non-text modality models', () => {
+    test('should identify non-text modality models (audio, tts, embedding, image, video, deprecated)', () => {
+        // Audio / TTS
         expect(modelValidator.isNonTextModality('gemini-2.5-flash-preview-tts')).toBe(true);
+        expect(modelValidator.isNonTextModality('text-to-speech-model')).toBe(true);
+        expect(modelValidator.isNonTextModality('lyria-3-pro-preview')).toBe(true);
+        // Embeddings
         expect(modelValidator.isNonTextModality('text-embedding-004')).toBe(true);
+        expect(modelValidator.isNonTextModality('embed-content-model')).toBe(true);
+        // Image generation
         expect(modelValidator.isNonTextModality('imagen-3.0-generate-002')).toBe(true);
+        // Video
         expect(modelValidator.isNonTextModality('veo-2.0-generate-001')).toBe(true);
-        expect(modelValidator.isNonTextModality('gemini-3.6-flash')).toBe(false);
+        // Deprecated code-only models
+        expect(modelValidator.isNonTextModality('code-gecko@001')).toBe(true);
+        expect(modelValidator.isNonTextModality('code-bison-001')).toBe(true);
+        // AQA retrieval model
+        expect(modelValidator.isNonTextModality('aqa@gemini')).toBe(true);
+
+        // Real chat models must NOT be excluded by modality filter
+        expect(modelValidator.isNonTextModality('gemini-2.5-flash')).toBe(false);
+        expect(modelValidator.isNonTextModality('gemini-2.0-flash')).toBe(false);
+        expect(modelValidator.isNonTextModality('gemini-2.5-pro')).toBe(false);
+        expect(modelValidator.isNonTextModality('deepseek/deepseek-r1')).toBe(false);
+        expect(modelValidator.isNonTextModality('anthropic/claude-3.5-sonnet')).toBe(false);
+        expect(modelValidator.isNonTextModality('learnlm-1.5-pro-experimental')).toBe(false);
     });
 
-    test('should validate single model usability based on dynamic checks and provider API keys', () => {
+    test('gemini-2.5-flash IS usable with a valid Google key (was wrongly blocklisted in previous version)', () => {
+        const metaGoogle = { provider: 'google-ai-studio', name: 'Gemini 2.5 Flash' };
+        expect(modelValidator.isModelUsable('gemini-2.5-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        expect(modelValidator.isModelUsable('gemini-2.5-pro', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        expect(modelValidator.isModelUsable('gemini-2.0-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        expect(modelValidator.isModelUsable('gemini-2.5-flash-lite', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+    });
+
+    test('genuinely deprecated Google models remain blocked even with a valid key', () => {
+        const metaGoogle = { provider: 'google-ai-studio', name: 'Gemini Legacy' };
+        expect(modelValidator.isModelUsable('gemini-1.0-pro', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(false);
+        expect(modelValidator.isModelUsable('gemini-pro', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(false);
+        expect(modelValidator.isModelUsable('gemini-1.5-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(false);
+        expect(modelValidator.isModelUsable('gemini-1.5-pro', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(false);
+    });
+
+    test('should validate single model usability based on provider API keys', () => {
         const metaGoogle = { provider: 'google-ai-studio', name: 'Gemini Flash' };
         const metaOpenRouter = { provider: 'openrouter', name: 'GPT-4o' };
         const metaPerplexity = { provider: 'perplexity', name: 'Sonar' };
 
-        // No keys set
-        expect(modelValidator.isModelUsable('gemini-3.6-flash', metaGoogle, {})).toBe(false);
+        // No keys — nothing usable
+        expect(modelValidator.isModelUsable('gemini-2.5-flash', metaGoogle, {})).toBe(false);
         expect(modelValidator.isModelUsable('openai/gpt-4o', metaOpenRouter, {})).toBe(false);
         expect(modelValidator.isModelUsable('sonar', metaPerplexity, {})).toBe(false);
 
-        // Google key present
-        expect(modelValidator.isModelUsable('gemini-3.6-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        // Google key present — real models usable
+        expect(modelValidator.isModelUsable('gemini-2.5-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        expect(modelValidator.isModelUsable('gemini-2.0-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
 
-        // Audio TTS model should never be usable for coding chat
+        // TTS stays excluded even with key
         expect(modelValidator.isModelUsable('gemini-2.5-flash-preview-tts', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(false);
+
+        // OpenRouter key
+        expect(modelValidator.isModelUsable('openai/gpt-4o', metaOpenRouter, { openRouterKey: 'sk-or-v1-testkey' })).toBe(true);
+
+        // Perplexity key
+        expect(modelValidator.isModelUsable('sonar', metaPerplexity, { perplexityKey: 'pplx-testkey' })).toBe(true);
     });
 
     test('should filter model catalog through validateUsableModels', () => {
         const models = {
-            'gemini-3.6-flash': { name: 'Gemini 3.6 Flash', provider: 'google-ai-studio' },
+            'gemini-2.5-flash': { name: 'Gemini 2.5 Flash', provider: 'google-ai-studio' },
             'gemini-2.5-flash-preview-tts': { name: 'TTS Model', provider: 'google-ai-studio' },
             'openai/gpt-4o': { name: 'GPT-4o', provider: 'openrouter' },
             'sonar': { name: 'Sonar', provider: 'perplexity' }
@@ -43,9 +92,20 @@ describe('ModelValidator Service', () => {
             googleKey: 'AIzaSyGoogleKey'
         });
 
-        expect(validated['gemini-3.6-flash'].available).toBe(true);
-        expect(validated['gemini-2.5-flash-preview-tts'].available).toBe(false); // Dynamic modality filter
-        expect(validated['openai/gpt-4o'].available).toBe(false); // Missing OpenRouter key
-        expect(validated['sonar'].available).toBe(false); // Missing Perplexity key
+        // gemini-2.5-flash now correctly usable
+        expect(validated['gemini-2.5-flash'].available).toBe(true);
+        // TTS excluded by modality filter
+        expect(validated['gemini-2.5-flash-preview-tts'].available).toBe(false);
+        // No OpenRouter key
+        expect(validated['openai/gpt-4o'].available).toBe(false);
+        // No Perplexity key
+        expect(validated['sonar'].available).toBe(false);
+    });
+
+    test('should handle runtime model failures via ModelCacheService', () => {
+        modelCacheService.addFailedModel('bad-model-xyz', '404 Not Found');
+        const meta = { provider: 'openrouter', name: 'Bad Model' };
+        // Even with a key, a failed model should be excluded
+        expect(modelValidator.isModelUsable('bad-model-xyz', meta, { openRouterKey: 'sk-or-v1-testkey' })).toBe(false);
     });
 });

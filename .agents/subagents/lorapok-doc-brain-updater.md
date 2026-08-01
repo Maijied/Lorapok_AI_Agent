@@ -22,6 +22,7 @@ Whenever files, routes, services, or test counts change:
   - Latest Test Suites & Total Passing Test count.
   - Recent updates under Living System Log.
   - Correct Git branch matrix details.
+- Verify that agent steering guidelines and subagent rules within `.agents/` remain consistent with the new test metrics and directory maps.
 
 ### 3. Repository Documentation Consistency
 - **`README.md`**: Keep quickstart, installation, CLI commands, and feature overview current.

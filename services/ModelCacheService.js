@@ -68,6 +68,17 @@ class ModelCacheService {
     }
 
     /**
+     * Clear only runtime failure tracking (keeps usable_models cache keys until next validate).
+     * @returns {void}
+     */
+    clearFailedModels() {
+        this.failedModels.clear();
+        this.cache.del('usable_models');
+        this.cache.del('availableModels');
+        logger.info('ModelCacheService: Runtime failed-model tracking cleared.');
+    }
+
+    /**
      * Clear all cached models and reset dynamic failure tracking.
      * @returns {void}
      */

@@ -16,12 +16,31 @@ class ModelValidator {
         const descStr = String(meta.description || '').toLowerCase();
         const nameStr = String(meta.name || '').toLowerCase();
 
+        // Models that are NOT text-chat capable:
+        // - Text-to-Speech / Audio synthesis
+        // - Embedding / vector models
+        // - Image generation (Imagen, DALL-E, Flux)
+        // - Video generation (Veo)
+        // - Deprecated Bison/Gecko chat models (replaced, often 404)
+        // - AQA: Answer Quality Assessment model (retrieval, not chat)
+        // - Code Gecko / Code Bison: old completion-only models
         const nonTextKeywords = [
-            'tts', 'text-to-speech', 'speech', 'audio-only',
-            'embedding', 'embed-content', 'embed-gecko',
-            'imagen', 'image-generation',
+            // Audio / TTS
+            'tts', 'text-to-speech', 'speech-synthesis', 'audio-only', 'lyria',
+            // Embeddings
+            'embedding', 'embed-content', 'embed-gecko', 'text-embedding',
+            'embedding-001', 'embedding-exp',
+            // Image generation
+            'imagen', 'image-generation', 'imagegeneration',
+            // Video generation
             'veo', 'video-generation',
-            'bison-001', 'gecko-001'
+            // Deprecated / non-chat Google models
+            'bison-001', 'gecko-001', 'gecko-002',
+            'code-gecko', 'code-bison', 'text-bison',
+            // AQA (Attributed Question Answering — retrieval model, NOT chat)
+            '-aqa', 'aqa@',
+            // Retrieval / Semantic search models
+            'retrieval-',
         ];
 
         return nonTextKeywords.some(kw => idStr.includes(kw) || nameStr.includes(kw) || descStr.includes(kw));
@@ -46,22 +65,22 @@ class ModelValidator {
         if (!modelId) return false;
         const id = String(modelId).trim();
 
-        // 1. Dynamic check: exclude non-text/specialized modality models (audio, tts, embedding, imagen)
+        // 1. Exclude non-text/specialized modality models (audio, tts, embedding, imagen, video)
         if (this.isNonTextModality(id, meta)) {
             return false;
         }
 
-        // 2. Dynamic check: exclude models that failed at runtime (429 limit 0, 404, modality error)
+        // 2. Exclude models that failed at runtime (429 limit 0, 404, modality error)
         if (modelCacheService.isModelFailed(id)) {
             return false;
         }
 
-        // 3. Dynamic check: verify model availability flag
+        // 3. Verify model availability flag is not explicitly set false
         if (meta.available === false) {
             return false;
         }
 
-        // 4. Dynamic check: provider API key presence
+        // 4. Verify provider API key presence
         const { googleKey, openRouterKey, perplexityKey } = keys;
         const provider = meta.provider || 'perplexity';
 
@@ -69,13 +88,24 @@ class ModelValidator {
             const hasKey = Boolean(googleKey && String(googleKey).trim() !== '');
             if (!hasKey) return false;
 
-            const zeroQuotaOrDeprecated = [
-                'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro',
-                'gemini-3.1-pro', 'gemini-3.1-flash', 'gemini-1.0-pro', 'gemini-pro',
+            // Confirmed deprecated/zero-quota Google models that always return errors.
+            // NOTE: gemini-2.5-flash and gemini-2.5-pro are NOT in this list — they are usable.
+            const deprecatedOrZeroQuota = [
+                // Legacy Palm-era models (always 404/deprecated)
+                'gemini-1.0-pro', 'gemini-pro',
+                // Gemini 1.5 — deprecated in favor of 2.x (may still work but being sunset)
+                'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b',
+                // Robotics / special hardware models (not API-accessible)
+                'gemini-robotics-er-1.5-preview', 'gemini-robotics-er-1.6-preview',
+                'gemini-robotics-1.5-preview',
+                // Audio-only / specialist models
                 'lyria-3-clip-preview', 'lyria-3-pro-preview',
-                'gemini-robotics-er-1.5-preview', 'gemini-robotics-er-1.6-preview'
+                // Old experimental IDs with date suffixes that no longer exist
+                'gemini-2.0-flash-thinking-exp-01-21',
+                'gemini-2.0-flash-lite-preview-02-05',
+                'gemini-2.0-pro-exp-02-05',
             ];
-            if (zeroQuotaOrDeprecated.includes(id)) {
+            if (deprecatedOrZeroQuota.includes(id)) {
                 return false;
             }
             return true;
@@ -101,9 +131,28 @@ class ModelValidator {
 
         for (const [id, meta] of Object.entries(models)) {
             const isUsable = this.isModelUsable(id, meta, keys);
+            const provider = meta.provider || 'perplexity';
+            let paymentRequired = meta.paymentRequired;
+            let rateLimited = meta.rateLimited;
+            let tier = meta.tier;
+            if (typeof paymentRequired !== 'boolean') {
+                if (provider === 'google-ai-studio') {
+                    paymentRequired = false;
+                    rateLimited = Boolean(rateLimited) || String(id).toLowerCase().includes('pro') || tier === 'pro';
+                    tier = 'free';
+                } else {
+                    paymentRequired = tier === 'pro';
+                    rateLimited = !paymentRequired;
+                    tier = paymentRequired ? 'pro' : 'free';
+                }
+            }
             validated[id] = {
                 ...meta,
-                available: isUsable
+                id,
+                available: isUsable,
+                paymentRequired,
+                rateLimited: Boolean(rateLimited),
+                tier: tier || (paymentRequired ? 'pro' : 'free')
             };
         }
 

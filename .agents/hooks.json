@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": [
+    {
+      "event": "sessionStart",
+      "command": "node .agents/hooks/session-start.js",
+      "description": "Point agents at BRAIN and Docs/architecture"
+    },
+    {
+      "event": "beforeShellExecution",
+      "command": "node .agents/hooks/before-shell.js",
+      "description": "Warn on destructive git commands"
+    },
+    {
+      "event": "afterFileEdit",
+      "command": "node .agents/hooks/after-file-edit.js",
+      "description": "Remind tests/docs after model or server edits",
+      "matchers": [
+        "services/Model*.js",
+        "server.js",
+        "commands/settings.js"
+      ]
+    }
+  ]
+}

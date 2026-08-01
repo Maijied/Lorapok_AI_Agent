@@ -1,21 +1,32 @@
 # Lorapok AI Agent Workspace Rules (.agents/AGENTS.md)
 
 ## Workspace Configuration & Scope
-This file provides context and rules for AI agents operating within the `Lorapok_AI_Agent` repository.
+
+Agent governance for the `lorapok_ai_agent` repository.
 
 ### Key Directories
-- `.agents/`: Contains project-level custom skills, subagents, steering rules, and agent workflows.
-- `bin/`: CLI binaries (`lorapok.js`).
-- `commands/`: CLI command definitions (git, chat, actions, settings, auth, system, workflow).
-- `lib/`: Core agent implementation, configuration, history, rendering, UI components.
-- `services/`: Core logic services for Git, File management, Actions, GitHub OAuth, and Model management (ModelManager.js).
-- `tests/`: Jest unit and corner-case test suites.
-- `website/` & `LorapokAiBuild/`: Static UI presentation pages and GitHub Pages builds.
+
+- `.agents/rules/` — Mandatory project rules (`.mdc`)
+- `.agents/hooks.json` + `.agents/hooks/` — Lifecycle hooks
+- `.agents/automations/` — Automation drafts
+- `.agents/skills/`, `.agents/steer/`, `.agents/subagents/`
+- `Docs/` — Architecture, API, CLI, providers
+- `packages/sdk/` — Multi-client HTTP SDK
+- `apps/website/` — Marketing site
+- `commands/registry.js` — Slash command registry
+- `services/Model*.js` — Sanitized model catalog
+- `tests/` — Jest (23 suites / 270 tests)
 
 ### Developer & Agent Directives
-- **Zero Test Regressions**: Ensure `npm test` runs with 100% passing rate before finishing any task.
-- **Docker Fallback**: Maintain backwards compatibility with Docker compose environments (`docker-compose.yml`, `Dockerfile`).
-- **Interactive Shell Handling**: Respect CLI non-interactive modes when running under automated environments or CI.
-- **Token Efficiency**: Use targeted line-range file reads (`StartLine`/`EndLine`), chunked edits, and `BRAIN.md` lookup to conserve prompt context tokens.
-- **NPM Cache Cleanup**: Always execute `npm cache clean --force` after completing tasks and test verifications to optimize workspace and system cache.
 
+- **Zero Test Regressions**: `npm test` must pass (270+) before finishing.
+- **Rules first**: Load `.agents/rules/` + steer + skills at task start.
+- **Models**: Usable vs paid only via ModelManager views; Google free-API ≠ paid.
+- **Docs sync**: Update root + `.agents` BRAIN/AGENTS and `Docs/` when architecture changes.
+- **NPM Cache Cleanup**: `npm cache clean --force` after task completion.
+
+### Universal Agent Workflow
+
+1. Read rules, steer, skills, BRAIN, Docs/architecture
+2. Execute changes (CommonJS, logger, tests)
+3. `npm test` → sync docs → cache clean

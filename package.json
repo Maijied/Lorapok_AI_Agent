@@ -1,6 +1,6 @@
 {
   "name": "lorapok-ai",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "🐛 Expert AI Coding Agent - Action-Oriented CLI & API",
   "main": "index.js",
   "bin": {

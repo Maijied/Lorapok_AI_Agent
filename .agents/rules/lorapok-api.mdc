@@ -1,0 +1,11 @@
+---
+description: Express REST API contracts
+globs: server.js,packages/sdk/**
+alwaysApply: false
+---
+
+# API Rules
+
+- `GET /api/models` must use validated views — never raw `getAllKnownModels()` alone
+- Guard chat/settings model IDs with `canSelectModel`
+- Prefer `lib/logger` over `console.error` in server middleware

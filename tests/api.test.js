@@ -9,23 +9,39 @@ const { LorapokConfig } = require('../lib/config');
 
 // Mock the agent-enhanced because it calls Perplexity API
 jest.mock('../lib/agent-enhanced', () => {
+    const validated = {
+        sonar: {
+            id: 'sonar',
+            name: 'Sonar',
+            available: true,
+            provider: 'perplexity',
+            tier: 'free',
+            paymentRequired: false,
+            rateLimited: true,
+            category: ['fast', 'research']
+        }
+    };
     return {
         LorapokEnhancedAgent: jest.fn().mockImplementation(() => ({
             chat: jest.fn().mockResolvedValue({ success: true, content: 'API response' }),
             generateCode: jest.fn().mockResolvedValue({ success: true, content: 'code' }),
             analyzeCode: jest.fn().mockResolvedValue({ success: true, content: 'analysis' }),
             debugCode: jest.fn().mockResolvedValue({ success: true, content: 'fix' }),
-            checkAvailableModels: jest.fn().mockResolvedValue({ sonar: { name: 'Sonar', available: true } }),
+            checkAvailableModels: jest.fn().mockResolvedValue(validated),
+            modelManager: {
+                getUsableModelIds: jest.fn().mockReturnValue(['sonar']),
+                getPaidCatalogIds: jest.fn().mockReturnValue([]),
+                canSelectModel: jest.fn((id) => id === 'sonar'),
+                fetchModels: jest.fn().mockResolvedValue(validated)
+            },
+            cache: { del: jest.fn() },
             listProjectFiles: jest.fn().mockReturnValue([{ path: 'test.js', type: 'file' }]),
             showFileTree: jest.fn().mockReturnValue('tree'),
             fileManager: {
                 readFile: jest.fn().mockReturnValue('content')
             },
             clearHistory: jest.fn()
-        })),
-        MODELS: {
-            sonar: { name: 'Sonar', tier: 'free', available: true }
-        }
+        }))
     };
 });
 
@@ -54,10 +70,18 @@ describe('API Server', () => {
     });
 
     test('GET /api/models should return available models', async () => {
-        const response = await request(app).get('/api/models').query({ sessionId: '123' });
+        const response = await request(app).get('/api/models').query({ sessionId: '123', view: 'usable' });
         expect(response.status).toBe(200);
-        // Server returns { models: ... }
+        expect(response.body.success).toBe(true);
         expect(response.body.models.sonar).toBeDefined();
+    });
+
+    test('POST /api/chat rejects inaccessible model', async () => {
+        const response = await request(app)
+            .post('/api/chat')
+            .send({ message: 'Hello', model: 'totally-fake-model-xyz', sessionId: '123' });
+        expect(response.status).toBe(400);
+        expect(response.body.success).toBe(false);
     });
 
     test('DELETE /api/sessions/:sessionId should handle non-existent session with 404', async () => {

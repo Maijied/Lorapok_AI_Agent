@@ -7,7 +7,7 @@ describe('ModelCacheService', () => {
 
     test('should cache and retrieve usable models', () => {
         const mockUsable = {
-            'gemini-3.6-flash': { name: 'Gemini 3.6 Flash', provider: 'google-ai-studio', available: true }
+            'gemini-2.5-flash': { name: 'Gemini 2.5 Flash', provider: 'google-ai-studio', available: true }
         };
 
         modelCacheService.cacheUsableModels(mockUsable);
@@ -31,5 +31,13 @@ describe('ModelCacheService', () => {
         
         // Usable cache should be invalidated
         expect(modelCacheService.getCachedUsableModels()).toBeNull();
+    });
+
+    test('clearFailedModels resets failure tracking', () => {
+        modelCacheService.addFailedModel('gemini-2.0-flash', '429');
+        expect(modelCacheService.isModelFailed('gemini-2.0-flash')).toBe(true);
+        modelCacheService.clearFailedModels();
+        expect(modelCacheService.isModelFailed('gemini-2.0-flash')).toBe(false);
+        expect(modelCacheService.getFailedModels()).toHaveLength(0);
     });
 });

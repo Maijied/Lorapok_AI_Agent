@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.3.1...v1.3.2) (2026-08-01)
+
+### Features
+
+* **models:** API-dynamic sanitized catalog with `classifyAccess`, usable vs paid views, Google free-API Pro in Currently Usable
+* **cli:** `commands/registry.js` single source for `/` autocomplete, system menu, and `/help`
+* **api:** Validated `GET /api/models` views, `POST /api/models/refresh`, model guards on chat/settings
+* **sdk:** `@lorapok/sdk` stub under `packages/sdk` for multi-client consumers
+* **docs:** Architecture, CLI, REST, and provider guides under `Docs/`
+* **agents:** `.agents/rules`, hooks, automations, model-provider skill & auditor
+
+### Bug Fixes
+
+* **models:** `/refresh-models` no longer deletes freshly fetched cache; clears runtime failures
+* **agent:** Fallback picks from live usable set; persists model only after success
+* **menus:** Bypass wired in system menu; unknown slash commands show helpful error
+
+### Changed
+
+* **layout:** `website/` → `apps/website/`; monorepo-ready `packages/` + `Docs/`
+* **tests:** 270 passing (23 suites)
+
 ## [1.3.1](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.3.0...v1.3.1) (2026-07-29)
 
 
@@ -71,7 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Exclude zero-quota and deprecated Google AI Studio models from ready selection catalog ([b864e17](https://github.com/Maijied/Lorapok_AI_Agent/commit/b864e17a532323b1e7ab097e7e8b4c32e9dc589b))
 * Import chalk library in lib/agent.js for error fallback formatting ([d4eb687](https://github.com/Maijied/Lorapok_AI_Agent/commit/d4eb6875ff152d74e0320e4ad4de4874fb7499c0))
 * Parse Google AI Studio array error responses and format 429/404 messages ([1502eb5](https://github.com/Maijied/Lorapok_AI_Agent/commit/1502eb53cdbf9a03ab03befcdddc9bbbf014fb26))
-* Replace deprecated gemini-2.5-flash model with active models (gemini-3.6-flash, gemini-3.5-flash-lite) and filter unavailable models ([43eba59](https://github.com/Maijied/Lorapok_AI_Agent/commit/43eba593967c00f5044559d556c54fc29a377c7b))
+* Replace deprecated gemini-1.5-flash model with active models (gemini-2.5-flash, gemini-2.0-flash) and filter unavailable models ([43eba59](https://github.com/Maijied/Lorapok_AI_Agent/commit/43eba593967c00f5044559d556c54fc29a377c7b))
 * Resolve duplicate activeModelMeta identifier declaration in commands/chat.js ([38ffce7](https://github.com/Maijied/Lorapok_AI_Agent/commit/38ffce7840bb0e6a214e00dcccaee9c9329ce282))
 * Sub-brand icon resolution logic ensuring Gemini Pro, Flash, TTS, Tools, and Image models render unique distinct icons ([df84b50](https://github.com/Maijied/Lorapok_AI_Agent/commit/df84b50b05b0da44d36a7ca9e64a99421f9fbf3c))
 * Update Fast & Lightweight icon to 🚀 Rocket and enhance /analyze output rendering and error visibility ([c38e4a7](https://github.com/Maijied/Lorapok_AI_Agent/commit/c38e4a7435e07c19a5f8ae3e57cc744639019359))
@@ -98,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clean `boxen`-wrapped professional UI for rendering turn token usage, active model name, and remaining token capacity limit directly in chat responses and `/analyze` command outputs.
 
 ### Fixed
-- Fixed automatic fallback model routing metrics so fallback model execution (`gemini-3.6-flash`) is dynamically credited in status cards, header cards, and session recap tables.
+- Fixed automatic fallback model routing metrics so fallback model execution (`gemini-2.5-flash`) is dynamically credited in status cards, header cards, and session recap tables.
 - Fixed an architectural bug where the `LorapokConfig` state would become stale in memory, routing models incorrectly to the wrong API endpoints.
 
 ## 1.0.0 (2026-07-28)

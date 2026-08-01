@@ -1,0 +1,13 @@
+{
+  "name": "@lorapok/sdk",
+  "version": "0.1.0",
+  "description": "Thin HTTP client for Lorapok REST API — shared by web, Android, and future clients",
+  "main": "src/index.js",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["lorapok", "sdk", "api"],
+  "license": "MIT",
+  "author": "Lorapok Labs <https://lorapok.tech>"
+}

@@ -39,6 +39,14 @@ function handleFileMentions(input, agent) {
                 for (const f of dirFiles) {
                     const fPath = typeof f === 'string' ? f : f.path;
                     if (fPath && (typeof f === 'string' || f.type !== 'directory')) {
+                        const abs = path.join(agent.projectRoot, fPath);
+                        try {
+                            const st = fs.statSync(abs);
+                            if (st.size > 512 * 1024) {
+                                console.log(chalk.yellow(`\n⚠️  Skipping large file '${fPath}' (${Math.round(st.size / 1024)}KB).`));
+                                continue;
+                            }
+                        } catch (_) { /* ignore */ }
                         const readRes = agent.fileManager.readFile(fPath);
                         if (readRes.success && readRes.data) {
                             aggregatedContent += `\n--- File: ${fPath} ---\n${readRes.data}\n`;
@@ -54,6 +62,18 @@ function handleFileMentions(input, agent) {
                     );
                 }
             } else {
+                if (!exists) {
+                    console.log(chalk.yellow(`\n⚠️  @mention path not found: '${targetPath}'`));
+                    console.log(chalk.gray('   Tip: type @ alone for the file picker, or use a path relative to the workspace.\n'));
+                    continue;
+                }
+                try {
+                    const st = fs.statSync(absolutePath);
+                    if (st.size > 1024 * 1024) {
+                        console.log(chalk.yellow(`\n⚠️  Skipping large file '${targetPath}' (${Math.round(st.size / 1024)}KB > 1MB).`));
+                        continue;
+                    }
+                } catch (_) { /* ignore */ }
                 const readRes = agent.fileManager.readFile(targetPath);
                 if (readRes.success) {
                     processedInput = processedInput.replace(
@@ -62,7 +82,7 @@ function handleFileMentions(input, agent) {
                     );
                     filesFound.push(targetPath);
                 } else {
-                    console.log(chalk.yellow(`\n⚠️  Warning: File or folder '${targetPath}' not found.`));
+                    console.log(chalk.yellow(`\n⚠️  Warning: Could not read '${targetPath}': ${readRes.error || 'unknown error'}`));
                 }
             }
         }
@@ -103,7 +123,7 @@ function renderTokenUsageBox(context, response, activeModelIdOverride) {
     const { agent, config, sessionData } = context;
     const boxen = require('boxen');
 
-    const activeModelId = response?.model || activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
+    const activeModelId = response?.model || activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-2.5-flash');
     const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
     const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
     const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
@@ -225,7 +245,7 @@ async function handleAnalyze(context) {
         );
 
         if (result && result.content) {
-            const activeModelId = result.model || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-3.6-flash');
+            const activeModelId = result.model || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-2.5-flash');
             const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
             const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
             const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');

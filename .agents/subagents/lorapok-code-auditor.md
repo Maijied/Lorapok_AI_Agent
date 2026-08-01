@@ -5,7 +5,7 @@ Specialized subagent responsible for auditing code quality, security vulnerabili
 
 ## Scope
 - `lib/`: `agent.js`, `agent-enhanced.js`, `ui.js`, `renderer.js`, `config.js`, `errors.js`, `history.js`, `logger.js`
-- `services/`: `ActionsManager.js`, `FileManager.js`, `GitManager.js`, `GithubAuth.js`
+- `services/`: `ActionsManager.js`, `FileManager.js`, `GitManager.js`, `GithubAuth.js`, `ModelManager.js`, `ModelValidator.js`, `ModelCacheService.js`
 - `commands/`: All CLI command handlers.
 - `server.js` and `bin/lorapok.js`
 

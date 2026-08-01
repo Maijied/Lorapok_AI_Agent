@@ -6,7 +6,7 @@
 
 **The official high-performance web presentation, interactive CLI simulation, and ecosystem directory for Lorapok AI Agent.**
 
-[![Build & Deploy](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/static.yml/badge.svg)](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/static.yml)
+[![Build & Deploy](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/deploy-website.yml/badge.svg)](https://github.com/Maijied/Lorapok_AI_Agent/actions/workflows/deploy-website.yml)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF.svg)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB.svg)](https://react.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](../LICENSE)
@@ -19,7 +19,7 @@
 
 ## ⚡ Overview
 
-The `website/` package is a single-page application (SPA) built using **React 18**, **Vite 5**, and **Vanilla Glassmorphic CSS**. It serves as the official frontend website for **Lorapok AI Agent**, featuring:
+The `apps/website/` package is a single-page application (SPA) built using **React 18**, **Vite 5**, and **Vanilla Glassmorphic CSS**. It serves as the official frontend website for **Lorapok AI Agent**, featuring:
 
 - 🐛 **Cybernetic BSF Larva Biological UI Design**: Signature mascot aesthetics with glowing neon-green & cyan glassmorphism.
 - 💻 **Live Agentic Terminal Simulation**: Real-time terminal playback (`AgenticSimulation.jsx`) showcasing code refactoring, test generation, and bug fixing.
@@ -42,7 +42,7 @@ The `website/` package is a single-page application (SPA) built using **React 18
 ## 📁 Directory Structure
 
 ```
-website/
+apps/website/
 ├── index.html                  # HTML entrypoint & meta tags
 ├── package.json                # Website dependencies & build scripts
 ├── vite.config.js              # Vite bundler configuration
@@ -83,9 +83,9 @@ website/
 
 ### Installation & Execution
 
-1. Navigate to the `website/` directory:
+1. Navigate to the `apps/website/` directory:
    ```bash
-   cd website
+   cd apps/website
    ```
 
 2. Install dependencies:
@@ -103,13 +103,13 @@ website/
    ```bash
    npm run build
    ```
-   Output bundle is compiled into `website/dist/`.
+   Output bundle is compiled into `apps/website/dist/`.
 
 ---
 
 ## 📦 Deployment Workflow
 
-The production build of `website/` is automatically deployed to GitHub Pages via the GitHub Actions workflow [static.yml](file:///home/maizied/Desktop/Personal_Projects/lorapok_ai_agent/.github/workflows/static.yml) on pushes to the `main` or `Website` branches.
+The production build of `apps/website/` is automatically deployed to GitHub Pages via [`.github/workflows/deploy-website.yml`](../../.github/workflows/deploy-website.yml) on pushes to `main` or `Website` (path-filtered to `apps/website/**`).
 
 ---
 

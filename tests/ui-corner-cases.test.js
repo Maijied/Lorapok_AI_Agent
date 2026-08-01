@@ -200,32 +200,34 @@ describe('TerminalUI.truncateCode corner cases', () => {
 });
 
 describe('TerminalUI.formatError / formatSuccess', () => {
-    test('1. formatError wraps message with red ❌ prefix', () => {
+    test('1. formatError uses themed Error panel', () => {
         const msg = 'Something went wrong';
         const result = TerminalUI.formatError(msg);
-        expect(result).toContain('❌');
+        expect(result).toMatch(/Error/i);
         expect(result).toContain('Something went wrong');
     });
 
-    test('2. formatSuccess wraps message with green ✅ prefix', () => {
+    test('2. formatSuccess wraps message with themed ✓ prefix', () => {
         const msg = 'Operation successful';
         const result = TerminalUI.formatSuccess(msg);
-        expect(result).toContain('✅');
+        expect(result).toContain('✓');
         expect(result).toContain('Operation successful');
     });
 
     test('3. Both handle empty strings', () => {
-        expect(TerminalUI.formatError('')).toContain('❌');
-        expect(TerminalUI.formatSuccess('')).toContain('✅');
+        expect(TerminalUI.formatError('')).toMatch(/Error/i);
+        expect(TerminalUI.formatSuccess('')).toContain('✓');
     });
 });
 
+
 describe('TerminalUI.getBranding corner cases', () => {
-    test('1. Should return a string containing border characters', () => {
+    test('1. Should return a string with welcome strip and wordmark', () => {
         const result = TerminalUI.getBranding();
         expect(typeof result).toBe('string');
         expect(result.length).toBeGreaterThan(0);
         expect(result).toMatch(/[╭╮╰╯┌┐└┘╔╗╚╝┏┓┗┛]/);
+        expect(result.toLowerCase()).toMatch(/lorapok|welcome/);
     });
 
     test('2. Should include version string', () => {

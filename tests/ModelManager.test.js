@@ -34,20 +34,19 @@ describe('ModelManager Service', () => {
     });
 
     test('DEFAULT_GOOGLE_MODELS should only contain real verified model IDs', () => {
-        // Real models that MUST exist
-        expect(DEFAULT_GOOGLE_MODELS['gemini-2.5-flash']).toBeDefined();
+        // Emergency stubs that MUST exist (live ListModels is preferred at runtime)
+        expect(DEFAULT_GOOGLE_MODELS['gemini-flash-latest']).toBeDefined();
+        expect(DEFAULT_GOOGLE_MODELS['gemini-3.5-flash']).toBeDefined();
         expect(DEFAULT_GOOGLE_MODELS['gemini-2.5-pro']).toBeDefined();
         expect(DEFAULT_GOOGLE_MODELS['gemini-2.0-flash']).toBeDefined();
         expect(DEFAULT_GOOGLE_MODELS['gemini-2.0-flash-lite']).toBeDefined();
-        expect(DEFAULT_GOOGLE_MODELS['learnlm-1.5-pro-experimental']).toBeDefined();
 
-        // Fake/nonexistent models that must NOT exist
-        expect(DEFAULT_GOOGLE_MODELS['gemini-2.5-flash']).toBeDefined();
-        expect(DEFAULT_GOOGLE_MODELS['gemini-3.5-flash']).toBeUndefined();
+        // Closed / non-chat IDs must NOT be emergency defaults
+        expect(DEFAULT_GOOGLE_MODELS['gemini-2.5-flash']).toBeUndefined();
+        expect(DEFAULT_GOOGLE_MODELS['gemini-2.5-flash-lite']).toBeUndefined();
         expect(DEFAULT_GOOGLE_MODELS['gemini-3-pro-preview']).toBeUndefined();
         expect(DEFAULT_GOOGLE_MODELS['deep-research-max-preview-04-2026']).toBeUndefined();
         expect(DEFAULT_GOOGLE_MODELS['gemini-2.0-flash-lite-preview-02-05']).toBeUndefined();
-        expect(DEFAULT_GOOGLE_MODELS['gemini-2.0-flash-thinking-exp-01-21']).toBeUndefined();
     });
 
     test('DEFAULT_OPENROUTER_MODELS should use verified model IDs (not fabricated ones)', () => {
@@ -64,8 +63,8 @@ describe('ModelManager Service', () => {
         expect(DEFAULT_OPENROUTER_MODELS['mistralai/mistral-large-2512']).toBeUndefined();
     });
 
-    test('gemini-2.5-flash should be free tier in DEFAULT_GOOGLE_MODELS', () => {
-        const m = DEFAULT_GOOGLE_MODELS['gemini-2.5-flash'];
+    test('gemini-flash-latest should be free tier in DEFAULT_GOOGLE_MODELS', () => {
+        const m = DEFAULT_GOOGLE_MODELS['gemini-flash-latest'];
         expect(m).toBeDefined();
         expect(m.tier).toBe('free');
         expect(m.provider).toBe('google-ai-studio');
@@ -186,8 +185,8 @@ describe('ModelManager Service', () => {
         expect(rec.reasoning.length).toBeGreaterThan(0);
         expect(rec.research.length).toBeGreaterThan(0);
         expect(rec.fast.length).toBeGreaterThan(0);
-        // Recommended fast should include gemini-2.5-flash (real ID)
-        expect(rec.fast.some(m => m.id === 'gemini-2.5-flash')).toBe(true);
+        // Recommended fast should include gemini-flash-latest
+        expect(rec.fast.some(m => m.id === 'gemini-flash-latest')).toBe(true);
     });
 
     test('should return categories metadata', () => {

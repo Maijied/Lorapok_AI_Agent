@@ -27,6 +27,9 @@ readline.Interface.prototype.pause = function() {
 const { LorapokEnhancedAgent } = require('./lib/agent-enhanced');
 const { LorapokConfig } = require('./lib/config');
 const TerminalUI = require('./lib/ui');
+const { getTheme, getDefaultThemeId } = require('./lib/theme');
+const { ActiveModelService } = require('./services/ActiveModelService');
+const { WorkspaceService } = require('./services/WorkspaceService');
 const { setCwd, handleError } = require('./commands/utils');
 const { handleChat } = require('./commands/chat');
 const { dispatchSlashCommand } = require('./commands/system');
@@ -187,7 +190,7 @@ async function promptSlashAutoComplete() {
     const prompt = new AutoComplete({
         name: 'command',
         message: 'Select Slash Command:',
-        limit: 14,
+        limit: 18,
         styles: {
             underline: str => str,
             em: chalk.cyan.bold
@@ -273,6 +276,64 @@ async function promptFileAutoComplete(agent) {
 }
 
 /**
+ * REPL input with instant @ trigger (no Enter required).
+ * @returns {Promise<string|null|'__AT__'>}
+ */
+async function promptReplLine(theme) {
+    const readline = require('readline');
+    return new Promise((resolve) => {
+        const prefix = `${theme.primary('❯')} `;
+        process.stdout.write(prefix);
+        let buf = '';
+        const wasRaw = process.stdin.isRaw;
+        readline.emitKeypressEvents(process.stdin);
+        if (process.stdin.isTTY) process.stdin.setRawMode(true);
+        process.stdin.resume();
+
+        const cleanup = () => {
+            process.stdin.removeListener('keypress', onKey);
+            if (process.stdin.isTTY) {
+                try { process.stdin.setRawMode(Boolean(wasRaw)); } catch (_) { /* ignore */ }
+            }
+        };
+
+        const onKey = (str, key) => {
+            if (key && key.ctrl && key.name === 'c') {
+                cleanup();
+                process.stdout.write('\n');
+                resolve(null);
+                return;
+            }
+            if (key && (key.name === 'return' || key.name === 'enter')) {
+                cleanup();
+                process.stdout.write('\n');
+                resolve(buf);
+                return;
+            }
+            if (key && (key.name === 'backspace' || key.name === 'delete')) {
+                if (buf.length > 0) {
+                    buf = buf.slice(0, -1);
+                    process.stdout.write('\b \b');
+                }
+                return;
+            }
+            if (str === '@' && buf.length === 0) {
+                cleanup();
+                process.stdout.write('@\n');
+                resolve('__AT__');
+                return;
+            }
+            if (str && str.length === 1 && !key?.ctrl && !key?.meta) {
+                buf += str;
+                process.stdout.write(str);
+            }
+        };
+
+        process.stdin.on('keypress', onKey);
+    });
+}
+
+/**
  * Main interactive REPL chat loop handling user prompts and command dispatch.
  * @returns {Promise<void>}
  */
@@ -280,18 +341,35 @@ async function chatLoop() {
     const userName = config.getUserName() || 'Developer';
     const context = { agent, config, sessionData, ui: TerminalUI };
     let currentMode = 'chat';
+    const activeModelService = new ActiveModelService(agent.modelManager);
+    const { SessionStore } = require('./services/SessionStore');
+    const sessionStore = new SessionStore(config.configDir);
 
     while (true) {
         try {
+            const theme = getTheme(config.getBrandingFont() || getDefaultThemeId());
             const bypassActive = config.getAutoApprove();
-            const statusTag = bypassActive ? chalk.green(' [BYPASS ON]') : '';
-            const modeTag = chalk.cyan.bold(` (${currentMode})`);
+            const modelStatus = activeModelService.getStatus(
+                config,
+                agent.availableModels || {},
+                sessionData
+            );
+            const leftBits = [
+                theme.muted('\u25C6') + ' ' + theme.color('text', userName),
+                currentMode !== 'chat' ? theme.muted(currentMode) : null,
+                bypassActive ? theme.success('bypass') : null
+            ].filter(Boolean).join(theme.muted(' | '));
+            const ctxColor = modelStatus.ctxTone === 'success' ? theme.success
+                : modelStatus.ctxTone === 'warning' ? theme.warning
+                    : theme.error;
+            const modelLabel = modelStatus.shortName || 'model';
+            const rightBits = theme.color('modelBadge', `${modelStatus.icon || '\u26A1'} ${modelLabel}`) +
+                theme.muted(' | ') + ctxColor(`${modelStatus.contextPct ?? 100}%`);
+            console.log(theme.rule());
+            console.log(theme.statusBar(leftBits, rightBits));
+            console.log(theme.rule());
 
-            const inputPrompt = new Input({
-                message: chalk.cyan.bold(`🧑‍💻 ${userName}`) + modeTag + statusTag + chalk.cyan.bold(' › ')
-            });
-
-            let input = await inputPrompt.run().catch(() => null);
+            let input = await promptReplLine(theme);
 
             if (input === null) {
                 ctrlCCount++;
@@ -306,7 +384,25 @@ async function chatLoop() {
             } else {
                 ctrlCCount = 0;
             }
-            input = input.trim();
+
+            if (input === '__AT__' || input === '@' || (typeof input === 'string' && input.startsWith('@'))) {
+                let selectedFile = null;
+                if (input === '__AT__' || input === '@') {
+                    selectedFile = await promptFileAutoComplete(agent);
+                    if (!selectedFile) continue;
+                } else {
+                    selectedFile = input.split(/\s+/)[0];
+                }
+
+                const msgPrompt = new Input({
+                    message: theme.color('info', `Question about ${selectedFile}`)
+                });
+                const userMsg = await msgPrompt.run().catch(() => null);
+                if (!userMsg) continue;
+                input = `${selectedFile} ${userMsg}`;
+            }
+
+            input = String(input || '').trim();
             if (!input) continue;
 
             if (input === '/' || input.startsWith('/')) {
@@ -328,23 +424,6 @@ async function chatLoop() {
                 continue;
             }
 
-            if (input === '@' || input.startsWith('@')) {
-                let selectedFile = null;
-                if (input === '@') {
-                    selectedFile = await promptFileAutoComplete(agent);
-                    if (!selectedFile) continue;
-                } else {
-                    selectedFile = input.split(/\s+/)[0];
-                }
-
-                const msgPrompt = new Input({
-                    message: chalk.cyan.bold(`💬 Question about ${selectedFile}: `)
-                });
-                const userMsg = await msgPrompt.run().catch(() => null);
-                if (!userMsg) continue;
-                input = `${selectedFile} ${userMsg}`;
-            }
-
             const lowerInput = input.toLowerCase();
             if (lowerInput === 'exit' || lowerInput === 'quit' || lowerInput === '/q') break;
 
@@ -354,6 +433,10 @@ async function chatLoop() {
             await handleError(err, agent, config);
         }
     }
+
+    try {
+        sessionStore.save({ ...sessionData, endTime: Date.now() });
+    } catch (_) { /* non-fatal */ }
 }
 
 /**
@@ -372,13 +455,62 @@ async function main() {
     const pkg = require('./package.json');
     const displayPath = agent.projectRoot === '/project' ? (process.env.PROJECT_ROOT || '/project') : agent.projectRoot;
 
-    await TerminalUI.animateLogo(1500, config.getBrandingFont(), pkg.version);
-    TerminalUI.showHeader(pkg.version, config.getModel(), displayPath, config);
-    TerminalUI.showWelcome();
+    // Prefer Labs Bible default theme for professional chrome
+    if (!config.getBrandingFont() || config.getBrandingFont() === 'Big' || config.getBrandingFont() === 'Executive') {
+        config.setBrandingFont(getDefaultThemeId());
+    }
+    // Migrate models closed to new Google keys
+    const deadDefaults = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+    if (deadDefaults.includes(config.getModel())) {
+        config.setModel('gemini-flash-latest');
+    }
+
+    await TerminalUI.animateLogo(500, config.getBrandingFont() || getDefaultThemeId(), pkg.version, config);
+    const activeModelService = new ActiveModelService(agent.modelManager);
+    const modelStatus = activeModelService.getStatus(config, agent.availableModels || {});
+    TerminalUI.showHeader(pkg.version, modelStatus.displayName || config.getModel(), displayPath, config);
+    TerminalUI.showWelcome(config);
+
+    // Workspace onboarding: ~/.lorapok + optional project .lorapok
+    try {
+        const ws = new WorkspaceService();
+        const theme = getTheme(config.getBrandingFont() || getDefaultThemeId());
+        await ws.runOnboarding({
+            cwd: process.cwd(),
+            isTTY: Boolean(process.stdout.isTTY),
+            askLegacy: async (legacyPaths) => {
+                console.log(theme.muted('\n  Workspace setup'));
+                console.log(theme.muted('  ~/.lorapok (user)  ·  ./.lorapok (project)\n'));
+                console.log(theme.warning('  Previous Lorapok data found:'));
+                legacyPaths.forEach(p => console.log(theme.muted(`    ${p}`)));
+                const choice = await new Select({
+                    message: 'Continue with',
+                    choices: [
+                        { name: 'backup', message: 'Backup previous data, then continue' },
+                        { name: 'fresh', message: 'Fresh start (archive previous)' },
+                        { name: 'skip', message: 'Skip for now' }
+                    ]
+                }).run().catch(() => 'skip');
+                return choice;
+            },
+            askProject: async (cwd) => {
+                const choice = await new Select({
+                    message: `Create .lorapok in this project?`,
+                    choices: [
+                        { name: 'yes', message: 'Yes — initialize .lorapok (recommended)' },
+                        { name: 'no', message: 'Not now' }
+                    ]
+                }).run().catch(() => 'no');
+                return choice === 'yes';
+            }
+        });
+    } catch (e) {
+        // Non-fatal onboarding errors
+    }
 
     await chatLoop();
 
-    TerminalUI.showInteractionSummary(sessionData);
+    TerminalUI.showInteractionSummary(sessionData, { themeId: config.getBrandingFont() });
     process.exit(0);
 }
 
@@ -389,14 +521,15 @@ program
     .version(`${pkg.name} v${pkg.version}\nBuilt with 🐛 by Lorapok Labs (https://lorapok.tech)`, '-v, --version', 'output the current version')
     .option('-m, --model <modelName>', 'Set active LLM model for the session')
     .option('-y, --yes, --bypass, --yolo', 'Enable Auto-Approve bypass mode (auto-applies file actions & shell commands)')
-    .action((options) => {
+    .action(async (options) => {
         if (options.model) {
+            // Soft-set; runtime sanitize/guards will reject inaccessible models
             process.env.LORAPOK_MODEL = options.model;
         }
         if (options.yes || options.bypass || options.yolo) {
             process.env.LORAPOK_AUTO_APPROVE = 'true';
         }
-        main();
+        await main();
     });
 
 

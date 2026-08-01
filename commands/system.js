@@ -9,7 +9,7 @@ const chalk = require('chalk');
 const fs = require('fs');
 const { Select, Input } = require('enquirer');
 const TerminalUI = require('../lib/ui');
-const { showLogs, showSettings, handleModelCommand, handleConfigCommand } = require('./settings');
+const { showLogs, showSettings, showSessionInfo, handleModelCommand, handleConfigCommand } = require('./settings');
 const { showGitMenu, handleGitSlashCommand } = require('./git');
 const { showActionsMenu } = require('./actions');
 const { handleAnalyze } = require('./chat');
@@ -80,14 +80,16 @@ async function showSystemMenu(context) {
         result(name) { return this.map(name)[name]; }
     });
 
-    const cmd = await select.run().catch(() => 'chat');
+    const cmd = await select.run().catch(() => '__back__');
 
+    if (cmd === '__back__') return { success: true, mode: 'chat' };
     if (cmd === 'exit') return { success: true, exit: true, mode: 'chat' };
     if (cmd === 'chat') return { success: true, mode: 'chat' };
     if (cmd === 'guide') { TerminalUI.showHowToUse(); await new Input({ message: 'Press Enter to return ⏎ ‣' }).run().catch(() => null); return { success: true, mode: 'guide' }; }
     if (cmd === 'help') { showHelp(); return { success: true, mode: 'help' }; }
     if (cmd === 'clear') { clearScreen(); return { success: true, mode: 'chat' }; }
-    if (cmd === 'logs') { await showLogs(); return { success: true, mode: 'logs' }; }
+    if (cmd === 'logs') { await showLogs(config); return { success: true, mode: 'logs' }; }
+    if (cmd === 'sessions') { await showSessionInfo(config); return { success: true, mode: 'sessions' }; }
     if (cmd === 'bypass') {
         const next = !config.getAutoApprove();
         config.setAutoApprove(next);
@@ -180,7 +182,11 @@ async function dispatchSlashCommand(input, context) {
             return { success: true };
 
         case 'logs':
-            await showLogs();
+            await showLogs(config);
+            return { success: true };
+
+        case 'sessions':
+            await showSessionInfo(config);
             return { success: true };
 
         case 'analyze':
@@ -245,37 +251,29 @@ async function dispatchSlashCommand(input, context) {
             return require('./settings').handleCacheCommand(args[0], context);
 
         case 'refresh-models': {
-            const ora = require('ora');
             let spinner = null;
             if (process.stdout.isTTY) {
-                spinner = ora('Refreshing models cache from APIs...').start();
+                spinner = TerminalUI.createSpinner('Sanitizing model catalog…', config).start();
             }
             try {
-                const modelCacheSvc = require('../services/ModelCacheService');
-                modelCacheSvc.clearFailedModels();
                 if (agent.cache) {
                     agent.cache.del('availableModels');
                 }
-                let modelCount = 0;
-                let usableCount = 0;
-                let paidCount = 0;
-                if (agent.modelManager) {
-                    const catalog = await agent.modelManager.fetchModels({ bypassCache: true });
-                    modelCount = Object.keys(catalog || {}).length;
-                }
-                if (typeof agent.checkAvailableModels === 'function') {
-                    const validated = await agent.checkAvailableModels();
-                    usableCount = agent.modelManager.getUsableModelIds(validated).length;
-                    paidCount = agent.modelManager.getPaidCatalogIds(validated).length;
-                }
-                const detail = modelCount > 0
-                    ? `(${modelCount} loaded — ${usableCount} usable | ${paidCount} paid)`
-                    : '';
-                if (spinner) spinner.succeed(`Model cache refreshed! ${detail}`);
-                else console.log(chalk.green(`Model cache refreshed! ${detail}`));
+                const { ModelSanitizeService } = require('../services/ModelSanitizeService');
+                const sanitizer = new ModelSanitizeService(agent.modelManager);
+                const result = await sanitizer.sanitize({
+                    force: true,
+                    config,
+                    selectedModel: config.getModel && config.getModel()
+                });
+                agent.availableModels = result.validated;
+                const s = result.stats;
+                const detail = `(${s.catalogSize} loaded — ${s.usable} usable | ${s.paid} paid | ${s.selectable} selectable | probed ${s.probed})`;
+                if (spinner) spinner.succeed(`Model catalog sanitized! ${detail}`);
+                else console.log(chalk.green(`Model catalog sanitized! ${detail}`));
             } catch (e) {
-                if (spinner) spinner.fail(`Failed to refresh models cache: ${e.message}`);
-                else console.log(chalk.red(`Failed to refresh models cache: ${e.message}`));
+                if (spinner) spinner.fail(`Failed to sanitize models: ${e.message}`);
+                else console.log(chalk.red(`Failed to sanitize models: ${e.message}`));
             }
             return { success: true };
         }

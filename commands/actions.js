@@ -12,6 +12,7 @@ const { Select, Input } = require('enquirer');
 const TerminalUI = require('../lib/ui');
 const ActionsManager = require('../services/ActionsManager');
 const { executeCommand } = require('./utils');
+const { menuChoice, backChoice, menuMessage } = require('../lib/menu-format');
 
 /**
  * Interactive menu explorer for GitHub Actions workflows, runs, and jobs.
@@ -29,9 +30,9 @@ async function showActionsMenu(agent, config) {
         const authSelect = new Select({
             message: 'Authentication required. How would you like to login?',
             choices: [
-                { name: 'browser', message: '🌐 Login via Browser (Recommended)' },
-                { name: 'token', message: '🔑 Enter Token Manually' },
-                { name: 'cancel', message: '❌ Cancel' }
+                menuChoice('browser', '🌐', 'Login via Browser (Recommended)'),
+                menuChoice('token', '🔑', 'Enter Token Manually'),
+                menuChoice('cancel', '❌', 'Cancel')
             ]
         });
 
@@ -91,9 +92,9 @@ async function showActionsMenu(agent, config) {
                     styles: { underline: str => str, em: chalk.cyan.bold },
                     pointer(choice, i) { return this.state.index === i ? chalk.cyan.bold('❯ ') : '  '; },
                     choices: [
-                        { name: 'suggested', message: `🔍 Auto-link suggested: ${suggestedUrl}` },
-                        { name: 'custom', message: '🟢 Enter custom GitHub Repo URL' },
-                        { name: 'cancel', message: '❌ Return to Main Menu' }
+                        menuChoice('suggested', '🔍', `Auto-link suggested: ${suggestedUrl}`),
+                        menuChoice('custom', '🟢', 'Enter custom GitHub Repo URL'),
+                        menuChoice('cancel', '❌', 'Return to Main Menu')
                     ],
                     result(name) { return this.map(name)[name]; }
                 });
@@ -137,7 +138,7 @@ async function showActionsMenu(agent, config) {
             value: w
         }));
 
-        choices.push({ name: 'exit', message: '❌ Exit' });
+        choices.push(menuChoice('exit', '❌', 'Exit'));
 
         const wfSelect = new Select({
             message: 'Select Workflow:',
@@ -165,10 +166,13 @@ async function showActionsMenu(agent, config) {
 
         const runChoices = runs.slice(0, 5).map(r => ({
             name: r.id.toString(),
-            message: `${r.status === 'completed' ? (r.conclusion === 'success' ? '✔' : '✖') : '⏳'} ${r.name} #${r.run_number} (${r.event})`,
+            message: menuMessage(
+                r.status === 'completed' ? (r.conclusion === 'success' ? '✔' : '✖') : '⏳',
+                `${r.name} #${r.run_number} (${r.event})`
+            ),
             value: r
         }));
-        runChoices.push({ name: 'back', message: '⬅ Back to Workflows' });
+        runChoices.push(menuChoice('back', '←', 'Back to Workflows'));
 
         const runSelect = new Select({
             message: 'Select Run to view details:',
@@ -192,8 +196,8 @@ async function showActionsMenu(agent, config) {
             const afterRunSelect = new Select({
                 message: 'Actions:',
                 choices: [
-                    { name: 'continue', message: '⬅ Back to Runs' },
-                    { name: 'rerun', message: `${chalk.blue('🔄')} Rerun this workflow` }
+                    menuChoice('continue', '←', 'Back to Runs'),
+                    menuChoice('rerun', '🔄', 'Rerun this workflow')
                 ]
             });
 
@@ -257,10 +261,10 @@ async function executeFileActions(actions, context) {
                 const confirm = new Select({
                     message: `Allow ${action.type} to ${action.filePath}?`,
                     choices: [
-                        { name: 'once', message: '🟢 Yes, allow this time' },
-                        { name: 'project', message: `📁 Yes, and always allow file edits in this project` },
-                        { name: 'bypass', message: '🚀 Yes, and always allow globally (Bypass Mode)' },
-                        { name: 'no', message: '❌ No (tell the agent what to do instead)' }
+                        menuChoice('once', '🟢', 'Yes, allow this time'),
+                        menuChoice('project', '📁', 'Yes, and always allow file edits in this project'),
+                        menuChoice('bypass', '🚀', 'Yes, and always allow globally (Bypass Mode)'),
+                        menuChoice('no', '❌', 'No (tell the agent what to do instead)')
                     ],
                     result(name) { return this.map(name)[name]; }
                 });
@@ -322,10 +326,10 @@ async function executeShellAction(action, context, bypassMode = false) {
         const confirm = new Select({
             message: `Allow command: ${commandText}?`,
             choices: [
-                { name: 'once', message: '🟢 Yes, allow this time' },
-                { name: 'project', message: `📁 Yes, and always allow '${cmdKey}' in this project` },
-                { name: 'bypass', message: '🚀 Yes, and always allow globally (Bypass Mode)' },
-                { name: 'no', message: '❌ No (tell the agent what to do instead)' }
+                menuChoice('once', '🟢', 'Yes, allow this time'),
+                menuChoice('project', '📁', `Yes, and always allow '${cmdKey}' in this project`),
+                menuChoice('bypass', '🚀', 'Yes, and always allow globally (Bypass Mode)'),
+                menuChoice('no', '❌', 'No (tell the agent what to do instead)')
             ],
             result(name) { return this.map(name)[name]; }
         });

@@ -121,13 +121,14 @@ function getProjectOverviewContext(agent) {
  */
 function renderTokenUsageBox(context, response, activeModelIdOverride) {
     const { agent, config, sessionData } = context;
-    const boxen = require('boxen');
+    const { getTheme, getDefaultThemeId } = require('../lib/theme');
+    const { ActiveModelService } = require('../services/ActiveModelService');
+    const theme = getTheme(config && config.getBrandingFont ? config.getBrandingFont() : getDefaultThemeId());
 
-    const activeModelId = response?.model || activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-2.5-flash');
+    const activeModelId = response?.model || activeModelIdOverride || (config && typeof config.getModel === 'function' ? config.getModel() : 'sonar');
     const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
     const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
-    const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
-    const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
+    const displayNameFallback = activeModelMeta?.name || activeModelId;
 
     let promptTokens = response?.usage?.prompt_tokens || 0;
     let completionTokens = response?.usage?.completion_tokens || 0;
@@ -147,7 +148,7 @@ function renderTokenUsageBox(context, response, activeModelIdOverride) {
 
         if (!sessionData.modelUsage) sessionData.modelUsage = {};
         if (!sessionData.modelUsage[activeModelId]) {
-            sessionData.modelUsage[activeModelId] = { name: displayName, prompt: 0, completion: 0, total: 0, requests: 0 };
+            sessionData.modelUsage[activeModelId] = { name: displayNameFallback, prompt: 0, completion: 0, total: 0, requests: 0 };
         }
         sessionData.modelUsage[activeModelId].prompt += promptTokens;
         sessionData.modelUsage[activeModelId].completion += completionTokens;
@@ -155,27 +156,39 @@ function renderTokenUsageBox(context, response, activeModelIdOverride) {
         sessionData.modelUsage[activeModelId].requests += 1;
     }
 
-    const maxCtx = activeModelMeta?.contextLength || 1000000;
-    const currentModelUsed = sessionData?.modelUsage?.[activeModelId]?.total || totalTokens;
-    const remainingTokens = Math.min(maxCtx, Math.max(0, maxCtx - currentModelUsed));
+    const status = agent && agent.modelManager
+        ? new ActiveModelService(agent.modelManager).getStatus(
+            { getModel: () => activeModelId },
+            { [activeModelId]: { ...(activeModelMeta || {}), id: activeModelId } },
+            sessionData
+        )
+        : null;
+    const budget = status?.contextBudget;
+    const remStr = budget && budget.remaining >= 1000000
+        ? `${(budget.remaining / 1000000).toFixed(2)}M`
+        : `${Math.round((budget?.remaining || 0) / 1000)}k`;
+    const maxCtxStr = budget && budget.maxCtx >= 1000000
+        ? `${(budget.maxCtx / 1000000).toFixed(1)}M`
+        : `${Math.round((budget?.maxCtx || 0) / 1000)}k`;
 
-    const remStr = remainingTokens >= 1000000 ? `${(remainingTokens / 1000000).toFixed(2)}M` : `${Math.round(remainingTokens / 1000)}k`;
-    const maxCtxStr = maxCtx >= 1000000 ? `${(maxCtx / 1000000).toFixed(1)}M` : `${Math.round(maxCtx / 1000)}k`;
-    const pctLeft = Math.min(100, Math.max(0, Math.round((remainingTokens / maxCtx) * 100)));
+    // Compact turn metrics (no duplicate model/% — those live on the prompt status bar)
+    const sessionTurns = sessionData?.count || 1;
+    const sessionTotal = sessionData?.tokens?.total || totalTokens;
+    const cached = Boolean(response?.cached);
+    const latencyMs = response?.latencyMs || response?.durationMs || null;
+    const latencyStr = latencyMs != null ? `${(latencyMs / 1000).toFixed(1)}s` : null;
 
-    const cacheTag = response?.cached ? chalk.green.bold(' [⚡ CACHED] ') : '';
-    const modelLabel = chalk.bold(`🧠 Active Model: ${displayName} ${cacheTag}`);
-    const tokenBar = chalk.cyan(`📊 Turn Usage: ${promptTokens} In | ${completionTokens} Out | ${totalTokens} Total`) +
-                     chalk.yellow(`  │  ⚡ Available Token Limit: ${remStr} / ${maxCtxStr} (${pctLeft}% Remaining)`);
-
-    const usageBox = boxen(`${modelLabel}\n${tokenBar}`, {
-        padding: { top: 0, bottom: 0, left: 2, right: 2 },
-        margin: { top: 1, bottom: 1 },
-        borderStyle: 'round',
-        borderColor: 'cyan'
-    });
-
-    console.log(usageBox);
+    console.log(theme.rule());
+    console.log('  ' + theme.sepJoin([
+        { text: `${promptTokens} in`, color: 'muted' },
+        { text: `${completionTokens} out`, color: 'muted' },
+        { text: `${totalTokens} tok`, color: 'muted' },
+        { text: `sess ${sessionTurns}`, color: 'muted' },
+        { text: `${Number(sessionTotal).toLocaleString()} life`, color: 'muted' },
+        { text: cached ? 'cache hit' : 'cache miss', color: 'muted' },
+        latencyStr ? { text: latencyStr, color: 'muted' } : null,
+        { text: `${remStr}/${maxCtxStr} left`, color: 'muted' }
+    ]));
 }
 
 /**
@@ -197,6 +210,7 @@ async function handleChat(input, context, options = {}) {
         const { processedInput } = handleFileMentions(input, agent);
         const projectInfo = getProjectOverviewContext(agent);
 
+        const startedAt = Date.now();
         const response = await withCancellation('Thinking...', (signal) =>
             agent.chat(processedInput, null, { signal, fileTree: projectInfo, ...options })
         );
@@ -204,13 +218,16 @@ async function handleChat(input, context, options = {}) {
         if (!response || response.aborted) {
             return { success: false, error: 'Request cancelled by user.' };
         }
-
-        console.log(chalk.cyan.bold('\n🐛 LORAPOK:'));
+        response.latencyMs = Date.now() - startedAt;
 
         const cleanContent = ui.hideLongCodeBlocks(response.content);
-        console.log(await renderMarkdown(cleanContent));
+        const rendered = await renderMarkdown(cleanContent);
+        if (ui && typeof ui.printAgentResponse === 'function') {
+            ui.printAgentResponse(rendered, config);
+        } else {
+            console.log(rendered);
+        }
 
-        // Render model name and token usage card
         renderTokenUsageBox(context, response);
 
         // Parse & execute file/shell action blocks
@@ -236,8 +253,10 @@ async function handleChat(input, context, options = {}) {
  * @returns {Promise<{ success: boolean, content?: string, error?: string }>} Analysis result
  */
 async function handleAnalyze(context) {
-    const { agent, config } = context;
-    const boxen = require('boxen');
+    const { agent, config, ui } = context;
+    const { getTheme, getDefaultThemeId } = require('../lib/theme');
+    const { ActiveModelService } = require('../services/ActiveModelService');
+    const theme = getTheme(config && config.getBrandingFont ? config.getBrandingFont() : getDefaultThemeId());
 
     try {
         const result = await withCancellation('Analyzing project structure & architecture...', (signal) =>
@@ -245,54 +264,62 @@ async function handleAnalyze(context) {
         );
 
         if (result && result.content) {
-            const activeModelId = result.model || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-2.5-flash');
+            const activeModelId = result.model || (config && typeof config.getModel === 'function' ? config.getModel() : 'gemini-flash-latest');
             const allModels = agent && agent.modelManager ? agent.modelManager.cache.get('allModels') : null;
             const activeModelMeta = (agent && typeof agent.getModelMetadata === 'function' ? agent.getModelMetadata(activeModelId) : null) || (allModels ? allModels[activeModelId] : null);
-            const icon = activeModelMeta?.icon || (agent && agent.modelManager ? agent.modelManager.getModelIcon(activeModelId) : '🧠');
-            const displayName = activeModelMeta?.name || `${icon} ${activeModelId}`;
+            const status = agent && agent.modelManager
+                ? new ActiveModelService(agent.modelManager).getStatus(
+                    { getModel: () => activeModelId },
+                    { [activeModelId]: { ...(activeModelMeta || {}), id: activeModelId } }
+                )
+                : null;
+            const displayName = status?.displayName || activeModelMeta?.name || activeModelId;
+            const icon = status?.icon || '\u25C6';
 
-            const headerText =
-                chalk.bold.cyan('🔬 LORAPOK CODEBASE ARCHITECTURE & ANALYSIS') + '\n' +
-                chalk.gray('──────────────────────────────────────────────────────────────') + '\n' +
-                chalk.yellow(`🧠 Active Engine: ${displayName}`) + '  │  ' + chalk.green.bold('🟢 Status: Analysis Complete');
-
-            const headerBox = boxen(headerText, {
-                padding: { top: 0, bottom: 0, left: 2, right: 2 },
-                margin: { top: 1, bottom: 1 },
-                borderStyle: 'double',
-                borderColor: 'cyan'
-            });
-
-            console.log(headerBox);
+            console.log(theme.box(
+                theme.color('info', 'LORAPOK CODEBASE ARCHITECTURE & ANALYSIS') + '\n' +
+                theme.muted('Active engine: ') + theme.color('text', `${icon} ${displayName}`) +
+                theme.muted('  |  ') + theme.success('Analysis complete'),
+                {
+                    padding: { top: 0, bottom: 0, left: 2, right: 2 },
+                    margin: { top: 1, bottom: 1 },
+                    borderStyle: 'double'
+                }
+            ));
 
             const renderedMarkdown = await renderMarkdown(result.content);
-            console.log(renderedMarkdown);
+            if (ui && typeof ui.printAgentResponse === 'function') {
+                ui.printAgentResponse(renderedMarkdown, config);
+            } else {
+                console.log(renderedMarkdown);
+            }
 
-            const footerText =
-                chalk.cyan.bold('💡 Recommended Action:') + chalk.white(' Use ') + chalk.yellow.bold('/chat') + chalk.white(' to discuss findings or ') + chalk.yellow.bold('/plan') + chalk.white(' to generate implementation roadmap.');
+            console.log(theme.box(
+                theme.color('info', 'Recommended action') + '\n' +
+                theme.muted('Use ') + theme.warning('/chat') + theme.muted(' to discuss findings or ') +
+                theme.warning('/plan') + theme.muted(' for an implementation roadmap.'),
+                {
+                    padding: { top: 0, bottom: 0, left: 2, right: 2 },
+                    margin: { top: 1, bottom: 1 }
+                }
+            ));
 
-            const footerBox = boxen(footerText, {
-                padding: { top: 0, bottom: 0, left: 2, right: 2 },
-                margin: { top: 1, bottom: 1 },
-                borderStyle: 'round',
-                borderColor: 'green'
-            });
-
-            console.log(footerBox);
-
-            // Render token usage box after analysis completion using actual executed model
             renderTokenUsageBox(context, result, activeModelId);
 
             return { success: true, content: result.content };
         }
         if (result && result.aborted) {
-            console.log(chalk.yellow('\n⚠️ Analysis cancelled by user.\n'));
+            console.log(theme.warning('\nAnalysis cancelled by user.\n'));
             return { success: false, error: 'Analysis cancelled.' };
         }
-        console.log(chalk.red('\n❌ Project analysis produced no output.\n'));
+        console.log(ui && ui.formatError
+            ? ui.formatError('Project analysis produced no output.', config)
+            : theme.error('\nProject analysis produced no output.\n'));
         return { success: false, error: 'No content' };
     } catch (err) {
-        console.log(chalk.red(`\n❌ Project Analysis Error: ${err.message || String(err)}\n`));
+        console.log(ui && ui.formatError
+            ? ui.formatError(`Project Analysis Error: ${err.message || String(err)}`, config)
+            : theme.error(`\nProject Analysis Error: ${err.message || String(err)}\n`));
         return { success: false, error: err.message || String(err) };
     }
 }

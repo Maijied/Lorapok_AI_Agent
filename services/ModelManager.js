@@ -13,6 +13,7 @@ const path = require('path');
 const logger = require('../lib/logger');
 const modelValidator = require('./ModelValidator');
 const modelCacheService = require('./ModelCacheService');
+const modelAccessService = require('./ModelAccessService');
 
 /**
  * Expertise categories definitions.
@@ -34,11 +35,11 @@ const CATEGORIES = {
  * Default Perplexity models categorized by expertise.
  */
 const DEFAULT_PERPLEXITY_MODELS = {
-    'sonar': { name: '⚡ Sonar (Perplexity)', category: ['fast', 'research'], provider: 'perplexity', tier: 'free', contextLength: 127000, rateLimit: 'Standard Tier (127k ctx)', description: 'Fast, lightweight model with web grounding.' },
-    'sonar-pro': { name: '🎯 Sonar Pro (Perplexity)', category: ['research', 'coding'], provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Enhanced web search and deep query resolution.' },
-    'sonar-reasoning': { name: '🧠 Sonar Reasoning (Perplexity)', category: ['reasoning', 'research'], provider: 'perplexity', tier: 'pro', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Reasoning model with real-time web search capabilities.' },
-    'sonar-reasoning-pro': { name: '🔬 Sonar Reasoning Pro (Perplexity)', category: ['reasoning', 'research', 'coding'], provider: 'perplexity', tier: 'pro', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Advanced chain-of-thought reasoning with deep web search.' },
-    'sonar-deep-research': { name: '🔍 Sonar Deep Research (Perplexity)', category: ['research', 'reasoning'], provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Exhaustive multi-source research engine for complex domain queries.' }
+    // Official Sonar API models (https://docs.perplexity.ai/docs/sonar/models) — no large public list API.
+    'sonar': { name: '⚡ Sonar (Perplexity)', category: ['fast', 'research'], provider: 'perplexity', tier: 'free', contextLength: 127000, rateLimit: 'Standard Tier (127k ctx)', description: 'Lightweight web-grounded search model.' },
+    'sonar-pro': { name: '🎯 Sonar Pro (Perplexity)', category: ['research', 'coding'], provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Advanced search with deeper grounding and follow-ups.' },
+    'sonar-reasoning-pro': { name: '🔬 Sonar Reasoning Pro (Perplexity)', category: ['reasoning', 'research', 'coding'], provider: 'perplexity', tier: 'pro', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Chain-of-thought reasoning with live web search (replaces deprecated sonar-reasoning).' },
+    'sonar-deep-research': { name: '🔍 Sonar Deep Research (Perplexity)', category: ['research', 'reasoning'], provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Exhaustive multi-source research reports.' }
 };
 
 /**
@@ -92,18 +93,15 @@ const DEFAULT_OPENROUTER_MODELS = {
  * These serve as the static fallback when the dynamic API fetch is unavailable.
  */
 const DEFAULT_GOOGLE_MODELS = {
-    // Gemini 2.5 Series — Current Generation (real IDs)
-    'gemini-2.5-flash': { name: '⚡ Gemini 2.5 Flash (Google AI Studio)', category: ['fast', 'reasoning', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '10 RPM | 250k TPM | 1M ctx', description: 'Latest fast multimodal flagship with thinking capabilities. Free tier available.' },
-    'gemini-2.5-flash-lite': { name: '🚀 Gemini 2.5 Flash-Lite (Google AI Studio)', category: ['fast', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 250k TPM | 1M ctx', description: 'Ultra cost-effective, high-throughput lightweight model.' },
-    'gemini-2.5-pro': { name: '💎 Gemini 2.5 Pro (Google AI Studio)', category: ['reasoning', 'coding', 'general'], provider: 'google-ai-studio', tier: 'pro', contextLength: 2000000, rateLimit: '2 RPM | 32k TPM | 2M ctx', description: 'Most capable Gemini model for complex reasoning, coding, and multimodal tasks.' },
-    // Gemini 2.0 Series — Stable Production (real IDs)
-    'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: ['fast', 'research', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Ultra-low latency production model with native search grounding and tool use.' },
-    'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: ['fast', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 1M TPM | 1M ctx', description: 'Most cost-efficient 2.0 generation model for high-volume tasks.' },
-    'gemini-2.0-flash-exp': { name: '🔬 Gemini 2.0 Flash Experimental (Google AI Studio)', category: ['fast', 'reasoning', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '10 RPM | 4M TPM | 1M ctx', description: 'Experimental 2.0 Flash with extended capabilities and thinking.' },
-    // Gemini Experimental (real preview IDs)
-    'gemini-exp-1206': { name: '✨ Gemini Experimental 1206 (Google AI Studio)', category: ['coding', 'reasoning', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 2000000, rateLimit: '2 RPM | 32k TPM | 2M ctx', description: 'Experimental Gemini preview with enhanced instruction-following and reasoning.' },
-    // Learning / Education (real ID)
-    'learnlm-1.5-pro-experimental': { name: '🎓 LearnLM 1.5 Pro Experimental (Google AI Studio)', category: ['general', 'reasoning'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Google education-focused model optimized for learning conversations.' }
+    // Emergency offline stubs only — prefer live ListModels. IDs verified usable for new keys (2026-08).
+    'gemini-flash-latest': { name: '⚡ Gemini Flash Latest (Google AI Studio)', category: ['fast', 'coding', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: 'Free API | 1M ctx', description: 'Rolling latest Flash alias for chat.' },
+    'gemini-flash-lite-latest': { name: '🚀 Gemini Flash-Lite Latest (Google AI Studio)', category: ['fast', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: 'Free API | 1M ctx', description: 'Rolling latest Flash-Lite alias.' },
+    'gemini-3.5-flash': { name: '⚡ Gemini 3.5 Flash (Google AI Studio)', category: ['fast', 'reasoning', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: 'Free API | 1M ctx', description: 'Current-generation fast multimodal chat model.' },
+    'gemini-3.5-flash-lite': { name: '🚀 Gemini 3.5 Flash-Lite (Google AI Studio)', category: ['fast', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: 'Free API | 1M ctx', description: 'Lightweight high-throughput chat model.' },
+    'gemini-3.6-flash': { name: '⚡ Gemini 3.6 Flash (Google AI Studio)', category: ['fast', 'coding', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: 'Free API | 1M ctx', description: 'Newer Flash generation for coding agents.' },
+    'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: ['fast', 'research', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Stable 2.0 Flash production chat model.' },
+    'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: ['fast', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 1M TPM | 1M ctx', description: 'Cost-efficient 2.0 Flash-Lite.' },
+    'gemini-2.5-pro': { name: '💎 Gemini 2.5 Pro (Google AI Studio)', category: ['reasoning', 'coding', 'general'], provider: 'google-ai-studio', tier: 'pro', contextLength: 2000000, rateLimit: '2 RPM | 32k TPM | 2M ctx', description: 'Higher-capacity Pro (rate-limited free API).' }
 };
 
 /**
@@ -189,11 +187,21 @@ class ModelManager {
         }
 
         if (provider === 'perplexity') {
-            const paymentRequired = meta.tier === 'pro' || rateStr.includes('pro tier');
+            // Perplexity API is pay-as-you-go (credits). Treat base `sonar` as free-tier
+            // for menu grouping only; Pro / Reasoning / Deep Research require credits.
+            const looksPro = meta.tier === 'pro' || rateStr.includes('pro tier') ||
+                idLower.includes('-pro') || idLower.includes('reasoning') ||
+                idLower.includes('deep-research') || nameStr.includes(' pro') ||
+                nameStr.includes('reasoning') || nameStr.includes('deep research');
+            const isSonarBase = idLower === 'sonar' || idLower.endsWith('/sonar') ||
+                (meta.tier === 'free' && !looksPro);
+            if (isSonarBase && !looksPro) {
+                return { paymentRequired: false, rateLimited: true, tier: 'free' };
+            }
             return {
-                paymentRequired,
-                rateLimited: !paymentRequired,
-                tier: paymentRequired ? 'pro' : 'free'
+                paymentRequired: true,
+                rateLimited: false,
+                tier: 'pro'
             };
         }
 
@@ -413,9 +421,16 @@ class ModelManager {
             idLower.includes('wizard-coder') || idLower.includes('wizard-code') ||
             idLower.includes('deepseek-coder') || idLower.includes('qwen-coder') ||
             idLower.includes('sonnet') || idLower.includes('command-a') || idLower.includes('command-r') ||
+            idLower.includes('claude') || idLower.includes('gpt') || idLower.includes('gemini') ||
+            idLower.includes('gemma') || idLower.includes('flash') || idLower.includes('codex') ||
             text.includes('code generation') || text.includes('software engineering') ||
             text.includes('debugging') || text.includes('refactoring')) {
             categories.push('coding');
+        }
+        if (idLower.includes('flash') || idLower.includes('lite') || idLower.includes('mini') ||
+            idLower.includes('nano') || idLower.includes('haiku') || idLower.includes('small') ||
+            idLower.includes('fast') || text.includes('low latency')) {
+            if (!categories.includes('fast')) categories.push('fast');
         }
 
         if (idLower.includes('gemma') || idLower.includes('llama') ||
@@ -520,7 +535,9 @@ class ModelManager {
         const key = apiKey || (this.config && typeof this.config.getGoogleApiKey === 'function' ? this.config.getGoogleApiKey() : process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
         const fallback = {};
         for (const [id, meta] of Object.entries(DEFAULT_GOOGLE_MODELS)) {
-            fallback[id] = this.enrichStaticModel(id, meta);
+            const enriched = this.enrichStaticModel(id, meta);
+            enriched.source = 'emergency-static';
+            fallback[id] = enriched;
         }
         if (!key) return fallback;
 
@@ -585,9 +602,14 @@ class ModelManager {
         }
 
         const fetchedAt = Date.now();
+
+        // Perplexity: no public list API — seed as unverified candidates (must pass probe to select).
         const perplexityModels = {};
         for (const [id, meta] of Object.entries(DEFAULT_PERPLEXITY_MODELS)) {
-            perplexityModels[id] = this.enrichStaticModel(id, meta);
+            const enriched = this.enrichStaticModel(id, meta);
+            enriched.source = 'seed';
+            enriched.accessState = 'unverified';
+            perplexityModels[id] = enriched;
         }
 
         const googleModels = await this.fetchGoogleModels();
@@ -610,9 +632,13 @@ class ModelManager {
             logger.error(`ModelManager: Failed to fetch OpenRouter models: ${error.message}`);
         }
 
+        // Offline emergency only — never mixed into a successful OpenRouter fetch.
         if (!openRouterOk) {
+            logger.warn('ModelManager: OpenRouter API unavailable — using emergency static stubs');
             for (const [id, meta] of Object.entries(DEFAULT_OPENROUTER_MODELS)) {
-                openRouterModels[id] = this.enrichStaticModel(id, meta);
+                const enriched = this.enrichStaticModel(id, meta);
+                enriched.source = 'emergency-static';
+                openRouterModels[id] = enriched;
             }
         }
 
@@ -682,18 +708,18 @@ class ModelManager {
                 { id: 'qwen/qwen-2.5-coder-32b-instruct', name: 'Qwen 2.5 Coder 32B', provider: 'openrouter', reason: 'Specialized open-weights coding model, excellent at completions.' }
             ],
             reasoning: [
-                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google-ai-studio', reason: 'Fast thinking-capable model with 1M context. Free tier.' },
+                { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', provider: 'google-ai-studio', reason: 'Fast thinking-capable model with 1M context. Free API.' },
                 { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'openrouter', reason: 'Deep algorithmic reasoning with full chain-of-thought visibility.' },
                 { id: 'sonar-reasoning-pro', name: 'Sonar Reasoning Pro', provider: 'perplexity', reason: 'Chain-of-thought reasoning combined with live web search.' }
             ],
             research: [
                 { id: 'sonar-deep-research', name: 'Sonar Deep Research', provider: 'perplexity', reason: 'Exhaustive multi-source research report generation.' },
                 { id: 'sonar-pro', name: 'Sonar Pro', provider: 'perplexity', reason: 'Fast grounded web search with inline citations.' },
-                { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'google-ai-studio', reason: 'Native search grounding and tool use with 1M context.' }
+                { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', provider: 'google-ai-studio', reason: 'Native multimodal Flash alias with long context.' }
             ],
             fast: [
-                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google-ai-studio', reason: 'Ultra-fast multimodal with thinking. Free tier. 1M context.' },
-                { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite', provider: 'google-ai-studio', reason: 'Most cost-efficient model for high-volume lightweight tasks.' },
+                { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', provider: 'google-ai-studio', reason: 'Rolling latest Flash alias. Free API. 1M context.' },
+                { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', provider: 'google-ai-studio', reason: 'Current-generation fast multimodal chat model.' },
                 { id: 'sonar', name: 'Sonar', provider: 'perplexity', reason: 'Lightweight web-grounded model for quick lookups.' }
             ]
         };
@@ -737,7 +763,10 @@ class ModelManager {
             if (!m || m.available !== true) return false;
             if (modelCacheService.isModelFailed(id)) return false;
             if (modelValidator.isNonTextModality(id, m)) return false;
-            return this.isFreeTier({ ...m, id });
+            if (!this.isFreeTier({ ...m, id })) return false;
+            const access = m.accessState || modelAccessService.getAccessState(id);
+            // Only live-probed free models (accessible / rate_limited) — never unverified/error/locked.
+            return access === 'accessible' || access === 'rate_limited';
         });
     }
 
@@ -756,61 +785,160 @@ class ModelManager {
         });
     }
 
+    /**
+     * Catalog models tagged with category (accessible + locked), not usable-only.
+     * Prefer chat-compatible text models; empty only when none are tagged.
+     */
     getModelsByCategoryView(validated, category) {
-        return this.getUsableModelIds(validated).filter(id => {
-            const cats = Array.isArray(validated[id].category) ? validated[id].category : [validated[id].category];
+        const ids = Object.keys(validated || {});
+        return ids.filter(id => {
+            const meta = validated[id] || {};
+            if (meta.modality && meta.modality !== 'text' && meta.modality !== 'chat') return false;
+            const cats = Array.isArray(meta.category)
+                ? meta.category
+                : this.categorizeModel(id, meta.name || '', meta.description || '');
             return cats.includes(category);
         });
     }
 
+    /**
+     * Category browse for Currently Usable set (free-tier + live-accessible only).
+     * @param {Object} validated
+     * @param {string} category
+     * @returns {string[]}
+     */
+    getUsableModelsByCategoryView(validated, category) {
+        const usable = new Set(this.getUsableModelIds(validated));
+        return this.getModelsByCategoryView(validated, category).filter(id => usable.has(id));
+    }
+
+    /**
+     * Models for a provider when the user has that provider's key.
+     * Includes free + paid (unlike Currently Usable, which is free-tier only).
+     * @param {Object} validated
+     * @param {string} provider
+     * @returns {string[]}
+     */
     getModelsByProviderView(validated, provider) {
-        return this.getUsableModelIds(validated).filter(id => validated[id].provider === provider);
+        return Object.keys(validated || {}).filter(id => {
+            const m = validated[id];
+            if (!m || m.provider !== provider) return false;
+            if (modelCacheService.isModelFailed(id)) return false;
+            if (modelValidator.isNonTextModality(id, m)) return false;
+            // Key presence is encoded as available === true by ModelValidator
+            return m.available === true;
+        });
+    }
+
+    /**
+     * Providers that have at least one keyed (available) model.
+     * @param {Object} validated
+     * @returns {string[]}
+     */
+    getKeyedProviders(validated = {}) {
+        const set = new Set();
+        for (const id of Object.keys(validated || {})) {
+            const m = validated[id];
+            if (!m || m.available !== true) continue;
+            if (modelCacheService.isModelFailed(id)) continue;
+            if (modelValidator.isNonTextModality(id, m)) continue;
+            if (m.provider) set.add(m.provider);
+        }
+        return [...set];
     }
 
     getTierLabel(item, hasAccess, showCatalog) {
-        if (showCatalog && !hasAccess) return '(No Key — Add to Unlock)';
+        const access = item.accessState || modelAccessService.getAccessState(item.id);
+        if (access === 'locked' || (showCatalog && !hasAccess)) {
+            if (!hasAccess) return '(No Key — Add to Unlock)';
+            return '(Pro — Credits Required / Locked)';
+        }
         const idName = `${item.id || ''} ${item.name || ''}`.toLowerCase();
         const googleRateLimited = item.provider === 'google-ai-studio' &&
             (item.rateLimited || idName.includes('pro') || idName.includes('ultra'));
         if (this.isFreeTier(item)) {
-            return googleRateLimited ? '(Rate Limited — Free API Key)' : '(Free Tier)';
+            if (access === 'rate_limited' || googleRateLimited) return '(Rate Limited — Free API Key)';
+            return '(Free Tier)';
         }
-        return '(Pro — Credits Required)';
+        if (access === 'accessible' || access === 'rate_limited') return '(Pro — Accessible)';
+        if (access === 'unverified') return '(Pro — Unverified)';
+        return '(Pro — Credits Required / Locked)';
     }
 
     getStatusIcon(item, hasAccess, showCatalog) {
-        if (showCatalog && !hasAccess) return '🔒';
+        const access = item.accessState || modelAccessService.getAccessState(item.id);
+        if (access === 'locked' || (showCatalog && !hasAccess)) return '🔒';
         const idName = `${item.id || ''} ${item.name || ''}`.toLowerCase();
         const googleRateLimited = item.provider === 'google-ai-studio' &&
             (item.rateLimited || idName.includes('pro') || idName.includes('ultra'));
         if (this.isFreeTier(item)) {
-            return googleRateLimited ? '🔵' : '🟢';
+            return (access === 'rate_limited' || googleRateLimited) ? '🔵' : '🟢';
         }
+        if (access === 'accessible' || access === 'rate_limited') return '✅';
         return '💳';
     }
 
     /**
-     * Pick a fallback model ID from the usable set (same provider preferred).
+     * Score-based fallback ranking over current usable/selectable set.
+     * @param {Object} validated
+     * @param {string|null} failedModelId
+     * @returns {string[]}
+     */
+    buildFallbackRank(validated = {}, failedModelId = null) {
+        const failed = this.sanitizeModelId(failedModelId || '');
+        const failedMeta = validated[failed] || {};
+        const failedProvider = failedMeta.provider || this.getProviderForModel(failed);
+        const failedCats = Array.isArray(failedMeta.category) ? failedMeta.category : [failedMeta.category].filter(Boolean);
+
+        const candidates = Object.keys(validated).filter(id => {
+            if (id === failed) return false;
+            if (modelCacheService.isModelFailed(id)) return false;
+            if (!this.canSelectModel(id, validated) && !this.getUsableModelIds(validated).includes(id)) {
+                // Allow usable unverified free as soft candidates
+                const m = validated[id];
+                if (!m || m.available !== true || !this.isFreeTier({ ...m, id })) return false;
+                const access = m.accessState || modelAccessService.getAccessState(id);
+                if (access === 'unavailable' || access === 'locked') return false;
+            }
+            return true;
+        });
+
+        // Prefer strictly selectable; include other usable as lower tier
+        const scored = candidates.map(id => {
+            const m = validated[id] || {};
+            const access = m.accessState || modelAccessService.getAccessState(id);
+            let score = 0;
+            if (m.provider === failedProvider) score += 50;
+            if (access === 'accessible') score += 40;
+            if (access === 'rate_limited') score += 20;
+            if (access === 'unverified') score += 5;
+            if (this.isFreeTier({ ...m, id })) score += 25;
+            const cats = Array.isArray(m.category) ? m.category : [m.category];
+            if (failedCats.some(c => cats.includes(c))) score += 15;
+            const ctx = Number(m.contextLength) || 0;
+            score += Math.min(10, Math.log10(ctx + 1));
+            if (modelCacheService.isModelFailed(id)) score -= 100;
+            if (access === 'rate_limited') score -= 5;
+            return { id, score };
+        });
+
+        scored.sort((a, b) => b.score - a.score);
+        return scored.map(s => s.id);
+    }
+
+    /**
+     * Pick a fallback model ID from scored rank (no hard-coded dead IDs).
      * @param {Object} validated
      * @param {string} failedModelId
      * @returns {string|null}
      */
     pickFallbackModelId(validated, failedModelId) {
-        const failed = this.sanitizeModelId(failedModelId);
-        const provider = (validated[failed] && validated[failed].provider) || this.getProviderForModel(failed);
-        const usable = this.getUsableModelIds(validated).filter(id => id !== failed && !modelCacheService.isModelFailed(id));
-        if (usable.length === 0) return null;
-        const sameProv = usable.filter(id => validated[id].provider === provider);
-        const preferOrder = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'sonar', 'meta-llama/llama-3.3-70b-instruct'];
-        for (const pref of preferOrder) {
-            if (sameProv.includes(pref)) return pref;
-            if (usable.includes(pref)) return pref;
-        }
-        return sameProv[0] || usable[0];
+        const rank = this.buildFallbackRank(validated, failedModelId);
+        return rank[0] || null;
     }
 
     /**
-     * Whether a model ID may be selected for active use with current keys.
+     * Whether a model ID may be selected for active use (live-accessible).
      * @param {string} modelId
      * @param {Object} validated
      * @returns {boolean}
@@ -821,7 +949,53 @@ class ModelManager {
         if (!m || m.available !== true) return false;
         if (modelCacheService.isModelFailed(id)) return false;
         if (modelValidator.isNonTextModality(id, m)) return false;
-        return true;
+        const access = m.accessState || modelAccessService.getAccessState(id);
+        // Must be live-probed accessible or rate_limited (never unverified/error/locked).
+        return modelAccessService.isSelectableState(access);
+    }
+
+    /**
+     * Sort model IDs for menus: accessible Google/fast first, then rate_limited, then others.
+     * @param {string[]} ids
+     * @param {Object} validated
+     * @returns {string[]}
+     */
+    sortModelIdsForDisplay(ids = [], validated = {}) {
+        const rankAccess = (a) => {
+            if (a === 'accessible') return 0;
+            if (a === 'rate_limited') return 1;
+            return 2;
+        };
+        const rankProvider = (p) => {
+            if (p === 'google-ai-studio') return 0;
+            if (p === 'perplexity') return 1;
+            return 2;
+        };
+        return [...ids].sort((a, b) => {
+            const ma = validated[a] || {};
+            const mb = validated[b] || {};
+            const aa = ma.accessState || modelAccessService.getAccessState(a);
+            const ab = mb.accessState || modelAccessService.getAccessState(b);
+            const dAccess = rankAccess(aa) - rankAccess(ab);
+            if (dAccess) return dAccess;
+            const dProv = rankProvider(ma.provider) - rankProvider(mb.provider);
+            if (dProv) return dProv;
+            return a.localeCompare(b);
+        });
+    }
+
+    /**
+     * Lightweight metadata lookup from cache/defaults.
+     * @param {string} modelId
+     * @returns {Object}
+     */
+    getModelMetadata(modelId) {
+        const id = this.sanitizeModelId(modelId);
+        const cached = this.cache.get('allModels');
+        if (cached && cached[id]) return { id, ...cached[id] };
+        const known = this.getAllKnownModels()[id];
+        if (known) return { id, ...known };
+        return { id, name: id, provider: this.getProviderForModel(id) };
     }
 
     /**

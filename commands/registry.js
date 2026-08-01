@@ -41,16 +41,24 @@ const COMMANDS = [
     { name: '/guide', aliases: ['/howtouse', '/manual'], section: 'system', description: 'How to use Lorapok', icon: '📖', handler: 'guide', inAutocomplete: true, inSystemMenu: true },
     { name: '/help', aliases: ['/?'], section: 'system', description: 'Command reference', icon: '❓', handler: 'help', inAutocomplete: true, inSystemMenu: true },
     { name: '/logs', section: 'system', description: 'View recent logs', icon: '📜', handler: 'logs', inAutocomplete: true, inSystemMenu: true },
+    { name: '/sessions', section: 'system', description: 'Browse saved session recaps', icon: '📁', handler: 'sessions', inAutocomplete: true, inSystemMenu: true },
     { name: '/clear', section: 'system', description: 'Clear the terminal', icon: '🧹', handler: 'clear', inAutocomplete: true, inSystemMenu: true },
     { name: '/menu', section: 'system', description: 'Open system command menu', icon: '📋', handler: 'menu', inAutocomplete: false, inSystemMenu: false },
     { name: '/exit', aliases: ['/quit', '/q'], section: 'system', description: 'Exit Lorapok', icon: '🚪', handler: 'exit', inAutocomplete: true, inSystemMenu: true }
 ];
 
 const SECTION_LABELS = {
-    core: '🤖 CORE AI',
-    controls: '🎛️  CONTROLS',
-    devops: '🛠️  DEVOPS',
-    system: '⚙️  SYSTEM'
+    core: 'CORE AI',
+    controls: 'CONTROLS',
+    devops: 'DEVOPS',
+    system: 'SYSTEM'
+};
+
+const SECTION_ICONS = {
+    core: '🤖',
+    controls: '🎛️',
+    devops: '🛠️',
+    system: '⚙️'
 };
 
 function getCommands() {
@@ -68,17 +76,32 @@ function getCommandByName(name) {
 }
 
 function getAutocompleteChoices(chalk) {
+    const { padIcon, commandMenuMessage } = require('../lib/menu-format');
     const sections = ['core', 'controls', 'devops', 'system'];
     const choices = [];
     for (const section of sections) {
         const items = COMMANDS.filter(c => c.section === section && c.inAutocomplete !== false);
         if (items.length === 0) continue;
-        choices.push({ role: 'heading', message: chalk ? chalk.cyan.bold(`  ${SECTION_LABELS[section]}`) : `  ${SECTION_LABELS[section]}` });
+        if (choices.length) {
+            choices.push({ role: 'separator', message: ' ', disabled: true });
+        }
+        const secIcon = SECTION_ICONS[section] || '·';
+        choices.push({
+            role: 'heading',
+            message: chalk
+                ? chalk.cyan.bold(`  ${padIcon(secIcon, 2)} ${SECTION_LABELS[section]}`)
+                : `  ${padIcon(secIcon, 2)} ${SECTION_LABELS[section]}`,
+            disabled: true
+        });
         for (const c of items) {
-            const pad = c.name.padEnd(16, ' ');
-            const msg = chalk
-                ? `    ${c.icon || '•'} ${chalk.bold(pad)} ${chalk.gray('‣ ' + c.description)}`
-                : `    ${c.icon || '•'} ${pad} ‣ ${c.description}`;
+            const icon = c.icon || '·';
+            const msg = commandMenuMessage(
+                icon,
+                c.name,
+                c.description,
+                chalk ? chalk.bold.bind(chalk) : null,
+                chalk ? chalk.gray.bind(chalk) : null
+            );
             choices.push({ name: c.name, message: msg });
         }
     }
@@ -86,19 +109,41 @@ function getAutocompleteChoices(chalk) {
 }
 
 function getSystemMenuChoices(chalk) {
+    const { padIcon, commandMenuMessage, backChoice } = require('../lib/menu-format');
     const sections = ['core', 'controls', 'devops', 'system'];
     const choices = [];
     for (const section of sections) {
         const items = COMMANDS.filter(c => c.section === section && c.inSystemMenu);
         if (items.length === 0) continue;
-        choices.push({ role: 'heading', message: chalk ? chalk.cyan.bold(`  ${SECTION_LABELS[section]}`) : `  ${SECTION_LABELS[section]}` });
+        if (choices.length) {
+            choices.push({ role: 'separator', message: ' ', disabled: true });
+        }
+        const secIcon = SECTION_ICONS[section] || '·';
+        choices.push({
+            role: 'heading',
+            message: chalk
+                ? chalk.cyan.bold(`  ${padIcon(secIcon, 2)} ${SECTION_LABELS[section]}`)
+                : `  ${padIcon(secIcon, 2)} ${SECTION_LABELS[section]}`,
+            disabled: true
+        });
         for (const c of items) {
-            const msg = chalk
-                ? `${c.icon || '•'} ${chalk.bold(c.handler)}  ${chalk.gray('— ' + c.description)}`
-                : `${c.icon || '•'} ${c.handler} — ${c.description}`;
+            const icon = c.icon || '·';
+            const msg = commandMenuMessage(
+                icon,
+                c.handler,
+                c.description,
+                chalk ? chalk.bold.bind(chalk) : null,
+                chalk ? chalk.gray.bind(chalk) : null
+            );
             choices.push({ name: c.handler, message: msg });
         }
     }
+    choices.push({ role: 'separator', message: ' ', disabled: true });
+    const back = backChoice('__back__', { indent: 4 });
+    if (chalk) {
+        back.message = chalk.gray(back.message);
+    }
+    choices.push(back);
     return choices;
 }
 

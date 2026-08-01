@@ -15,11 +15,11 @@ Agent governance for the `lorapok_ai_agent` repository.
 - `apps/website/` — Marketing site
 - `commands/registry.js` — Slash command registry
 - `services/Model*.js` — Sanitized model catalog
-- `tests/` — Jest (23 suites / 270 tests)
+- `tests/` — Jest (33 suites / 321 tests)
 
 ### Developer & Agent Directives
 
-- **Zero Test Regressions**: `npm test` must pass (270+) before finishing.
+- **Zero Test Regressions**: `npm test` must pass (283+) before finishing.
 - **Rules first**: Load `.agents/rules/` + steer + skills at task start.
 - **Models**: Usable vs paid only via ModelManager views; Google free-API ≠ paid.
 - **Docs sync**: Update root + `.agents` BRAIN/AGENTS and `Docs/` when architecture changes.

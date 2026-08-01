@@ -1,7 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-08-01 | Version: 1.3.2 | Test Suite: 23/23 Passed (270 Tests)*
+> *Last Synced: 2026-08-01 | Version: 1.4.0 | Test Suite: 33/33 Passed (321 Tests)*
 
 ---
 
@@ -24,14 +24,14 @@
 lorapok_ai_agent/
 ├── bin/ lorapok.js
 ├── commands/          # registry.js + handlers
-├── lib/               # agent, config, ui, cache
+├── lib/               # agent, config, ui, menu-format, cache
 ├── services/          # Model*, Git, File, Actions
 ├── server.js
 ├── packages/sdk/      # HTTP client stub
 ├── apps/website/      # marketing site
 ├── Docs/              # architecture, api, cli, providers
 ├── .agents/           # skills, steer, rules, hooks, automations
-└── tests/             # Jest (23 suites / 270 tests)
+└── tests/             # Jest (33 suites / 321 tests)
 ```
 
 See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
@@ -41,8 +41,15 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 ## 📊 Live Metrics
 
 - Node.js >= 18
-- Jest: **23 suites, 270 tests passing**
-- npm package version: **1.3.2**
+- Jest: **33 suites, 321 tests passing**
+- Model sanitize: `ModelSanitizeService` + `ModelAccessService` + `ActiveModelService`
+- Secrets: `SecretsVault` AES-256-GCM; sessions: `SessionStore`; geek lines: `GeekLinesService`
+- Themes: default ANSI Shadow; Banner3 as **Banner** theme; dual-tone wordmark fill; cyber laptop vs classic + AI Coding badge
+- Menus: `lib/menu-format.js` pads icon columns so Settings/Git/Actions/system labels align
+- API keys: `ModelAccessService.verifyProviderKey` live-tests connection after vault save
+- Model menus: Usable / Category(usable) / Provider(keyed free+paid) / Paid catalog; Perplexity Sonar seed = 4 models
+- Response: themed boxen (fixed broken left-rail); metrics/status use `|` + underline
+- Workspace: `WorkspaceService`; npm package version: **1.4.0**
 
 ---
 

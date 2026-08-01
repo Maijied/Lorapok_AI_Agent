@@ -497,7 +497,10 @@ async function chatLoop() {
                     
                     nextInput = `[SYSTEM AUTOMATED FEEDBACK]\nThe following actions were executed. Please analyze the results and provide the final answer to the user's previous request, or propose the next steps if needed.\n\n${systemFeedback}`;
                     
-                    console.log(chalk.yellow('\n(Agent is continuing based on command output...)'));
+                    const separator = chalk.dim('─'.repeat(process.stdout.columns || 80));
+                    console.log(`\n${separator}`);
+                    console.log(chalk.yellow('🔄 Agent is analyzing results and continuing...'));
+                    console.log(`${separator}\n`);
                     continue;
                 }
                 

@@ -265,7 +265,7 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
             successRate: 100,
             tokens: { prompt: 500, completion: 300, total: 800 },
             modelUsage: {
-                'anthropic/claude-3.5-sonnet': { name: '🎭 Claude 3.5 Sonnet', requests: 2, prompt: 300, completion: 200, total: 500 },
+                'anthropic/claude-sonnet-5': { name: '🎭 Claude 3.5 Sonnet', requests: 2, prompt: 300, completion: 200, total: 500 },
                 'sonar-pro': { name: '🎯 Sonar Pro', requests: 1, prompt: 200, completion: 100, total: 300 }
             }
         };

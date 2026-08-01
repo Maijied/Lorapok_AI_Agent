@@ -1,0 +1,9 @@
+---
+description: Professional markdown standards
+globs: "**/*.md"
+alwaysApply: false
+---
+
+# Docs Rules
+
+Follow `.agents/skills/professional-readme-creator`: badges, feature matrix, env tables, fenced examples, accurate version (`package.json`).

@@ -15,3 +15,7 @@
 - Use the Winston logger instance: `logger.info()`, `logger.warn()`, `logger.error()`, `logger.debug()`.
 - Logs are written to standard Winston transport targets and `.lorapok.log` files.
 - Keep interactive terminal printing separate in `lib/ui.js` and `lib/renderer.js`.
+
+## LLM API Routing & Fallbacks
+- **Validation**: Rely on `ModelManager` and `ModelValidator` to verify model status before invocation.
+- **Failover Logic**: If a model request yields a 429 Rate Limit or 404 error, gracefully failover to a validated fallback model (e.g., `gemini-2.0-flash`) instead of throwing an unhandled exception. Register the failure with `ModelCacheService.addFailedModel`.

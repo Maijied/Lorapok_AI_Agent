@@ -59,7 +59,7 @@ describe('Google AI Studio Provider Support', () => {
             data: {
                 models: [
                     {
-                        name: 'models/gemini-3.6-flash',
+                        name: 'models/gemini-2.5-flash',
                         displayName: 'Gemini 3.6 Flash',
                         description: 'Flagship fast model',
                         inputTokenLimit: 2000000,
@@ -91,11 +91,11 @@ describe('Google AI Studio Provider Support', () => {
         });
 
         const googleModels = await modelManager.fetchGoogleModels('test-key');
-        expect(googleModels['gemini-3.6-flash']).toBeDefined();
+        expect(googleModels['gemini-2.5-flash']).toBeDefined();
         expect(googleModels['gemma-4-31b-it']).toBeDefined();
         expect(googleModels['gemma-4-31b-it'].provider).toBe('google-ai-studio');
         expect(googleModels['antigravity-preview-05-2026']).toBeDefined();
-        expect(googleModels['antigravity-preview-05-2026'].category).toBe('agent');
+        expect(googleModels['antigravity-preview-05-2026'].category).toContain('agent');
         
         // Embedding only model should be excluded from chat/generation catalog
         expect(googleModels['embedding-001']).toBeUndefined();
@@ -106,9 +106,11 @@ describe('Google AI Studio Provider Support', () => {
         delete process.env.GEMINI_API_KEY;
         delete process.env.GOOGLE_API_KEY;
         const googleModels = await modelManager.fetchGoogleModels(null);
-        expect(googleModels['gemini-3.6-flash']).toBeDefined();
-        expect(googleModels['gemini-3.6-flash'].provider).toBe('google-ai-studio');
-        expect(googleModels['gemini-3.5-flash-lite']).toBeDefined();
+        // Real verified model IDs that must exist in defaults
+        expect(googleModels['gemini-2.5-flash']).toBeDefined();
+        expect(googleModels['gemini-2.5-flash'].provider).toBe('google-ai-studio');
+        expect(googleModels['gemini-2.0-flash']).toBeDefined();
+        expect(googleModels['gemini-2.0-flash-lite']).toBeDefined();
     });
 
     test('should execute chat API call using Google AI Studio OpenAI-compatible endpoint', async () => {

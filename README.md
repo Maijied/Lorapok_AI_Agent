@@ -14,7 +14,7 @@
       <div align="left">
         <code><b>[ SYSTEM ONLINE ]</b></code> — <b>Lorapok Labs</b> · 🌐 <a href="https://ai.lorapok.tech" target="_blank"><b>https://ai.lorapok.tech</b></a>
         <br />
-        <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>Beta v2.0</b></sub>
+        <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>v1.3.1</b></sub>
       </div>
     </td>
     <td align="right" valign="middle" width="180">
@@ -40,9 +40,9 @@
 <br />
 
 [![Live Web Application](https://img.shields.io/badge/LIVE_URL-ai.lorapok.tech-0D9488?style=for-the-badge&logo=googlechrome&logoColor=white)](https://ai.lorapok.tech)
-[![Beta Release](https://img.shields.io/badge/RELEASE-v2.0.0--beta-7C3AED?style=for-the-badge&logo=git&logoColor=white)](https://ai.lorapok.tech)
-[![npm version](https://img.shields.io/badge/NPM-v1.2.0-0284C7?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/lorapok-ai)
-[![Unit Tests](https://img.shields.io/badge/TESTS-186_PASSING-16A34A?style=for-the-badge&logo=jest&logoColor=white)](https://github.com/Maijied/Lorapok_AI_Agent)
+[![Release](https://img.shields.io/badge/RELEASE-v1.3.1-7C3AED?style=for-the-badge&logo=git&logoColor=white)](https://ai.lorapok.tech)
+[![npm version](https://img.shields.io/badge/NPM-v1.3.1-0284C7?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/lorapok-ai)
+[![Unit Tests](https://img.shields.io/badge/TESTS-270_PASSING-16A34A?style=for-the-badge&logo=jest&logoColor=white)](https://github.com/Maijied/Lorapok_AI_Agent)
 [![License](https://img.shields.io/badge/LICENSE-MIT-D97706?style=for-the-badge)](LICENSE)
 [![Node.js](https://img.shields.io/badge/NODE.JS-%3E%3D18.0.0-15803D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 
@@ -61,16 +61,16 @@
 
 ## ⚡ What is Lorapok AI Agent?
 
-**Lorapok AI Agent** is an autonomous, action-oriented CLI (`bin/lorapok.js`) and REST API (`server.js`) engine built for terminal engineering and full-stack development. It plans, scaffolds code, executes test suites, inspects Git diffs, and orchestrates multi-provider AI models across **Google Gemini (3.6/3.5/2.0)**, **OpenRouter (Multi-LLM)** & **Perplexity AI**.
+**Lorapok AI Agent** is an autonomous, action-oriented CLI (`bin/lorapok.js`) and REST API (`server.js`) engine built for terminal engineering and multi-client apps. It plans, scaffolds code, executes test suites, inspects Git diffs, and orchestrates multi-provider AI models across **Google Gemini 2.x (AI Studio)**, **OpenRouter**, and **Perplexity AI**. Architecture docs live in [`Docs/`](Docs/); shared HTTP client in [`packages/sdk`](packages/sdk); site in [`apps/website`](apps/website).
 
 ## 🌟 Feature Matrix
 
 | Feature | Description | Status |
 | :--- | :--- | :---: |
-| 🧠 **Multi-Provider Model Engine** | Native support for Google AI Studio (Gemini 3.6/3.5/2.0), Perplexity AI, and OpenRouter | `Ready` |
-| 🛡️ **Dynamic Model Validator** | Automatic zero-quota model filtering, non-text modality exclusion, & runtime failure caching | `Ready` |
-| 📊 **Token Capacity & Limit UI** | Real-time turn usage & available model context capacity tracking (`1.0M / 1.0M (100% Remaining)`) | `Ready` |
-| 🆓 **Free Tier Filter & Credit Notice** | Dedicated free model filters with clear provider billing instructions for paid credit models | `Ready` |
+| 🧠 **Multi-Provider Model Engine** | Google AI Studio (Gemini 2.x), Perplexity AI, and OpenRouter with API-dynamic catalogs | `Ready` |
+| 🛡️ **Sanitized Model Views** | Single service-layer usable vs paid separation; non-chat & failed models excluded | `Ready` |
+| 📊 **Token Capacity & Limit UI** | Real-time turn usage & available model context capacity tracking | `Ready` |
+| 🆓 **Usable vs Paid Catalog** | Currently Usable = free/no-payment; Paid Catalog for credits-required models only | `Ready` |
 | ⚡ **Token-Saving Response Cache** | Persistent SHA-256 LLM response cache (`/cache`) reducing token consumption & latency | `Ready` |
 | 💻 **Collapsible Bash Process Box** | Framed bash execution box with duration badges, exit status, and collapsible output | `Ready` |
 | 🤖 **Interactive AI REPL** | Terminal-first interactive chat with context-aware workspace file injection | `Ready` |
@@ -145,7 +145,7 @@ rm -rf ~/.lorapok
 
 1. **Set your Provider API Key (Google AI Studio, OpenRouter, or Perplexity):**
    ```bash
-   # Option A: Google AI Studio API Key (Gemini 3.6 Flash, 3.5 Flash-Lite, 2.0 Flash) [100% Free Tier Available]
+   # Option A: Google AI Studio API Key (Gemini 2.5 Flash / 2.0 Flash, etc.) [Free API tier available]
    # Get key at: https://aistudio.google.com/app/apikey
    export GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -192,19 +192,23 @@ Lorapok stores user settings in `~/.lorapok/config.json`. You can modify setting
 
 | Command | Shortcut / Alias | Description |
 | :--- | :--- | :--- |
-| `/chat` | `chat`, `Enter` | Interactive AI coding chat mode |
-| `/plan` | `plan` | Trigger Plan → Tasks → Code execution workflow |
-| `/analyze` | `analyze` | Perform deep project structure analysis |
-| `/model` | `models` | Switch, list (`/model list`), or inspect (`/model info`) active LLM model |
-| `/cache` | `cache` | Inspect, toggle, or clear LLM response cache |
-| `/git` | `git` | Open Git operations & authentication menu |
-| `/actions` | `ci`, `actions` | Monitor and trigger GitHub Actions workflows |
-| `/files` | `files` | Display visual project file tree |
-| `/logs` | `logs` | View recent system diagnostic logs |
-| `/settings` | `settings` | Customize theme, model, primary language, username |
-| `/clear` | `clear` | Clear terminal screen |
-| `/help` | `?`, `help` | Display command reference |
-| `/exit` | `exit`, `/q` | Exit Lorapok session |
+| `/` | (palette) | Open slash command autocomplete |
+| `/chat` | — | Interactive AI coding chat |
+| `/plan` | — | Plan → execute multi-step objective |
+| `/analyze` | — | Deep project structure analysis |
+| `/model` | `/models` | Usable/paid model picker, `list`, `info`, `set` |
+| `/refresh-models` | — | Re-fetch & re-validate model catalog |
+| `/settings` | — | Theme, model, language, API keys |
+| `/cache` | — | Response cache stats / clear / toggle |
+| `/config` | — | Inspect or set config keys |
+| `/bypass` | `/yolo` | Toggle auto-approve |
+| `/git` | — | Git operations menu |
+| `/actions` | `/ci` | GitHub Actions workflows |
+| `/files` | — | Project file tree |
+| `/guide` | `/howtouse` | User manual |
+| `/help` | `/?` | Command reference (from registry) |
+| `/exit` | `/quit`, `/q` | Exit session |
+| `@` | file picker | Mention workspace files in chat |
 
 
 ---
@@ -216,8 +220,9 @@ The Express server (`npm run server`, default port 3847) exposes the following e
 | Endpoint | Method | Description | Request Body Example |
 | :--- | :---: | :--- | :--- |
 | `/health` | `GET` | Server health and Lorapok Labs branding status | N/A |
-| `/api/models` | `GET` | List available Perplexity AI models | N/A |
-| `/api/chat` | `POST` | Send prompt to AI agent | `{ "message": "Explain index.js", "sessionId": "default" }` |
+| `/api/models` | `GET` | Validated models (`?view=usable\|paid\|all`) | N/A |
+| `/api/models/refresh` | `POST` | Refresh model catalog | `{ "sessionId": "default" }` |
+| `/api/chat` | `POST` | Send prompt (model ID guarded) | `{ "message": "Explain index.js", "sessionId": "default" }` |
 | `/api/generate` | `POST` | Generate code snippets based on requirements | `{ "requirements": "Create a logger module", "language": "js" }` |
 | `/api/analyze` | `POST` | Analyze codebase structure | `{ "sessionId": "default" }` |
 | `/api/debug` | `POST` | Debug snippet or error trace | `{ "code": "...", "error": "TypeError: ..." }` |

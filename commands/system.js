@@ -14,6 +14,7 @@ const { showGitMenu, handleGitSlashCommand } = require('./git');
 const { showActionsMenu } = require('./actions');
 const { handleAnalyze } = require('./chat');
 const { runProWorkflow } = require('./workflow');
+const { getSystemMenuChoices } = require('./registry');
 
 /**
  * Display terminal help and command reference guide.
@@ -56,6 +57,15 @@ function showSystemInfo(context) {
 async function showSystemMenu(context) {
     const { agent, config, ui } = context;
     const isBypass = config.getAutoApprove();
+    const menuChoices = getSystemMenuChoices(chalk).map(c => {
+        if (c.name === 'bypass') {
+            return {
+                ...c,
+                message: `⚡ bypass  ${chalk.gray('— Toggle auto-approve')} (${isBypass ? chalk.green('ON') : chalk.yellow('OFF')})`
+            };
+        }
+        return c;
+    });
 
     const select = new Select({
         message: 'Select Command / Action:',
@@ -66,28 +76,7 @@ async function showSystemMenu(context) {
         pointer(choice, i) {
             return this.state.index === i ? chalk.cyan.bold('❯ ') : '  ';
         },
-        choices: [
-            { role: 'heading', message: chalk.cyan.bold('  🤖 CORE AI') },
-            { name: 'chat', message: '    💬 Interactive AI Chat' },
-            { name: 'plan', message: '    📝 Plan & Execute Pro Workflow' },
-            { name: 'analyze', message: '    🔍 Analyze Project Architecture' },
-
-            { role: 'heading', message: chalk.cyan.bold('\n  🚀 CONTROLS') },
-            { name: 'bypass', message: `    🚀 Toggle Bypass Mode (${isBypass ? chalk.green('ON') : chalk.yellow('OFF')})` },
-            { name: 'settings', message: '    ⚙️  Settings & Themes' },
-
-            { role: 'heading', message: chalk.cyan.bold('\n  🔗 DEVOPS & GIT') },
-            { name: 'git', message: '    🔗 Git Operations Manager' },
-            { name: 'actions', message: '    ⚡ GitHub Actions Explorer' },
-            { name: 'files', message: '    📁 Workspace Files Browser' },
-
-            { role: 'heading', message: chalk.cyan.bold('\n  📊 SYSTEM') },
-            { name: 'guide', message: '    📖 How to Use (User Guide & Workflow)' },
-            { name: 'logs', message: '    📊 View Application Logs' },
-            { name: 'help', message: '    ❓ Help & Command Guide' },
-            { name: 'clear', message: '    🧹 Clear Screen' },
-            { name: 'exit', message: '    ❌ Exit Lorapok' }
-        ],
+        choices: menuChoices,
         result(name) { return this.map(name)[name]; }
     });
 
@@ -99,6 +88,22 @@ async function showSystemMenu(context) {
     if (cmd === 'help') { showHelp(); return { success: true, mode: 'help' }; }
     if (cmd === 'clear') { clearScreen(); return { success: true, mode: 'chat' }; }
     if (cmd === 'logs') { await showLogs(); return { success: true, mode: 'logs' }; }
+    if (cmd === 'bypass') {
+        const next = !config.getAutoApprove();
+        config.setAutoApprove(next);
+        console.log(chalk.cyan(`\n⚡ Bypass / auto-approve is now ${next ? chalk.green('ON') : chalk.yellow('OFF')}.\n`));
+        return { success: true, mode: 'bypass' };
+    }
+    if (cmd === 'model' || cmd === 'models') {
+        await handleModelCommand([], context);
+        return { success: true, mode: 'model' };
+    }
+    if (cmd === 'refresh-models') {
+        return dispatchSlashCommand('/refresh-models', context);
+    }
+    if (cmd === 'cache') {
+        return require('./settings').handleCacheCommand(undefined, context);
+    }
 
     if (cmd === 'analyze') { await handleAnalyze(context); return { success: true, mode: 'analyze' }; }
     if (cmd === 'plan') {
@@ -239,6 +244,42 @@ async function dispatchSlashCommand(input, context) {
         case 'cache':
             return require('./settings').handleCacheCommand(args[0], context);
 
+        case 'refresh-models': {
+            const ora = require('ora');
+            let spinner = null;
+            if (process.stdout.isTTY) {
+                spinner = ora('Refreshing models cache from APIs...').start();
+            }
+            try {
+                const modelCacheSvc = require('../services/ModelCacheService');
+                modelCacheSvc.clearFailedModels();
+                if (agent.cache) {
+                    agent.cache.del('availableModels');
+                }
+                let modelCount = 0;
+                let usableCount = 0;
+                let paidCount = 0;
+                if (agent.modelManager) {
+                    const catalog = await agent.modelManager.fetchModels({ bypassCache: true });
+                    modelCount = Object.keys(catalog || {}).length;
+                }
+                if (typeof agent.checkAvailableModels === 'function') {
+                    const validated = await agent.checkAvailableModels();
+                    usableCount = agent.modelManager.getUsableModelIds(validated).length;
+                    paidCount = agent.modelManager.getPaidCatalogIds(validated).length;
+                }
+                const detail = modelCount > 0
+                    ? `(${modelCount} loaded — ${usableCount} usable | ${paidCount} paid)`
+                    : '';
+                if (spinner) spinner.succeed(`Model cache refreshed! ${detail}`);
+                else console.log(chalk.green(`Model cache refreshed! ${detail}`));
+            } catch (e) {
+                if (spinner) spinner.fail(`Failed to refresh models cache: ${e.message}`);
+                else console.log(chalk.red(`Failed to refresh models cache: ${e.message}`));
+            }
+            return { success: true };
+        }
+
         case 'chat':
             console.log(chalk.cyan('\n💬 Interactive AI Chat Mode Active. Ask anything!\n'));
             return { success: true, mode: 'chat' };
@@ -248,7 +289,9 @@ async function dispatchSlashCommand(input, context) {
             return showSystemMenu(context);
 
         default:
-            return showSystemMenu(context);
+            console.log(chalk.yellow(`\n⚠️  Unknown command: /${mainCmd}`));
+            console.log(chalk.gray('   Type / for the command palette, or /help for the full reference.\n'));
+            return { success: false, error: `Unknown command: /${mainCmd}` };
     }
 }
 

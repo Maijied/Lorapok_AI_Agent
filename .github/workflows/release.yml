@@ -1,8 +1,15 @@
-name: Release & Publish
+# Lorapok AI Agent — Release Please + optional Docker artifact attachment
+# npm publish remains disabled until NPM_TOKEN is configured in repo secrets.
+
+name: Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -11,55 +18,66 @@ permissions:
 
 jobs:
   release-please:
+    name: Release Please
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - name: Create release PR / tag
         id: release
+        uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
-          package-name: lorapok-ai
 
-
-#   publish-npm:
-#     needs: release-please
-#     if: ${{ needs.release-please.outputs.release_created }}
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#       - uses: actions/setup-node@v4
-#         with:
-#           node-version: '20.x'
-#           registry-url: 'https://registry.npmjs.org'
-#       - name: Configure Git Identity
-#         run: |
-#           git config --global user.name "Lorapok CI Bot"
-#           git config --global user.email "bot@lorapok.tech"
-#       - run: npm ci || npm install
-#       - run: npm test
-#       - run: npm publish --access public
-#         env:
-#           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+  # Uncomment when ready to publish to npm (requires secrets.NPM_TOKEN):
+  # publish-npm:
+  #   name: Publish npm package
+  #   needs: release-please
+  #   if: needs.release-please.outputs.release_created == 'true'
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
+  #         registry-url: https://registry.npmjs.org
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npm test
+  #     - run: npm publish --access public
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   docker-release:
+    name: Attach Docker image to release
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
+    if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: Build Docker Image
-        run: docker build -t lorapok-ai-agent:${{ needs.release-please.outputs.tag_name }} .
-      - name: Save Docker Image
-        run: docker save lorapok-ai-agent:${{ needs.release-please.outputs.tag_name }} | gzip > lorapok-ai-agent-${{ needs.release-please.outputs.tag_name }}.tar.gz
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          TAG="${{ needs.release-please.outputs.tag_name }}"
+          docker build -t "lorapok-ai-agent:${TAG}" -t lorapok-ai-agent:latest .
+
+      - name: Export image archive
+        run: |
+          TAG="${{ needs.release-please.outputs.tag_name }}"
+          docker save "lorapok-ai-agent:${TAG}" | gzip > "lorapok-ai-agent-${TAG}.tar.gz"
+          ls -lh "lorapok-ai-agent-${TAG}.tar.gz"
+
+      - name: Upload archive to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: lorapok-ai-agent-*.tar.gz
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

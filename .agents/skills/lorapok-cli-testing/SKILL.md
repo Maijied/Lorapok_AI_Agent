@@ -24,5 +24,5 @@ npx jest tests/renderer-corner-cases.test.js
 - **Console Capture**: Intercept stdout/stderr during test runs to verify Boxen and marked-terminal render outputs.
 
 ## Requirements
-- All 155+ tests must pass cleanly.
+- All 270 tests must pass cleanly.
 - No unhandled promise rejections or memory leaks during test execution.

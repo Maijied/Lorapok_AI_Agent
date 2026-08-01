@@ -60,18 +60,11 @@ describe('LorapokCodingAgent', () => {
         await expect(agent.chat('Make a web app')).rejects.toThrow('Invalid API key');
     });
 
-    test('should probe models correctly', async () => {
-        // Mock successful probe for sonar, fail for reasoning
-        axios.post.mockImplementation((url, payload) => {
-            if (payload.model === 'sonar') {
-                return Promise.resolve({ data: {} });
-            }
-            return Promise.reject(new Error('Model not available'));
-        });
-
+    test('should check available models', async () => {
+        // Since active pinging is removed, both should be available as long as the key is present
         const results = await agent.checkAvailableModels();
         expect(results['sonar'].available).toBe(true);
-        expect(results['sonar-reasoning'].available).toBe(false);
+        expect(results['sonar-reasoning'].available).toBe(true);
     });
 
     test('should maintain conversation history', async () => {
@@ -113,14 +106,14 @@ describe('LorapokCodingAgent', () => {
             }
         });
 
-        const response = await agent.callPerplexityAPI([{ role: 'user', content: 'test' }], 'anthropic/claude-3.5-sonnet');
+        const response = await agent.callPerplexityAPI([{ role: 'user', content: 'test' }], 'anthropic/claude-sonnet-5');
         expect(response.success).toBe(true);
         expect(response.content).toBe('OpenRouter response');
 
         expect(axios.post).toHaveBeenCalledWith(
             'https://openrouter.ai/api/v1/chat/completions',
             expect.objectContaining({
-                model: 'anthropic/claude-3.5-sonnet'
+                model: 'anthropic/claude-sonnet-5'
             }),
             expect.objectContaining({
                 headers: expect.objectContaining({

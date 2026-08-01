@@ -1,50 +1,74 @@
+# Lorapok AI Agent — Archive merged feature branches under archive/<name>
+# Skips forks, protected branches, and already-archived refs.
+
 name: Archive Merged Branches
 
 on:
   pull_request:
     types: [closed]
 
+concurrency:
+  group: archive-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
 jobs:
   archive-branch:
-    if: |
+    name: Archive merged head branch
+    if: >
       github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'master') &&
-      !startsWith(github.event.pull_request.head.ref, 'main') &&
-      !startsWith(github.event.pull_request.head.ref, 'master') &&
+      github.event.pull_request.head.ref != 'main' &&
+      github.event.pull_request.head.ref != 'master' &&
       !startsWith(github.event.pull_request.head.ref, 'archive/')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         shell: bash
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure Git Identity
+      - name: Configure Git identity
         run: |
           git config user.name "Lorapok CI Bot"
           git config user.email "bot@lorapok.tech"
 
-      - name: Archive and Remove Feature Branch
+      - name: Archive and remove feature branch
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          HEAD_REF="${{ github.event.pull_request.head.ref }}"
+          set -euo pipefail
+
           ARCHIVE_REF="archive/${HEAD_REF}"
 
-          echo "📦 Archiving feature branch '${HEAD_REF}' to '${ARCHIVE_REF}'..."
-          
-          git fetch origin
-          git checkout -b "${ARCHIVE_REF}" "${{ github.event.pull_request.head.sha }}"
-          git push origin "${ARCHIVE_REF}" --force
+          echo "Archiving '${HEAD_REF}' (@ ${HEAD_SHA}) → '${ARCHIVE_REF}'"
 
-          echo "✅ Branch successfully archived as '${ARCHIVE_REF}'!"
+          git fetch origin --prune
 
-          if git ls-remote --exit-code --heads origin "${HEAD_REF}" > /dev/null 2>&1; then
-            echo "🧹 Removing original branch '${HEAD_REF}' from remote..."
-            git push origin --delete "${HEAD_REF}" || true
+          # Create archive ref from the merged commit (no force unless remote archive already exists)
+          git branch -f "${ARCHIVE_REF}" "${HEAD_SHA}"
+
+          if git ls-remote --exit-code --heads origin "${ARCHIVE_REF}" >/dev/null 2>&1; then
+            echo "Remote archive ref exists; updating..."
+            git push origin "${ARCHIVE_REF}" --force-with-lease
+          else
+            git push origin "${ARCHIVE_REF}"
           fi
 
+          echo "Archive ref published: ${ARCHIVE_REF}"
+
+          if git ls-remote --exit-code --heads origin "${HEAD_REF}" >/dev/null 2>&1; then
+            echo "Deleting remote feature branch: ${HEAD_REF}"
+            git push origin --delete "${HEAD_REF}"
+          else
+            echo "Remote feature branch already absent: ${HEAD_REF}"
+          fi

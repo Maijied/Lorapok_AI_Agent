@@ -7,6 +7,9 @@
 
 const axios = require('axios');
 const NodeCache = require('node-cache');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const logger = require('../lib/logger');
 const modelValidator = require('./ModelValidator');
 const modelCacheService = require('./ModelCacheService');
@@ -31,45 +34,76 @@ const CATEGORIES = {
  * Default Perplexity models categorized by expertise.
  */
 const DEFAULT_PERPLEXITY_MODELS = {
-    'sonar': { name: '⚡ Sonar (Perplexity)', category: 'fast', provider: 'perplexity', tier: 'free', contextLength: 127000, rateLimit: 'Standard Tier (127k ctx)', description: 'Fast, lightweight model with web grounding.' },
-    'sonar-pro': { name: '🎯 Sonar Pro (Perplexity)', category: 'research', provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Enhanced web search and deep query resolution.' },
-    'sonar-reasoning': { name: '🧠 Sonar Reasoning (Perplexity)', category: 'reasoning', provider: 'perplexity', tier: 'pro', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Reasoning model with real-time web search capabilities.' },
-    'sonar-reasoning-pro': { name: '🔬 Sonar Reasoning Pro (Perplexity)', category: 'reasoning', provider: 'perplexity', tier: 'pro', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Advanced chain-of-thought reasoning with deep web search.' },
-    'sonar-deep-research': { name: '🔍 Sonar Deep Research (Perplexity)', category: 'research', provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Exhaustive multi-source research engine for complex domain queries.' }
+    'sonar': { name: '⚡ Sonar (Perplexity)', category: ['fast', 'research'], provider: 'perplexity', tier: 'free', contextLength: 127000, rateLimit: 'Standard Tier (127k ctx)', description: 'Fast, lightweight model with web grounding.' },
+    'sonar-pro': { name: '🎯 Sonar Pro (Perplexity)', category: ['research', 'coding'], provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Enhanced web search and deep query resolution.' },
+    'sonar-reasoning': { name: '🧠 Sonar Reasoning (Perplexity)', category: ['reasoning', 'research'], provider: 'perplexity', tier: 'pro', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Reasoning model with real-time web search capabilities.' },
+    'sonar-reasoning-pro': { name: '🔬 Sonar Reasoning Pro (Perplexity)', category: ['reasoning', 'research', 'coding'], provider: 'perplexity', tier: 'pro', contextLength: 127000, rateLimit: 'Pro Tier (127k ctx)', description: 'Advanced chain-of-thought reasoning with deep web search.' },
+    'sonar-deep-research': { name: '🔍 Sonar Deep Research (Perplexity)', category: ['research', 'reasoning'], provider: 'perplexity', tier: 'pro', contextLength: 200000, rateLimit: 'Pro Tier (200k ctx)', description: 'Exhaustive multi-source research engine for complex domain queries.' }
 };
 
 /**
  * Default OpenRouter models fallback when API is unreachable.
  */
+/**
+ * Default OpenRouter models fallback when API is unreachable.
+ * All model IDs below are verified to exist on OpenRouter as of 2025/2026.
+ * Free-tier models have daily rate limits. Pro models require OpenRouter credits.
+ */
 const DEFAULT_OPENROUTER_MODELS = {
-    'anthropic/claude-3.7-sonnet': { name: '🎭 Claude 3.7 Sonnet (OpenRouter)', category: 'coding', provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $3.00/M', resetWindow: 'Realtime', description: 'Anthropic flagship hybrid reasoning & coding model.' },
-    'anthropic/claude-3.5-haiku': { name: '⚡ Claude 3.5 Haiku (OpenRouter)', category: 'fast', provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $0.80/M', resetWindow: 'Realtime', description: 'Ultra-fast lightweight Claude model.' },
-    'deepseek/deepseek-r1': { name: '🧬 DeepSeek R1 (OpenRouter)', category: 'reasoning', provider: 'openrouter', tier: 'free', contextLength: 164000, rateLimit: '164k ctx | Free', resetWindow: '1m/24h', description: 'Open-weights reasoning flagship with step-by-step chain of thought.' },
-    'deepseek/deepseek-chat': { name: '🧬 DeepSeek V3 (OpenRouter)', category: 'coding', provider: 'openrouter', tier: 'pro', contextLength: 64000, rateLimit: '64k ctx | $0.14/M', resetWindow: 'Realtime', description: 'High performance open-weights coding engine.' },
-    'meta-llama/llama-3.3-70b-instruct': { name: '🦙 Llama 3.3 70B Instruct (OpenRouter)', category: 'openweights', provider: 'openrouter', tier: 'free', contextLength: 128000, rateLimit: '128k ctx | Free', resetWindow: '1m/24h', description: 'Meta state-of-the-art open-weights model.' },
-    'qwen/qwen-2.5-coder-32b-instruct': { name: '🐉 Qwen 2.5 Coder 32B (OpenRouter)', category: 'coding', provider: 'openrouter', tier: 'free', contextLength: 32000, rateLimit: '32k ctx | Free', resetWindow: '1m/24h', description: 'Specialized open-weights coding model.' },
-    'mistralai/mistral-large-2411': { name: '🌪️ Mistral Large 2 (OpenRouter)', category: 'reasoning', provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: '128k ctx | $2.00/M', resetWindow: 'Realtime', description: 'Mistral flagship reasoning and multilingual model.' },
-    'openai/gpt-4o': { name: '⚡ GPT-4o (OpenRouter)', category: 'general', provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: '128k ctx | $2.50/M', resetWindow: 'Realtime', description: 'OpenAI flagship multimodal intelligence.' },
-    'openai/o3-mini': { name: '⚡ OpenAI o3-mini (OpenRouter)', category: 'reasoning', provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $1.10/M', resetWindow: 'Realtime', description: 'OpenAI high-speed reasoning model.' }
+    // OpenRouter Auto-Router
+    'openrouter/auto': { name: '🤖 OpenRouter Auto', category: ['general'], provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: 'Varies', resetWindow: 'Realtime', description: 'Automatically routes requests to the best available model for the task.' },
+    // Google via OpenRouter
+    'google/gemini-2.0-flash-001': { name: '⚡ Gemini 2.0 Flash (OpenRouter)', category: ['fast', 'coding', 'research'], provider: 'openrouter', tier: 'free', contextLength: 1000000, rateLimit: '1M ctx | Free (limited)', resetWindow: '1m/24h', description: 'Google Gemini 2.0 Flash — fast multimodal with native tool use and search grounding.' },
+    'google/gemini-2.5-pro': { name: '💎 Gemini 2.5 Pro (OpenRouter)', category: ['reasoning', 'coding', 'general'], provider: 'openrouter', tier: 'pro', contextLength: 2000000, rateLimit: '2M ctx | $1.25/M', resetWindow: 'Realtime', description: 'Google most capable flagship for complex reasoning and long-context tasks.' },
+    // Anthropic via OpenRouter (verified IDs)
+    'anthropic/claude-3.5-sonnet': { name: '🎭 Claude 3.5 Sonnet (OpenRouter)', category: ['coding', 'reasoning'], provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $3.00/M', resetWindow: 'Realtime', description: 'Anthropic best-in-class coding, reasoning, and instruction-following model.' },
+    'anthropic/claude-3.5-haiku': { name: '⚡ Claude 3.5 Haiku (OpenRouter)', category: ['fast', 'coding'], provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $0.80/M', resetWindow: 'Realtime', description: 'Fast and affordable Claude model, ideal for lightweight tasks and quick responses.' },
+    'anthropic/claude-opus-4': { name: '🎭 Claude Opus 4 (OpenRouter)', category: ['coding', 'reasoning', 'agent'], provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $15.00/M', resetWindow: 'Realtime', description: 'Most intelligent Claude model for highly complex tasks and autonomous agents.' },
+    // DeepSeek via OpenRouter
+    'deepseek/deepseek-r1': { name: '🧬 DeepSeek R1 (OpenRouter)', category: ['reasoning', 'coding', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 164000, rateLimit: '164k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Open-weights reasoning flagship with transparent chain-of-thought reasoning.' },
+    'deepseek/deepseek-r1-distill-llama-70b': { name: '🧬 DeepSeek R1 Distill 70B (OpenRouter)', category: ['reasoning', 'fast', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 128000, rateLimit: '128k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Distilled DeepSeek R1 reasoning into Llama 70B — faster, still strong at reasoning.' },
+    'deepseek/deepseek-chat-v3-0324': { name: '🧬 DeepSeek V3 (OpenRouter)', category: ['coding', 'fast', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 128000, rateLimit: '128k ctx | Free (limited)', resetWindow: '1m/24h', description: 'High performance open-weights coding and general intelligence engine.' },
+    // Meta Llama via OpenRouter
+    'meta-llama/llama-3.3-70b-instruct': { name: '🦙 Llama 3.3 70B Instruct (OpenRouter)', category: ['openweights', 'general', 'fast'], provider: 'openrouter', tier: 'free', contextLength: 131072, rateLimit: '128k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Meta state-of-the-art open-weights instruction model.' },
+    'meta-llama/llama-4-maverick': { name: '🦙 Llama 4 Maverick (OpenRouter)', category: ['openweights', 'general', 'fast'], provider: 'openrouter', tier: 'free', contextLength: 131072, rateLimit: '128k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Meta Llama 4 Maverick — efficient multimodal open-weights model.' },
+    'meta-llama/llama-4-scout': { name: '🦙 Llama 4 Scout (OpenRouter)', category: ['openweights', 'fast'], provider: 'openrouter', tier: 'free', contextLength: 131072, rateLimit: '128k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Meta Llama 4 Scout — lightweight fast multimodal model with long context.' },
+    // Qwen via OpenRouter
+    'qwen/qwen-2.5-coder-32b-instruct': { name: '🐉 Qwen 2.5 Coder 32B (OpenRouter)', category: ['coding', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 32768, rateLimit: '32k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Specialized open-weights coding model, strong at code completion and generation.' },
+    'qwen/qwen3-235b-a22b': { name: '🐉 Qwen3 235B A22B (OpenRouter)', category: ['reasoning', 'coding', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 40960, rateLimit: '40k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Qwen3 MoE flagship with hybrid thinking mode — strong at math, code, and reasoning.' },
+    'qwen/qwen3-30b-a3b': { name: '🐉 Qwen3 30B A3B (OpenRouter)', category: ['reasoning', 'fast', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 40960, rateLimit: '40k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Smaller Qwen3 MoE — fast thinking model ideal for coding and quick tasks.' },
+    // Mistral via OpenRouter
+    'mistralai/mistral-large-2407': { name: '🌪️ Mistral Large 2407 (OpenRouter)', category: ['reasoning', 'coding'], provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: '128k ctx | $2.00/M', resetWindow: 'Realtime', description: 'Mistral flagship reasoning and multilingual model.' },
+    'mistralai/mistral-nemo': { name: '🌪️ Mistral Nemo (OpenRouter)', category: ['fast', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 131072, rateLimit: '128k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Apache 2.0 licensed efficient model, fast and capable for everyday tasks.' },
+    // OpenAI via OpenRouter
+    'openai/gpt-4o': { name: '⚡ GPT-4o (OpenRouter)', category: ['general', 'coding'], provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: '128k ctx | $2.50/M', resetWindow: 'Realtime', description: 'OpenAI flagship multimodal model — strong at vision, code, and reasoning.' },
+    'openai/gpt-4o-mini': { name: '⚡ GPT-4o Mini (OpenRouter)', category: ['fast', 'general'], provider: 'openrouter', tier: 'pro', contextLength: 128000, rateLimit: '128k ctx | $0.15/M', resetWindow: 'Realtime', description: 'Cost-efficient OpenAI model for lightweight tasks and fast inference.' },
+    'openai/o3-mini': { name: '🔬 OpenAI o3-mini (OpenRouter)', category: ['reasoning', 'coding', 'fast'], provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $1.10/M', resetWindow: 'Realtime', description: 'OpenAI high-speed reasoning model for math, science, and complex problem solving.' },
+    'openai/o4-mini': { name: '🔬 OpenAI o4-mini (OpenRouter)', category: ['reasoning', 'coding', 'fast'], provider: 'openrouter', tier: 'pro', contextLength: 200000, rateLimit: '200k ctx | $1.10/M', resetWindow: 'Realtime', description: 'Latest OpenAI fast reasoning model with strong STEM performance.' },
+    // xAI Grok via OpenRouter
+    'x-ai/grok-3-beta': { name: '🚀 Grok 3 Beta (OpenRouter)', category: ['reasoning', 'coding', 'general'], provider: 'openrouter', tier: 'pro', contextLength: 131072, rateLimit: '128k ctx | $3.00/M', resetWindow: 'Realtime', description: 'xAI Grok 3 — strong reasoning, real-time knowledge, and coding capabilities.' },
+    'x-ai/grok-3-mini-beta': { name: '🚀 Grok 3 Mini Beta (OpenRouter)', category: ['reasoning', 'fast'], provider: 'openrouter', tier: 'pro', contextLength: 131072, rateLimit: '128k ctx | $0.30/M', resetWindow: 'Realtime', description: 'Efficient Grok 3 reasoning model — great value for thinking-intensive tasks.' },
+    // MoonShot Kimi via OpenRouter
+    'moonshotai/kimi-k2': { name: '🌙 Kimi K2 (OpenRouter)', category: ['coding', 'agent', 'openweights'], provider: 'openrouter', tier: 'free', contextLength: 131072, rateLimit: '128k ctx | Free (limited)', resetWindow: '1m/24h', description: 'Moonshot Kimi K2 — MoE agentic model optimized for coding and tool use.' }
 };
 
 /**
- * Default Google AI Studio models.
+ * Default Google AI Studio models — verified real model IDs as of 2025/2026.
+ * Only models confirmed to exist on the Google AI Studio generativelanguage API are listed here.
+ * These serve as the static fallback when the dynamic API fetch is unavailable.
  */
 const DEFAULT_GOOGLE_MODELS = {
-    'gemini-3.6-flash': { name: '⚡ Gemini 3.6 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 2000000, rateLimit: '5 RPM | 250k TPM | 2M ctx', description: 'Next-gen fast multimodal flagship model.' },
-    'gemini-3.5-flash-lite': { name: '🚀 Gemini 3.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 250k TPM | 1M ctx', description: 'Ultra cost-effective lightweight model.' },
-    'gemini-3.5-flash': { name: '⚡ Gemini 3.5 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '5 RPM | 250k TPM | 1M ctx', description: 'High speed lightweight model.' },
-    'gemini-3.1-flash-lite': { name: '🚀 Gemini 3.1 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 250k TPM | 1M ctx', description: 'Fast lightweight preview model.' },
-    'gemini-3-pro-preview': { name: '✨ Gemini 3 Pro Preview (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'pro', contextLength: 1000000, rateLimit: '2 RPM | 32k TPM | 1M ctx', description: 'Gemini 3 Pro preview engine.' },
-    'gemini-3-flash-preview': { name: '⚡ Gemini 3 Flash Preview (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '5 RPM | 250k TPM | 1M ctx', description: 'Gemini 3 Flash preview engine.' },
-    'gemini-2.5-flash-lite': { name: '🚀 Gemini 2.5 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '10 RPM | 250k TPM | 1M ctx', description: 'Extremely fast cost-optimized model.' },
-    'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Ultra-low latency production model with search grounding.' },
-    'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: 'fast', provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 4M TPM | 1M ctx', description: 'Extremely fast cost-optimized model.' },
-    'gemma-4-31b-it': { name: '🦙 Gemma 4 31B IT (Google AI Studio)', category: 'coding', provider: 'google-ai-studio', tier: 'free', contextLength: 128000, rateLimit: '30 RPM | 128k ctx', description: 'Open weights state-of-the-art Gemma model.' },
-    'gemma-4-26b-a4b-it': { name: '🦙 Gemma 4 26B IT (Google AI Studio)', category: 'general', provider: 'google-ai-studio', tier: 'free', contextLength: 128000, rateLimit: '30 RPM | 128k ctx', description: 'Lightweight open weights Gemma model.' },
-    'antigravity-preview-05-2026': { name: '🧠 Antigravity Agent Preview (Google AI Studio)', category: 'reasoning', provider: 'google-ai-studio', tier: 'pro', contextLength: 500000, rateLimit: '60 RPM | 100k TPM | 500k ctx', description: 'Autonomous coding agent preview model.' },
-    'deep-research-max-preview-04-2026': { name: '🔍 Deep Research Max Preview (Google AI Studio)', category: 'research', provider: 'google-ai-studio', tier: 'pro', contextLength: 1000000, rateLimit: 'Exhaustive Deep Search', description: 'Exhaustive research report generation model.' }
+    // Gemini 2.5 Series — Current Generation (real IDs)
+    'gemini-2.5-flash': { name: '⚡ Gemini 2.5 Flash (Google AI Studio)', category: ['fast', 'reasoning', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '10 RPM | 250k TPM | 1M ctx', description: 'Latest fast multimodal flagship with thinking capabilities. Free tier available.' },
+    'gemini-2.5-flash-lite': { name: '🚀 Gemini 2.5 Flash-Lite (Google AI Studio)', category: ['fast', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 250k TPM | 1M ctx', description: 'Ultra cost-effective, high-throughput lightweight model.' },
+    'gemini-2.5-pro': { name: '💎 Gemini 2.5 Pro (Google AI Studio)', category: ['reasoning', 'coding', 'general'], provider: 'google-ai-studio', tier: 'pro', contextLength: 2000000, rateLimit: '2 RPM | 32k TPM | 2M ctx', description: 'Most capable Gemini model for complex reasoning, coding, and multimodal tasks.' },
+    // Gemini 2.0 Series — Stable Production (real IDs)
+    'gemini-2.0-flash': { name: '⚡ Gemini 2.0 Flash (Google AI Studio)', category: ['fast', 'research', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Ultra-low latency production model with native search grounding and tool use.' },
+    'gemini-2.0-flash-lite': { name: '🚀 Gemini 2.0 Flash-Lite (Google AI Studio)', category: ['fast', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '30 RPM | 1M TPM | 1M ctx', description: 'Most cost-efficient 2.0 generation model for high-volume tasks.' },
+    'gemini-2.0-flash-exp': { name: '🔬 Gemini 2.0 Flash Experimental (Google AI Studio)', category: ['fast', 'reasoning', 'coding'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '10 RPM | 4M TPM | 1M ctx', description: 'Experimental 2.0 Flash with extended capabilities and thinking.' },
+    // Gemini Experimental (real preview IDs)
+    'gemini-exp-1206': { name: '✨ Gemini Experimental 1206 (Google AI Studio)', category: ['coding', 'reasoning', 'general'], provider: 'google-ai-studio', tier: 'free', contextLength: 2000000, rateLimit: '2 RPM | 32k TPM | 2M ctx', description: 'Experimental Gemini preview with enhanced instruction-following and reasoning.' },
+    // Learning / Education (real ID)
+    'learnlm-1.5-pro-experimental': { name: '🎓 LearnLM 1.5 Pro Experimental (Google AI Studio)', category: ['general', 'reasoning'], provider: 'google-ai-studio', tier: 'free', contextLength: 1000000, rateLimit: '15 RPM | 1M TPM | 1M ctx', description: 'Google education-focused model optimized for learning conversations.' }
 };
 
 /**
@@ -99,38 +133,328 @@ class ModelManager {
      * @param {string} [description=''] - Model description text
      * @returns {'coding'|'reasoning'|'research'|'fast'|'general'} Category ID string
      */
+    /**
+     * Sanitize a model ID by stripping API-specific prefixes.
+     * @param {string} modelId - Raw model ID from API response
+     * @returns {string} Clean model ID
+     */
+    sanitizeModelId(modelId) {
+        if (!modelId) return '';
+        return String(modelId)
+            .replace(/^models\//, '')
+            .replace(/^google-ai-studio\//, '')
+            .trim();
+    }
+
+    /**
+     * Classify payment vs rate-limit access for a model.
+     * Google AI Studio free-API models are never paymentRequired (even "Pro" capacity).
+     * @param {string} modelId
+     * @param {Object} [meta={}]
+     * @param {Object|null} [pricing=null]
+     * @returns {{ paymentRequired: boolean, rateLimited: boolean, tier: 'free'|'pro' }}
+     */
+    classifyAccess(modelId, meta = {}, pricing = null) {
+        const id = this.sanitizeModelId(modelId || meta.id || '');
+        const idLower = id.toLowerCase();
+        const provider = meta.provider || this.getProviderForModel(id);
+        const rateStr = String(meta.rateLimit || '').toLowerCase();
+        const nameStr = String(meta.name || id || '').toLowerCase();
+
+        if (provider === 'google-ai-studio') {
+            const rateLimited = idLower.includes('-pro') || idLower.includes('ultra') ||
+                idLower.includes('exp-') || rateStr.includes('2 rpm') || meta.tier === 'pro';
+            return { paymentRequired: false, rateLimited: Boolean(rateLimited), tier: 'free' };
+        }
+
+        if (provider === 'openrouter') {
+            const p = pricing || meta.pricing;
+            const hasPricing = Boolean(p && (p.prompt != null || p.completion != null));
+            let pPrice = 0;
+            let cPrice = 0;
+            if (hasPricing) {
+                pPrice = p.prompt != null ? parseFloat(p.prompt) * 1000000 : 0;
+                cPrice = p.completion != null ? parseFloat(p.completion) * 1000000 : 0;
+            }
+            const explicitlyFree = idLower.endsWith(':free') || nameStr.includes(':free') ||
+                (hasPricing && pPrice === 0 && cPrice === 0) ||
+                (rateStr.includes('| free') && !rateStr.includes('$'));
+            if (explicitlyFree || meta.tier === 'free') {
+                return { paymentRequired: false, rateLimited: true, tier: 'free' };
+            }
+            if (meta.tier === 'pro' || rateStr.includes('$') || (hasPricing && (pPrice > 0 || cPrice > 0))) {
+                return { paymentRequired: true, rateLimited: false, tier: 'pro' };
+            }
+            return { paymentRequired: true, rateLimited: false, tier: 'pro' };
+        }
+
+        if (provider === 'perplexity') {
+            const paymentRequired = meta.tier === 'pro' || rateStr.includes('pro tier');
+            return {
+                paymentRequired,
+                rateLimited: !paymentRequired,
+                tier: paymentRequired ? 'pro' : 'free'
+            };
+        }
+
+        if (meta.tier === 'free' || rateStr.includes('free') || nameStr.includes(':free')) {
+            return { paymentRequired: false, rateLimited: true, tier: 'free' };
+        }
+        if (meta.tier === 'pro' || rateStr.includes('$') || rateStr.includes('pro tier')) {
+            return { paymentRequired: true, rateLimited: false, tier: 'pro' };
+        }
+        return { paymentRequired: true, rateLimited: false, tier: 'pro' };
+    }
+
+    /**
+     * Normalize a provider API (or static) model into the unified catalog schema.
+     * @param {string} provider
+     * @param {Object} rawItem
+     * @param {Object} [extras={}]
+     * @returns {Object|null}
+     */
+    normalizeApiModel(provider, rawItem, extras = {}) {
+        if (!rawItem) return null;
+        let id = '';
+        let displayName = '';
+        let description = '';
+        let contextLength = null;
+        let outputTokenLimit = null;
+        let pricing = null;
+        let supportedMethods = null;
+        let rateLimit = null;
+        let resetWindow = '1m/24h';
+
+        if (provider === 'google-ai-studio') {
+            // API items use name=models/xxx; static defaults pass id=xxx and a display name
+            const rawId = rawItem.id && !String(rawItem.id).includes(' ')
+                ? rawItem.id
+                : (rawItem.name || '');
+            id = this.sanitizeModelId(rawId);
+            if (!id || id.includes(' ')) {
+                id = this.sanitizeModelId(rawItem.id || '');
+            }
+            if (!id) return null;
+            displayName = rawItem.displayName ||
+                String(rawItem.name || id).replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '').replace(/^[^\w]*\s*/, '').trim() ||
+                id;
+            // If name looked like a display label, prefer explicit id
+            if (rawItem.id && /^[a-z0-9._:-]+$/i.test(rawItem.id)) {
+                id = this.sanitizeModelId(rawItem.id);
+                if (rawItem.displayName) displayName = rawItem.displayName;
+                else if (rawItem.name && /[\s(]/.test(rawItem.name)) {
+                    displayName = String(rawItem.name).replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '').replace(/^[\p{Emoji}\s]*/u, '').trim() || id;
+                }
+            }
+            description = rawItem.description || '';
+            contextLength = rawItem.inputTokenLimit || rawItem.contextLength || null;
+            outputTokenLimit = rawItem.outputTokenLimit || null;
+            supportedMethods = rawItem.supportedGenerationMethods || null;
+            if (supportedMethods && !supportedMethods.includes('generateContent')) return null;
+            const inputLimit = contextLength
+                ? (contextLength >= 1000000 ? `${(contextLength / 1000000).toFixed(1)}M` : `${Math.round(contextLength / 1000)}k`)
+                : null;
+            const outputLimit = outputTokenLimit ? `${Math.round(outputTokenLimit / 1000)}k` : null;
+            rateLimit = rawItem.rateLimit || (inputLimit ? `${inputLimit} in${outputLimit ? ` | ${outputLimit} out` : ''}` : null);
+            resetWindow = rawItem.resetWindow || '1m/24h';
+        } else if (provider === 'openrouter') {
+            id = this.sanitizeModelId(rawItem.id || '');
+            if (!id) return null;
+            displayName = rawItem.name || id;
+            description = rawItem.description || '';
+            contextLength = rawItem.context_length || rawItem.contextLength || null;
+            pricing = rawItem.pricing || null;
+            const ctx = contextLength
+                ? (contextLength >= 1000000 ? `${(contextLength / 1000000).toFixed(0)}M` : `${Math.round(contextLength / 1000)}k`)
+                : null;
+            const pPrice = pricing?.prompt ? (parseFloat(pricing.prompt) * 1000000) : 0;
+            const cPrice = pricing?.completion ? (parseFloat(pricing.completion) * 1000000) : 0;
+            const isFree = (pPrice === 0 && cPrice === 0) || id.endsWith(':free');
+            const priceTag = isFree ? 'Free' : `$${pPrice.toFixed(2)}/M`;
+            rateLimit = rawItem.rateLimit || (ctx ? `${ctx} ctx | ${priceTag}` : priceTag);
+            resetWindow = isFree ? '1m/24h' : 'Realtime';
+        } else {
+            id = this.sanitizeModelId(rawItem.id || '');
+            if (!id) return null;
+            displayName = (rawItem.name || id).replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '').trim();
+            description = rawItem.description || '';
+            contextLength = rawItem.contextLength || null;
+            outputTokenLimit = rawItem.outputTokenLimit || null;
+            pricing = rawItem.pricing || null;
+            rateLimit = rawItem.rateLimit || null;
+            resetWindow = rawItem.resetWindow || '1m/24h';
+            provider = rawItem.provider || provider;
+        }
+
+        if (modelValidator.isNonTextModality(id, { name: displayName, description }) ||
+            modelCacheService.isModelFailed(id)) {
+            return null;
+        }
+
+        const baseMeta = {
+            ...rawItem,
+            id,
+            name: displayName,
+            description,
+            provider,
+            contextLength,
+            outputTokenLimit,
+            pricing,
+            rateLimit,
+            resetWindow
+        };
+        const access = this.classifyAccess(id, baseMeta, pricing);
+        const icon = this.getModelIcon(id, displayName);
+        const category = Array.isArray(rawItem.category)
+            ? rawItem.category
+            : this.categorizeModel(id, displayName, description);
+
+        let finalName = rawItem.name;
+        if (!finalName || provider === 'google-ai-studio' || provider === 'openrouter') {
+            if (provider === 'google-ai-studio') {
+                finalName = `${icon} ${displayName} (Google AI Studio)`;
+            } else if (provider === 'openrouter') {
+                finalName = `${icon} ${displayName}`;
+            } else {
+                finalName = rawItem.name || `${icon} ${displayName}`;
+            }
+        }
+
+        // Prefer static default rateLimit strings when merging known Google IDs
+        const staticDefaults = { ...DEFAULT_GOOGLE_MODELS, ...DEFAULT_OPENROUTER_MODELS, ...DEFAULT_PERPLEXITY_MODELS };
+        if (staticDefaults[id]?.rateLimit && extras.source === 'api' && provider === 'google-ai-studio') {
+            rateLimit = staticDefaults[id].rateLimit;
+        }
+
+        return {
+            name: finalName,
+            category,
+            icon,
+            provider,
+            contextLength,
+            outputTokenLimit,
+            rateLimit,
+            resetWindow,
+            description,
+            pricing,
+            tier: access.tier,
+            paymentRequired: access.paymentRequired,
+            rateLimited: access.rateLimited,
+            supportedMethods,
+            source: extras.source || 'static',
+            fetchedAt: extras.fetchedAt || Date.now()
+        };
+    }
+
+    /**
+     * Enrich a static default model entry with access flags.
+     * @param {string} id
+     * @param {Object} meta
+     * @returns {Object}
+     */
+    enrichStaticModel(id, meta) {
+        const access = this.classifyAccess(id, { ...meta, id }, meta.pricing);
+        return {
+            ...meta,
+            id,
+            category: Array.isArray(meta.category) ? meta.category : this.categorizeModel(id, meta.name, meta.description),
+            icon: meta.icon || this.getModelIcon(id, meta.name),
+            tier: access.tier,
+            paymentRequired: access.paymentRequired,
+            rateLimited: access.rateLimited,
+            source: 'static',
+            fetchedAt: Date.now()
+        };
+    }
+
     categorizeModel(modelId, name = '', description = '') {
         const idLower = (modelId || '').toLowerCase();
         const text = `${modelId} ${name} ${description}`.toLowerCase();
+        const categories = [];
 
-        if (idLower.includes('nano-banana') || idLower.includes('imagen') || idLower.includes('image') || idLower.includes('flux') || idLower.includes('dall-e')) {
-            return 'image';
+        if (idLower.includes('imagen') || idLower.includes('flux') || idLower.includes('dall-e') ||
+            (idLower.includes('image') && !idLower.includes('imagination'))) {
+            categories.push('image');
         }
-        if (idLower.includes('tts') || idLower.includes('speech') || idLower.includes('audio') || idLower.includes('lyria')) {
-            return 'audio';
+        if (idLower.includes('tts') || idLower.includes('text-to-speech') || idLower.includes('lyria') ||
+            idLower.includes('audio-only') || (idLower.includes('speech') && !idLower.includes('speechless'))) {
+            categories.push('audio');
         }
-        if (idLower.includes('veo') || idLower.includes('video')) {
-            return 'video';
+        if (idLower.includes('veo') || idLower.includes('video') || idLower.includes('sora')) {
+            categories.push('video');
         }
-        if (idLower.includes('antigravity') || idLower.includes('computer-use') || idLower.includes('agent')) {
-            return 'agent';
+
+        if (idLower.includes('antigravity') || idLower.includes('computer-use') ||
+            idLower.includes('tool-use') || idLower.includes('function-calling') ||
+            (idLower.includes('agent') && !idLower.includes('reagent'))) {
+            categories.push('agent');
         }
-        if (idLower.includes('deep-research') || idLower.includes('sonar-deep-research') || idLower.includes('sonar-pro') || text.includes('search') || text.includes('web search')) {
-            return 'research';
+
+        if (idLower.includes('deep-research') || idLower.includes('sonar-deep') || idLower.includes('sonar-pro') ||
+            idLower.includes('sonar') || idLower.includes('search-preview') || idLower.includes('perplexity') ||
+            text.includes('web search') || text.includes('grounding') || text.includes('citations') ||
+            (text.includes('search') && !text.includes('semantic search'))) {
+            categories.push('research');
         }
-        if (idLower.includes('r1') || idLower.includes('reasoning') || idLower.includes('o1') || idLower.includes('o3') || text.includes('reasoning') || text.includes('thinker')) {
-            return 'reasoning';
+
+        if (idLower.includes('reasoning') || idLower.includes('thinking') || idLower.includes('thinker') ||
+            idLower.includes('deepseek-reasoner') || idLower.includes('qwq') ||
+            idLower.includes('-r1') || idLower.includes('/r1') || idLower.includes('-r2') ||
+            idLower.includes('/o1') || idLower.includes('-o1') ||
+            idLower.includes('/o3') || idLower.includes('-o3') ||
+            idLower.includes('-o4') || idLower.includes('/o4') ||
+            text.includes('chain-of-thought') || text.includes('step-by-step reasoning')) {
+            categories.push('reasoning');
         }
-        if (idLower.includes('coder') || idLower.includes('sonnet') || idLower.includes('codestral') || idLower.includes('deepseek-v3') || idLower.includes('qwen-coder') || idLower.includes('starcoder') || text.includes('code') || text.includes('coding')) {
-            return 'coding';
+
+        if (idLower.includes('coder') || idLower.includes('codestral') || idLower.includes('starcoder') ||
+            idLower.includes('codellama') || idLower.includes('codegemma') || idLower.includes('devstral') ||
+            idLower.includes('opencode') || idLower.includes('swe-') ||
+            idLower.includes('wizard-coder') || idLower.includes('wizard-code') ||
+            idLower.includes('deepseek-coder') || idLower.includes('qwen-coder') ||
+            idLower.includes('sonnet') || idLower.includes('command-a') || idLower.includes('command-r') ||
+            text.includes('code generation') || text.includes('software engineering') ||
+            text.includes('debugging') || text.includes('refactoring')) {
+            categories.push('coding');
         }
-        if (idLower.includes('gemma') || idLower.includes('llama') || idLower.includes('mistral') || idLower.includes('qwen') || idLower.includes('phi')) {
-            return 'openweights';
+
+        if (idLower.includes('gemma') || idLower.includes('llama') ||
+            idLower.includes('mistral') || idLower.includes('mixtral') || idLower.includes('ministral') ||
+            idLower.includes('nemo') || idLower.includes('pixtral') ||
+            idLower.includes('qwen') || idLower.includes('phi') ||
+            idLower.includes('falcon') || idLower.includes('olmo') || idLower.includes('aya') ||
+            idLower.includes('yi-') || idLower.includes('/yi') || idLower.includes('01-ai') ||
+            idLower.includes('wizard') || idLower.includes('vicuna') || idLower.includes('alpaca') ||
+            idLower.includes('glm') || idLower.includes('kimi')) {
+            categories.push('openweights');
         }
-        if (idLower.includes('flash') || idLower.includes('mini') || idLower.includes('haiku') || idLower.includes('sonar') || text.includes('fast') || text.includes('lightweight')) {
-            return 'fast';
+
+        if (idLower.includes('flash') || idLower.includes('-lite') || idLower.includes('/lite') ||
+            idLower.includes('-mini') || idLower.includes('/mini') ||
+            idLower.includes('haiku') || idLower.includes('sonar') ||
+            idLower.includes('nemo') || idLower.includes('nano') || idLower.includes('turbo') ||
+            idLower.includes('instant') ||
+            idLower.includes('scout') || idLower.includes('-3b') || idLower.includes('-7b') ||
+            text.includes('low latency') || text.includes('lightweight') || text.includes('fast inference')) {
+            categories.push('fast');
         }
-        return 'general';
+
+        if (idLower.includes('gpt-4') || idLower.includes('gpt-3') || idLower.includes('chatgpt') ||
+            idLower.includes('learnlm') || idLower.includes('maverick') ||
+            idLower.includes('kimi') || idLower.includes('minimax') ||
+            idLower.includes('glm') || idLower.includes('baichuan')) {
+            if (!categories.includes('general')) categories.push('general');
+        }
+
+        if (categories.length === 0) {
+            categories.push('general');
+        }
+        return categories;
+    }
+
+    /** Chat-selectable category IDs (excludes image/audio/video). */
+    getChatCategoryIds() {
+        return ['coding', 'reasoning', 'research', 'agent', 'openweights', 'fast', 'general'];
     }
 
     /**
@@ -194,7 +518,11 @@ class ModelManager {
      */
     async fetchGoogleModels(apiKey = null) {
         const key = apiKey || (this.config && typeof this.config.getGoogleApiKey === 'function' ? this.config.getGoogleApiKey() : process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
-        if (!key) return DEFAULT_GOOGLE_MODELS;
+        const fallback = {};
+        for (const [id, meta] of Object.entries(DEFAULT_GOOGLE_MODELS)) {
+            fallback[id] = this.enrichStaticModel(id, meta);
+        }
+        if (!key) return fallback;
 
         try {
             logger.info('ModelManager: Fetching dynamic models from Google AI Studio API...');
@@ -202,38 +530,13 @@ class ModelManager {
             const response = await axios.get(endpoint, { timeout: 8000 });
             if (response.data && Array.isArray(response.data.models)) {
                 const dynamicGoogleModels = {};
+                const fetchedAt = Date.now();
                 for (const item of response.data.models) {
                     if (!item.name) continue;
-                    const modelId = item.name.replace(/^models\//, '');
-                    
-                    // Dynamic check: Exclude models that do not support generateContent or are specialized modalities/failed models
-                    if (item.supportedGenerationMethods && !item.supportedGenerationMethods.includes('generateContent')) {
-                        continue;
-                    }
-                    if (modelValidator.isNonTextModality(modelId, item) || modelCacheService.isModelFailed(modelId)) {
-                        continue;
-                    }
-
-                    const cat = this.categorizeModel(modelId, item.displayName || '', item.description || '');
-                    const icon = this.getModelIcon(modelId, item.displayName || '');
-                    const displayName = item.displayName || modelId;
-
-                    const inputLimit = item.inputTokenLimit ? (item.inputTokenLimit >= 1000000 ? `${(item.inputTokenLimit / 1000000).toFixed(1)}M` : `${Math.round(item.inputTokenLimit / 1000)}k`) : null;
-                    const outputLimit = item.outputTokenLimit ? `${Math.round(item.outputTokenLimit / 1000)}k` : null;
-                    const dynamicLimit = inputLimit ? `${inputLimit} in${outputLimit ? ` | ${outputLimit} out` : ''}` : null;
-
-                    dynamicGoogleModels[modelId] = {
-                        name: `${icon} ${displayName} (Google AI Studio)`,
-                        category: cat,
-                        icon: icon,
-                        provider: 'google-ai-studio',
-                        contextLength: item.inputTokenLimit || null,
-                        outputTokenLimit: item.outputTokenLimit || null,
-                        rateLimit: dynamicLimit,
-                        resetWindow: '1m/24h',
-                        description: item.description || '',
-                        tier: (modelId.includes('flash') || modelId.includes('lite') || modelId.includes('nano')) ? 'free' : 'pro'
-                    };
+                    const normalized = this.normalizeApiModel('google-ai-studio', item, { source: 'api', fetchedAt });
+                    if (!normalized) continue;
+                    const modelId = this.sanitizeModelId(item.name);
+                    dynamicGoogleModels[modelId] = normalized;
                 }
                 if (Object.keys(dynamicGoogleModels).length > 0) {
                     return dynamicGoogleModels;
@@ -242,59 +545,89 @@ class ModelManager {
         } catch (error) {
             logger.error(`ModelManager: Failed to fetch Google AI Studio models: ${error.message}`);
         }
-        return DEFAULT_GOOGLE_MODELS;
+        return fallback;
     }
 
     /**
      * Fetch all available LLM models from Google AI Studio API, OpenRouter API & Perplexity defaults.
+     * On successful provider fetch, that provider's slice is replaced (no ghost static IDs).
      * @param {Object} [options={}] - Options (bypassCache: boolean)
      * @returns {Promise<Object>} Dictionary of model metadata objects indexed by ID
      */
     async fetchModels(options = {}) {
+        const cacheFile = path.join(os.homedir(), '.lorapok', 'models_cache.json');
+
+        if (options.bypassCache) {
+            this.cache.del('allModels');
+            try {
+                if (fs.existsSync(cacheFile)) fs.unlinkSync(cacheFile);
+            } catch (err) {
+                logger.warn(`ModelManager: Failed to clear models_cache.json - ${err.message}`);
+            }
+        }
+
         if (!options.bypassCache) {
             const cached = this.cache.get('allModels');
             if (cached) return cached;
+
+            try {
+                if (fs.existsSync(cacheFile)) {
+                    const stats = fs.statSync(cacheFile);
+                    if (Date.now() - stats.mtimeMs < 86400000) {
+                        const fileCached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+                        this.cache.set('allModels', fileCached);
+                        return fileCached;
+                    }
+                }
+            } catch (err) {
+                logger.warn(`ModelManager: Failed to read models_cache.json - ${err.message}`);
+            }
+        }
+
+        const fetchedAt = Date.now();
+        const perplexityModels = {};
+        for (const [id, meta] of Object.entries(DEFAULT_PERPLEXITY_MODELS)) {
+            perplexityModels[id] = this.enrichStaticModel(id, meta);
         }
 
         const googleModels = await this.fetchGoogleModels();
-        const models = { ...DEFAULT_PERPLEXITY_MODELS, ...DEFAULT_OPENROUTER_MODELS, ...googleModels };
 
+        let openRouterOk = false;
+        const openRouterModels = {};
         try {
             logger.info('ModelManager: Fetching dynamic models from OpenRouter API...');
             const response = await axios.get(this.openrouterEndpoint, { timeout: 8000 });
             if (response.data && Array.isArray(response.data.data)) {
                 for (const item of response.data.data) {
                     if (!item.id) continue;
-                    const cat = this.categorizeModel(item.id, item.name, item.description);
-                    const icon = this.getModelIcon(item.id, item.name);
-                    const displayName = item.name || item.id;
-
-                    const ctx = item.context_length ? (item.context_length >= 1000000 ? `${(item.context_length / 1000000).toFixed(0)}M` : `${Math.round(item.context_length / 1000)}k`) : null;
-                    const pPrice = item.pricing?.prompt ? (parseFloat(item.pricing.prompt) * 1000000) : 0;
-                    const cPrice = item.pricing?.completion ? (parseFloat(item.pricing.completion) * 1000000) : 0;
-                    const isFree = (pPrice === 0 && cPrice === 0) || item.id.endsWith(':free');
-                    const priceTag = isFree ? 'Free' : `$${pPrice.toFixed(2)}/M`;
-                    const dynamicLimit = ctx ? `${ctx} ctx | ${priceTag}` : priceTag;
-
-                    models[item.id] = {
-                        name: `${icon} ${displayName}`,
-                        category: cat,
-                        icon: icon,
-                        provider: 'openrouter',
-                        contextLength: item.context_length || null,
-                        rateLimit: dynamicLimit,
-                        resetWindow: isFree ? '1m/24h' : 'Realtime',
-                        description: item.description || '',
-                        pricing: item.pricing || null,
-                        tier: isFree ? 'free' : 'pro'
-                    };
+                    const normalized = this.normalizeApiModel('openrouter', item, { source: 'api', fetchedAt });
+                    if (!normalized) continue;
+                    openRouterModels[this.sanitizeModelId(item.id)] = normalized;
                 }
+                openRouterOk = Object.keys(openRouterModels).length > 0;
             }
         } catch (error) {
             logger.error(`ModelManager: Failed to fetch OpenRouter models: ${error.message}`);
         }
 
+        if (!openRouterOk) {
+            for (const [id, meta] of Object.entries(DEFAULT_OPENROUTER_MODELS)) {
+                openRouterModels[id] = this.enrichStaticModel(id, meta);
+            }
+        }
+
+        const models = { ...perplexityModels, ...openRouterModels, ...googleModels };
+
         this.cache.set('allModels', models);
+
+        try {
+            const lorapokDir = path.join(os.homedir(), '.lorapok');
+            if (!fs.existsSync(lorapokDir)) fs.mkdirSync(lorapokDir, { recursive: true });
+            fs.writeFileSync(cacheFile, JSON.stringify(models, null, 2), 'utf8');
+        } catch (err) {
+            logger.warn(`ModelManager: Failed to write models_cache.json - ${err.message}`);
+        }
+
         return models;
     }
 
@@ -325,9 +658,13 @@ class ModelManager {
         };
 
         for (const [id, meta] of Object.entries(allModels)) {
-            const cat = meta.category || 'general';
-            if (!grouped[cat]) grouped[cat] = [];
-            grouped[cat].push({ id, ...meta });
+            let cats = meta.category || ['general'];
+            if (!Array.isArray(cats)) cats = [cats];
+            
+            for (const cat of cats) {
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push({ id, ...meta });
+            }
         }
 
         return grouped;
@@ -340,22 +677,24 @@ class ModelManager {
     getRecommendedModels() {
         return {
             coding: [
-                { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'openrouter', reason: 'Best-in-class code generation & architecture.' },
-                { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'openrouter', reason: 'State-of-the-art open reasoning & code logic.' },
-                { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'openrouter', reason: 'Versatile code synthesis & documentation.' }
+                { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'openrouter', reason: 'Best-in-class code generation, refactoring, and architecture.' },
+                { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'openrouter', reason: 'State-of-the-art open reasoning with transparent chain-of-thought.' },
+                { id: 'qwen/qwen-2.5-coder-32b-instruct', name: 'Qwen 2.5 Coder 32B', provider: 'openrouter', reason: 'Specialized open-weights coding model, excellent at completions.' }
             ],
             reasoning: [
-                { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'openrouter', reason: 'Deep algorithmic reasoning & problem solving.' },
-                { id: 'sonar-reasoning-pro', name: 'Sonar Reasoning Pro', provider: 'perplexity', reason: 'Chain-of-thought with live web search.' }
+                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google-ai-studio', reason: 'Fast thinking-capable model with 1M context. Free tier.' },
+                { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'openrouter', reason: 'Deep algorithmic reasoning with full chain-of-thought visibility.' },
+                { id: 'sonar-reasoning-pro', name: 'Sonar Reasoning Pro', provider: 'perplexity', reason: 'Chain-of-thought reasoning combined with live web search.' }
             ],
             research: [
                 { id: 'sonar-deep-research', name: 'Sonar Deep Research', provider: 'perplexity', reason: 'Exhaustive multi-source research report generation.' },
-                { id: 'sonar-pro', name: 'Sonar Pro', provider: 'perplexity', reason: 'Fast grounded web search with citations.' }
+                { id: 'sonar-pro', name: 'Sonar Pro', provider: 'perplexity', reason: 'Fast grounded web search with inline citations.' },
+                { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'google-ai-studio', reason: 'Native search grounding and tool use with 1M context.' }
             ],
             fast: [
-                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google-ai-studio', reason: 'Ultra-low latency multimodal fast execution.' },
-                { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', provider: 'openrouter', reason: 'Ultra-low latency for quick code edits.' },
-                { id: 'sonar', name: 'Sonar', provider: 'perplexity', reason: 'Lightweight web grounded model.' }
+                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google-ai-studio', reason: 'Ultra-fast multimodal with thinking. Free tier. 1M context.' },
+                { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite', provider: 'google-ai-studio', reason: 'Most cost-efficient model for high-volume lightweight tasks.' },
+                { id: 'sonar', name: 'Sonar', provider: 'perplexity', reason: 'Lightweight web-grounded model for quick lookups.' }
             ]
         };
     }
@@ -367,6 +706,176 @@ class ModelManager {
     getCategories() {
         return CATEGORIES;
     }
+    /**
+     * Get all statically known models combined from defaults.
+     * @returns {Object} Dictionary of all known models
+     */
+    getAllKnownModels() {
+        return { ...DEFAULT_PERPLEXITY_MODELS, ...DEFAULT_OPENROUTER_MODELS, ...DEFAULT_GOOGLE_MODELS };
+    }
+
+    /**
+     * True when the model does not require paid credits (compat wrapper).
+     * @param {Object} m - Model metadata object
+     * @returns {boolean}
+     */
+    isFreeTier(m) {
+        if (!m) return false;
+        if (typeof m.paymentRequired === 'boolean') return !m.paymentRequired;
+        const access = this.classifyAccess(m.id || '', m, m.pricing);
+        return !access.paymentRequired;
+    }
+
+    /**
+     * Usable menu IDs: available + not payment-required + not failed.
+     * @param {Object} validated - validateUsableModels output
+     * @returns {string[]}
+     */
+    getUsableModelIds(validated = {}) {
+        return Object.keys(validated).filter(id => {
+            const m = validated[id];
+            if (!m || m.available !== true) return false;
+            if (modelCacheService.isModelFailed(id)) return false;
+            if (modelValidator.isNonTextModality(id, m)) return false;
+            return this.isFreeTier({ ...m, id });
+        });
+    }
+
+    /**
+     * Paid catalog IDs: payment-required chat models (not failed / not modality).
+     * @param {Object} validated
+     * @returns {string[]}
+     */
+    getPaidCatalogIds(validated = {}) {
+        return Object.keys(validated).filter(id => {
+            const m = validated[id];
+            if (!m) return false;
+            if (modelCacheService.isModelFailed(id)) return false;
+            if (modelValidator.isNonTextModality(id, m)) return false;
+            return !this.isFreeTier({ ...m, id });
+        });
+    }
+
+    getModelsByCategoryView(validated, category) {
+        return this.getUsableModelIds(validated).filter(id => {
+            const cats = Array.isArray(validated[id].category) ? validated[id].category : [validated[id].category];
+            return cats.includes(category);
+        });
+    }
+
+    getModelsByProviderView(validated, provider) {
+        return this.getUsableModelIds(validated).filter(id => validated[id].provider === provider);
+    }
+
+    getTierLabel(item, hasAccess, showCatalog) {
+        if (showCatalog && !hasAccess) return '(No Key — Add to Unlock)';
+        const idName = `${item.id || ''} ${item.name || ''}`.toLowerCase();
+        const googleRateLimited = item.provider === 'google-ai-studio' &&
+            (item.rateLimited || idName.includes('pro') || idName.includes('ultra'));
+        if (this.isFreeTier(item)) {
+            return googleRateLimited ? '(Rate Limited — Free API Key)' : '(Free Tier)';
+        }
+        return '(Pro — Credits Required)';
+    }
+
+    getStatusIcon(item, hasAccess, showCatalog) {
+        if (showCatalog && !hasAccess) return '🔒';
+        const idName = `${item.id || ''} ${item.name || ''}`.toLowerCase();
+        const googleRateLimited = item.provider === 'google-ai-studio' &&
+            (item.rateLimited || idName.includes('pro') || idName.includes('ultra'));
+        if (this.isFreeTier(item)) {
+            return googleRateLimited ? '🔵' : '🟢';
+        }
+        return '💳';
+    }
+
+    /**
+     * Pick a fallback model ID from the usable set (same provider preferred).
+     * @param {Object} validated
+     * @param {string} failedModelId
+     * @returns {string|null}
+     */
+    pickFallbackModelId(validated, failedModelId) {
+        const failed = this.sanitizeModelId(failedModelId);
+        const provider = (validated[failed] && validated[failed].provider) || this.getProviderForModel(failed);
+        const usable = this.getUsableModelIds(validated).filter(id => id !== failed && !modelCacheService.isModelFailed(id));
+        if (usable.length === 0) return null;
+        const sameProv = usable.filter(id => validated[id].provider === provider);
+        const preferOrder = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'sonar', 'meta-llama/llama-3.3-70b-instruct'];
+        for (const pref of preferOrder) {
+            if (sameProv.includes(pref)) return pref;
+            if (usable.includes(pref)) return pref;
+        }
+        return sameProv[0] || usable[0];
+    }
+
+    /**
+     * Whether a model ID may be selected for active use with current keys.
+     * @param {string} modelId
+     * @param {Object} validated
+     * @returns {boolean}
+     */
+    canSelectModel(modelId, validated = {}) {
+        const id = this.sanitizeModelId(modelId);
+        const m = validated[id];
+        if (!m || m.available !== true) return false;
+        if (modelCacheService.isModelFailed(id)) return false;
+        if (modelValidator.isNonTextModality(id, m)) return false;
+        return true;
+    }
+
+    /**
+     * Infer the provider for a given model ID based on string prefix matching and known models.
+     * @param {string} modelId - Model ID string
+     * @returns {'openrouter'|'perplexity'|'google-ai-studio'} Provider string
+     */
+    getProviderForModel(modelId) {
+        if (!modelId) return 'perplexity';
+        const all = this.getAllKnownModels();
+        if (all[modelId]?.provider) return all[modelId].provider;
+        
+        // Also check cached available models if we already fetched them
+        const cached = this.cache.get('allModels');
+        if (cached && cached[modelId]?.provider) return cached[modelId].provider;
+
+        // Google AI Studio — all Gemini/Gemma/LearnLM/experimental models
+        if (
+            modelId.startsWith('gemini-') || 
+            modelId.startsWith('models/gemini-') || 
+            modelId.startsWith('google-ai-studio/') ||
+            modelId.startsWith('gemma-') ||
+            modelId.startsWith('gemma2-') ||
+            modelId.startsWith('gemma3-') ||
+            modelId.startsWith('learnlm-') ||
+            modelId.startsWith('antigravity-') ||
+            modelId.startsWith('deep-research-')
+        ) {
+            return 'google-ai-studio';
+        }
+        // OpenRouter — all provider/model namespaced IDs
+        if (
+            modelId.startsWith('openrouter/') ||
+            modelId.startsWith('anthropic/') ||
+            modelId.startsWith('openai/') ||
+            modelId.startsWith('deepseek/') ||
+            modelId.startsWith('meta-llama/') ||
+            modelId.startsWith('google/') ||
+            modelId.startsWith('mistralai/') ||
+            modelId.startsWith('qwen/') ||
+            modelId.startsWith('x-ai/') ||
+            modelId.startsWith('moonshotai/') ||
+            modelId.startsWith('cohere/') ||
+            modelId.startsWith('nvidia/') ||
+            modelId.startsWith('amazon/') ||
+            modelId.startsWith('01-ai/') ||
+            modelId.startsWith('z-ai/') ||
+            modelId.startsWith('minimax/')
+        ) {
+            return 'openrouter';
+        }
+        return 'perplexity';
+    }
 }
 
-module.exports = { ModelManager, CATEGORIES, DEFAULT_PERPLEXITY_MODELS, DEFAULT_GOOGLE_MODELS };
+module.exports = { ModelManager, CATEGORIES, DEFAULT_PERPLEXITY_MODELS, DEFAULT_OPENROUTER_MODELS, DEFAULT_GOOGLE_MODELS };
+

@@ -1,7 +1,7 @@
 # Lorapok Subagent: Git Release Manager
 
 ## Role
-Specialized subagent responsible for auditing git branches (`main`, `Beta-V2`, `git-features-integration`, `ui-polish-and-functionality-improvement`), preparing releases, updating `CHANGELOG.md`, and validating `package.json` versioning.
+Specialized subagent responsible for auditing git branches (`main`, `LLM-Support/GoogleAiStudio-Support`, `git-features-integration`, `ui-polish-and-functionality-improvement`), preparing releases, updating `CHANGELOG.md`, and validating `package.json` versioning.
 
 ## Directives
 1. Inspect commit differences between target branch and `main`.

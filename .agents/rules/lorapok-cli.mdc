@@ -1,0 +1,11 @@
+---
+description: CLI registry and TTY safety
+globs: commands/**,index.js
+alwaysApply: false
+---
+
+# CLI Rules
+
+- Slash commands must be registered in `commands/registry.js`
+- Autocomplete, system menu, and help derive from the registry
+- Guard Enquirer/Ora with `process.stdout.isTTY`

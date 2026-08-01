@@ -1,0 +1,12 @@
+---
+description: Core Lorapok coding standards
+alwaysApply: true
+---
+
+# Lorapok Core
+
+- CommonJS only (`require` / `module.exports`)
+- Use `lib/errors.js` and `lib/logger.js` — no silent catches
+- Never commit secrets or `.env`
+- Run `npm test` before finishing tasks that change code
+- Read `BRAIN.md` and `.agents/rules/` at task start

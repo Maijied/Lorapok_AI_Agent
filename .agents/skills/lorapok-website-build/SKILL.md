@@ -1,17 +1,22 @@
 ---
 name: lorapok-website-build
-description: Skill for maintaining and deploying the website/ and LorapokAiBuild/ frontend assets, static documentation, and GitHub Pages build workflow.
+description: Skill for maintaining and deploying apps/website frontend assets and static documentation.
 ---
 
 # Lorapok Website Build Skill
 
-## Overview
-The repository includes frontend static builds in `website/` and `LorapokAiBuild/` for web previews and GitHub Pages documentation.
+## Location
 
-## Testing & Preview
-- Serve local website: `npx serve website` or open `LorapokAiBuild/index.html`.
-- Modern responsive layout: Clean CSS grid/flexbox, dark mode aesthetics, hero section, features grid, documentation links.
+Site assets live in **`apps/website/`** (moved from legacy `website/`).
 
-## Standards
-- No broken asset links or hardcoded local absolute paths.
-- Optimizing CSS for mobile and desktop screens.
+## Tasks
+
+- Update marketing / docs pages under `apps/website/`
+- Keep version badges aligned with root `package.json`
+- Prefer consuming model lists via REST + `@lorapok/sdk`, not hardcoded catalogs
+- Preview locally per `apps/website/README.md` if present
+
+## Do not
+
+- Reference nonexistent `LorapokAiBuild/` paths
+- Duplicate paid/usable filtering in the frontend — use `/api/models`

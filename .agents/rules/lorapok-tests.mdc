@@ -1,0 +1,10 @@
+---
+description: Zero-regression testing policy
+globs: tests/**
+alwaysApply: false
+---
+
+# Test Rules
+
+- Every code change needs tests under `tests/`
+- `npm test` must pass 100% before task completion

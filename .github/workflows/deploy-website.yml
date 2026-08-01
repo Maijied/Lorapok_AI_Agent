@@ -1,56 +1,69 @@
-name: Deploy Website to GitHub Pages
+# Lorapok AI Agent — Deploy marketing site (apps/website) to GitHub Pages
+
+name: Deploy Website
 
 on:
   push:
-    branches: ["Website", "main"]
+    branches: [main, Website]
     paths:
-      - "website/**"
+      - "apps/website/**"
       - "assets/**"
       - ".github/workflows/deploy-website.yml"
-
   workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  build-and-deploy:
+  build:
+    name: Build site
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/website
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: website/package-lock.json
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/website/package-lock.json
 
-      - name: Install Website Dependencies
-        run: |
-          cd website
-          npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Build Website with Vite
-        run: |
-          cd website
-          npm run build
+      - name: Build (Vite)
+        run: npm run build
+        env:
+          NODE_ENV: production
 
-      - name: Setup GitHub Pages
+      - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Website Artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: website/dist
+          path: apps/website/dist
 
-      - name: Deploy to GitHub Pages
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

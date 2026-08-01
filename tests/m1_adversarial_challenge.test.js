@@ -16,8 +16,7 @@ jest.mock('../lib/agent-enhanced', () => {
         LorapokEnhancedAgent: jest.fn().mockImplementation(() => ({
             chat: jest.fn().mockResolvedValue({ success: true, content: 'API response' }),
             clearHistory: jest.fn()
-        })),
-        MODELS: { sonar: { name: 'Sonar' } }
+        }))
     };
 });
 

@@ -1,101 +1,66 @@
 # 🧠 Lorapok AI Agent - Central System Brain (BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-07-29 | Version: 1.1.0 | Test Suite: 21/21 Passed (186 Tests)*
+> *Last Synced: 2026-08-01 | Version: 1.3.2 | Test Suite: 23/23 Passed (270 Tests)*
 
 ---
 
 ## 📌 Executive Summary
-**Lorapok AI Agent** is an enterprise-grade, action-oriented AI Coding Agent featuring:
-- **CLI Engine**: Interactive terminal UI (`bin/lorapok.js`, `index.js`) built with Boxen, Figlet, Ora, Enquirer, and Marked.
-- **REST API Server**: Express server (`server.js`) with CORS, file upload handling (`multer`), and session logging.
-- **File Tool Primitives**: High-performance `grepSearch`, line-bounded `viewFile`, surgical `replaceFileContent`, `multiReplaceFileContent`, `write_to_file`, and `listDir` in `services/FileManager.js`.
-- **Model Validator & Cache Services**: `services/ModelValidator.js` and `services/ModelCacheService.js` providing dynamic zero-quota model exclusion, modality validation, runtime failure tracking, and provider credit categorization.
-- **Token-Saving Cache Engine**: Persistent SHA-256 response caching (`lib/cache.js`) tracking tokens saved and decreasing latency.
-- **Collapsible Bash Execution Box**: Framed bash execution box (`commands/utils.js`) displaying live duration, exit status, and collapsible output.
-- **Agent Runtimes**: Dual execution capability (Native Node.js >= 18 and Docker Compose container fallback).
-- **Core Integrations**: Multi-provider LLM engine (Google AI Studio Gemini, Perplexity AI, OpenRouter), Git repository management (`services/GitManager.js`), file system operations (`services/FileManager.js`), model management (`services/ModelManager.js`), and action rerun execution (`services/ActionsManager.js`).
 
+**Lorapok AI Agent** is an action-oriented AI Coding Agent with CLI + Express REST API, multi-provider LLM orchestration (Google AI Studio, OpenRouter, Perplexity), and a monorepo-ready layout for web/mobile clients via `packages/sdk`.
+
+### Key Points
+1. **CLI & API** — `bin/lorapok.js`, `index.js`, `server.js`
+2. **Sanitized model catalog** — `ModelManager` + `ModelValidator` + menu/API views (usable vs paid)
+3. **Command registry** — `commands/registry.js` drives `/` palette, system menu, `/help`
+4. **Docs & agents** — `Docs/`, `.agents/rules|hooks|automations|skills`
+5. **Clients** — `apps/website`, `packages/sdk` (future Android/iOS)
 
 ---
 
-## 🏗️ System Architecture & Module Map
+## 🏗️ Module Map
 
 ```
-Lorapok AI Agent Workspace
-├── bin/
-│   └── lorapok.js               # CLI Launcher & Docker auto-redirection
-├── commands/
-│   ├── actions.js               # Background actions & rerun engine
-│   ├── auth.js                  # GitHub OAuth & token management
-│   ├── chat.js                  # Interactive terminal chat prompt & token usage card box
-│   ├── git.js                   # Git CLI actions & branch menus
-│   ├── settings.js              # Model selection, theme customization, cache & log viewer
-│   ├── system.js                # Environment diagnostics
-│   ├── utils.js                 # Shared CLI utility functions & bash execution box
-│   └── workflow.js              # Multi-step automation workflows
-├── lib/
-│   ├── agent-enhanced.js        # Context-aware AI Agent implementation
-│   ├── agent.js                 # Core LLM API communication layer & automatic fallback router
-│   ├── cache.js                 # SHA-256 Response Caching Engine & Token Savings Tracker
-│   ├── config.js                # Configuration manager (~/.lorapok/config.json)
-│   ├── errors.js                # Custom LorapokError domain error types
-│   ├── history.js               # Session & conversation history store
-│   ├── logger.js                # Winston structured logging service
-│   ├── renderer.js              # Terminal markdown & syntax highlighter
-│   └── ui.js                    # Interactive Boxen/Ora/Enquirer components
-├── services/
-│   ├── ActionsManager.js        # Action queue & execution tracking
-│   ├── FileManager.js           # Safe file operations & path checking
-│   ├── GitManager.js            # Git command execution wrapper
-│   ├── GithubAuth.js            # OAuth token management
-│   ├── ModelCacheService.js     # Model catalog caching & dynamic failure registration
-│   ├── ModelManager.js          # Model API routing & catalog provider mapping
-│   └── ModelValidator.js        # Dynamic model usability & modality validation
-├── server.js                    # Express REST API backend
-├── website/ & LorapokAiBuild/   # Frontend web UI & GitHub Pages build
-├── tests/                       # Jest test suite (21 suites, 186 tests)
-
-├── .agents/                     # AI Agent rules, skills, subagents & MCP config
-│   ├── AGENTS.md                # Workspace developer & agent directives
-│   ├── BRAIN.md                 # System memory sync copy
-│   ├── mcp.json                 # Model Context Protocol server settings
-│   ├── skills/                  # Custom agent skills
-│   ├── steer/                   # Architectural steering guides
-│   └── subagents/               # Autonomous subagent definitions
-└── BRAIN.md                     # Root living knowledge base
+lorapok_ai_agent/
+├── bin/ lorapok.js
+├── commands/          # registry.js + handlers
+├── lib/               # agent, config, ui, cache
+├── services/          # Model*, Git, File, Actions
+├── server.js
+├── packages/sdk/      # HTTP client stub
+├── apps/website/      # marketing site
+├── Docs/              # architecture, api, cli, providers
+├── .agents/           # skills, steer, rules, hooks, automations
+└── tests/             # Jest (23 suites / 270 tests)
 ```
 
----
-
-## 📊 Live Metrics & Verification Snapshot
-- **Active Node Target**: Node.js >= 18.0.0
-- **Test Runner**: Jest v29.7.0 (`npm test`)
-- **Test Suites**: 21 Passed, 21 Total
-- **Total Tests**: 186 Passed, 186 Total
-- **Docker Support**: Docker Compose with automatic fallback to local Node.js.
+See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 
 ---
 
-## 🌿 Git Branch Matrix
-| Branch | Status | Primary Purpose / Feature Scope |
-|---|---|---|
-| `main` | Production Active | Core production branch, 186/186 tests passing |
-| `LLM-Support/GoogleAiStudio-Support` | Active Feature | Multi-provider model validator, free tier filters, token capacity UI |
-| `git-features-integration` | Feature Branch | Startup logo animation, version display, smart action reruns |
-| `ui-polish-and-functionality-improvement` | Feature Branch | Settings themes, exit summaries, documentation updates |
-| `bash-command-support-update-language-support` | Docs Branch | 60+ language support documentation |
+## 📊 Live Metrics
+
+- Node.js >= 18
+- Jest: **23 suites, 270 tests passing**
+- npm package version: **1.3.2**
 
 ---
 
-## 🛠️ Update & Maintenance Protocol
-1. **Trigger**: After any code, config, or test modification.
-2. **Action**: Run `npm test` to verify zero regressions.
-3. **Brain Update**: Execute `lorapok-doc-brain-updater` subagent or update `BRAIN.md` with:
-   - Updated file tree & module maps.
-   - Latest test count and passing status.
-   - New APIs, CLI flags, or configuration keys.
-   - Updated release notes in `CHANGELOG.md`.
+## 🌿 Branch Matrix
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Stable release |
+| `LLM-Support/GoogleAiStudio-Support` | Multi-provider models & menus |
+| `LLM-Support/OpenRouter-Support` | OpenRouter routing |
+| `git-features-integration` | Git / actions |
+| `ui-polish-and-functionality-improvement` | UI polish |
 
 ---
-*Maintained by Lorapok AI Agent Ecosystem | https://lorapok.tech*
+
+## 🛠️ Sync Protocol
+
+After code changes: `npm test` → update BRAIN ×2, AGENTS ×2, CHANGELOG → `npm cache clean --force`.
+
+---
+*https://lorapok.tech*

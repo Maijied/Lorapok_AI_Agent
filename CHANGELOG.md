@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.4.0...v1.5.0) (2026-08-01)
+
+
+### Features
+
+* **cli:** add animated bye-bye larva beside SESSION RECAP metrics ([99627e5](https://github.com/Maijied/Lorapok_AI_Agent/commit/99627e526e3af343eb6b4a87cb318d8cb5d1701c))
+* **cli:** polish model status colors, response frame, exit recap, and header alignment ([0c1a7d0](https://github.com/Maijied/Lorapok_AI_Agent/commit/0c1a7d08b6d06261e916e7912bf91257af6e99c2))
+* live model sanitize, menu views, and architecture docs ([eeb80b3](https://github.com/Maijied/Lorapok_AI_Agent/commit/eeb80b3d3ef29b5b5421f0b4bdbc676151a55432))
+
+
+### Bug Fixes
+
+* **cli:** center bye-bye logo in SESSION RECAP metrics gap ([650ca0a](https://github.com/Maijied/Lorapok_AI_Agent/commit/650ca0a1e3a6ba0174ec439722ca298c8eb29939))
+* **cli:** compact bye-bye emblem and tighten SESSION RECAP layout ([ed8db50](https://github.com/Maijied/Lorapok_AI_Agent/commit/ed8db50f217168a2b57510ad58dcdedd3f2eaa49))
+* **test:** strip ANSI in AI Coding badge assert for CI FORCE_COLOR ([f8db203](https://github.com/Maijied/Lorapok_AI_Agent/commit/f8db20350117be08e67cbd6ed9fa7be3d62156c8))
+
 ## [Unreleased]
 
 ### Features

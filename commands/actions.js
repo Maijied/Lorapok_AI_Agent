@@ -247,8 +247,18 @@ async function executeFileActions(actions, context) {
         if (action.type === 'COMMAND') {
             const cmdRes = await executeShellAction(action, context, bypassMode);
             if (cmdRes.bypassAll) bypassMode = true;
-            if (cmdRes.aborted) break;
-            if (cmdRes.success) appliedCount++;
+            if (cmdRes.aborted) {
+                action.error = "User aborted the action. They did not allow this command to run.";
+                action.result = "ABORTED";
+                break;
+            }
+            if (cmdRes.success) {
+                appliedCount++;
+                action.result = cmdRes.stdout || cmdRes.stderr || 'Command executed successfully.';
+            } else {
+                action.error = cmdRes.error;
+                action.result = cmdRes.stderr || cmdRes.stdout || cmdRes.error;
+            }
         } else {
             let current = '';
             const readRes = agent.fileManager.readFile(action.filePath);
@@ -293,15 +303,17 @@ async function executeFileActions(actions, context) {
             ui.showEditStatus(action.type, action.filePath);
             if (action.type === 'DELETE') {
                 agent.fileManager.deleteFile(action.filePath);
+                action.result = 'File deleted successfully.';
             } else {
                 agent.fileManager.writeFile(action.filePath, action.content);
+                action.result = 'File written successfully.';
             }
             console.log(ui.formatSuccess(`${action.type} applied.`));
             appliedCount++;
         }
     }
 
-    return { success: true, appliedCount };
+    return { success: true, appliedCount, executedActions: actions };
 }
 
 /**
@@ -359,10 +371,10 @@ async function executeShellAction(action, context, bypassMode = false) {
     const result = executeCommand(commandText);
     if (result.success) {
         console.log(ui.formatSuccess(`Command executed.`));
-        return { success: true, bypassAll };
+        return { success: true, bypassAll, stdout: result.stdout, stderr: result.stderr };
     } else {
         console.log(ui.formatError(`Command failed.`));
-        return { success: false, error: result.error, bypassAll };
+        return { success: false, error: result.stderr || 'Command failed', bypassAll, stdout: result.stdout, stderr: result.stderr };
     }
 }
 

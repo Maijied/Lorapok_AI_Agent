@@ -269,9 +269,11 @@ async function handleChat(input, context, options = {}) {
 
         // Parse & execute file/shell action blocks
         const actions = agent.parseActions(response.content);
+        let executedActions = [];
         if (actions.length > 0) {
             // Future step: orchestrator.processToolCalls(actions)
-            await executeFileActions(actions, context);
+            const executeRes = await executeFileActions(actions, context);
+            if (executeRes && executeRes.executedActions) executedActions = executeRes.executedActions;
             
             const hasFileEdits = actions.some(a => a.type !== 'COMMAND');
             if (hasFileEdits) {
@@ -279,7 +281,7 @@ async function handleChat(input, context, options = {}) {
             }
         }
 
-        return { success: true, content: response.content, usage: response.usage, suggestedQuestions };
+        return { success: true, content: response.content, usage: response.usage, suggestedQuestions, executedActions };
     } catch (err) {
         if (sessionData && typeof sessionData.successRate === 'number') {
             sessionData.successRate = Math.max(0, sessionData.successRate - 5);

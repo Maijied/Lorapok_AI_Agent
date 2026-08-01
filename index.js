@@ -479,9 +479,29 @@ async function chatLoop() {
             const lowerInput = input.toLowerCase();
             if (lowerInput === 'exit' || lowerInput === 'quit' || lowerInput === '/q') break;
 
-            const chatRes = await handleChat(input, context);
-            if (chatRes && chatRes.suggestedQuestions) {
-                lastSuggestions = chatRes.suggestedQuestions;
+            let nextInput = input;
+            while (true) {
+                const chatRes = await handleChat(nextInput, context);
+                
+                if (chatRes && chatRes.suggestedQuestions) {
+                    lastSuggestions = chatRes.suggestedQuestions;
+                }
+                
+                if (chatRes && chatRes.executedActions && chatRes.executedActions.length > 0) {
+                    const systemFeedback = chatRes.executedActions.map(a => {
+                        let resText = `Action: ${a.type} ${a.filePath || ''}\n`;
+                        if (a.error) resText += `Error: ${a.error}\n`;
+                        if (a.result) resText += `Result:\n${a.result}\n`;
+                        return resText;
+                    }).join('\n');
+                    
+                    nextInput = `[SYSTEM AUTOMATED FEEDBACK]\nThe following actions were executed. Please analyze the results and provide the final answer to the user's previous request, or propose the next steps if needed.\n\n${systemFeedback}`;
+                    
+                    console.log(chalk.yellow('\n(Agent is continuing based on command output...)'));
+                    continue;
+                }
+                
+                break;
             }
 
         } catch (err) {

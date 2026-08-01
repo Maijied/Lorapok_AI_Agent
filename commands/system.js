@@ -282,6 +282,14 @@ async function dispatchSlashCommand(input, context) {
             console.log(chalk.cyan('\n💬 Interactive AI Chat Mode Active. Ask anything!\n'));
             return { success: true, mode: 'chat' };
 
+        case 'agent':
+        case 'agentic':
+            console.log(chalk.cyan('\n⚡ Autonomous Agent Mode Active. I can use tools, fs, and shell.\n'));
+            return { success: true, mode: 'agent' };
+
+        case 'debug':
+            console.log(chalk.magenta('\n🐛 Analysis & Debug Mode Active. Paste your logs or issues.\n'));
+            return { success: true, mode: 'debug' };
 
         case 'menu':
             return showSystemMenu(context);

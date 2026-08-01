@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.5.0...v1.6.0) (2026-08-01)
+
+
+### Features
+
+* Implement 'Suggested Next Questions' flow in Chat Mode ([808f2e4](https://github.com/Maijied/Lorapok_AI_Agent/commit/808f2e4fd0d4b73ff8a4a85c7abee40d11490fd4))
+* Implement multi-provider architecture and operational modes ([8f13d32](https://github.com/Maijied/Lorapok_AI_Agent/commit/8f13d3227d0ea048e18583ff4f73a096a34a1114))
+* **ui:** implement smart code diff chunking and output folding ([7d22e8b](https://github.com/Maijied/Lorapok_AI_Agent/commit/7d22e8b937dc45cd43a1495d117b68fa907644df))
+
+
+### Bug Fixes
+
+* **cli:** enhance plan mode autonomy and UI separator ([6c6c9a8](https://github.com/Maijied/Lorapok_AI_Agent/commit/6c6c9a8cf8565ea2d3fd57891e1bbb0029dd6b67))
+* Implement autonomous feedback loop for actions in Plan Mode ([3cd2f35](https://github.com/Maijied/Lorapok_AI_Agent/commit/3cd2f35b28c5b12c11795f925d0dee6edb903fe3))
+* prevent smart commit prompt on pure shell commands in chat mode ([6d7f255](https://github.com/Maijied/Lorapok_AI_Agent/commit/6d7f25554347e218898d96e298be51d7a8e42eda))
+* refine autonomous mode conversational output and separator lines ([d82f2ba](https://github.com/Maijied/Lorapok_AI_Agent/commit/d82f2ba891eebe0c7205b81b0c8f580907664c12))
+* resolve unknown command warning when entering agent or debug mode ([46d68c4](https://github.com/Maijied/Lorapok_AI_Agent/commit/46d68c49d53f58b4e463d593964a8f07c7292053))
+* strip &lt;suggestions&gt; tags from plan output UI ([16fad6e](https://github.com/Maijied/Lorapok_AI_Agent/commit/16fad6e6b4768d4bc9e9dc608b51827f033cae79))
+
 ## [1.5.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.4.0...v1.5.0) (2026-08-01)
 
 

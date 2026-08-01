@@ -276,14 +276,13 @@ async function handleAnalyze(context) {
             const displayName = status?.displayName || activeModelMeta?.name || activeModelId;
             const icon = status?.icon || '\u25C6';
 
-            console.log(theme.box(
-                theme.color('info', 'LORAPOK CODEBASE ARCHITECTURE & ANALYSIS') + '\n' +
-                theme.muted('Active engine: ') + theme.color('text', `${icon} ${displayName}`) +
-                theme.muted('  |  ') + theme.success('Analysis complete'),
+            console.log(theme.panel(
+                theme.muted('Active engine') + theme.muted('  ·  ') +
+                theme.color('text', `${icon} ${displayName}`) +
+                theme.muted('  ·  ') + theme.success('Analysis complete'),
                 {
                     padding: { top: 0, bottom: 0, left: 2, right: 2 },
-                    margin: { top: 1, bottom: 1 },
-                    borderStyle: 'double'
+                    margin: { top: 1, bottom: 0 }
                 }
             ));
 
@@ -294,12 +293,13 @@ async function handleAnalyze(context) {
                 console.log(renderedMarkdown);
             }
 
-            console.log(theme.box(
-                theme.color('info', 'Recommended action') + '\n' +
-                theme.muted('Use ') + theme.warning('/chat') + theme.muted(' to discuss findings or ') +
-                theme.warning('/plan') + theme.muted(' for an implementation roadmap.'),
+            console.log(theme.panel(
+                theme.color('info', 'Next steps') + '\n' +
+                theme.muted('  ·  ') + theme.warning('/chat') + theme.muted('  discuss findings') + '\n' +
+                theme.muted('  ·  ') + theme.warning('/plan') + theme.muted('  implementation roadmap') + '\n' +
+                theme.muted('  ·  ') + theme.warning('/help') + theme.muted('  response & model color legend'),
                 {
-                    padding: { top: 0, bottom: 0, left: 2, right: 2 },
+                    padding: { top: 0, bottom: 0, left: 1, right: 1 },
                     margin: { top: 1, bottom: 1 }
                 }
             ));

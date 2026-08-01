@@ -126,22 +126,26 @@ describe('Renderer Corner Cases', () => {
         expect(result).toContain('H2');
         expect(result).toContain('H3');
         expect(result).toContain('H4');
-        expect(result).toContain('▸ H4'); 
-        expect(result).toContain('### H3');
-        expect(result).toContain('## H2');
-        expect(result).toContain('# H1');
+        expect(result).toContain('▸ H4');
+        expect(result).toContain('▎ H3');
+        // Professional view: raw markdown hashes are stripped
+        expect(result).not.toMatch(/^### /m);
+        expect(result).not.toContain('## H2');
+        expect(result).not.toContain('# H1');
+        expect(result).toContain('═');
+        expect(result).toContain('─');
     });
 
     // 13. renderMarkdownSync with horizontal rules
     test('Horizontal rules (---) should produce a line of ─ characters', () => {
         const result = renderMarkdownSync('---');
-        expect(result).toContain('─'.repeat(60));
+        expect(result).toContain('─'.repeat(56));
     });
 
     // 14. renderMarkdownSync with blockquotes
     test('Blockquotes (> text) should produce styled blockquote with ┃ character', () => {
         const result = renderMarkdownSync('> blockquote text');
-        expect(result).toContain('┃');
+        expect(result).toContain('│');
         expect(result).toContain('blockquote text');
     });
 
@@ -166,7 +170,8 @@ describe('Renderer Corner Cases', () => {
     // 18. renderMarkdownSync with ordered lists
     test('Ordered lists (1. item) should produce styled output', () => {
         const result = renderMarkdownSync('1. First item\n2. Second item');
-        expect(result).toContain('→');
+        expect(result).toContain('1.');
+        expect(result).toContain('2.');
         expect(result).toContain('First item');
         expect(result).toContain('Second item');
     });
@@ -185,16 +190,17 @@ console.log(1);
 ---
 `;
         const result = renderMarkdownSync(input);
-        expect(result).toContain('# Title');
+        expect(result).toContain('Title');
+        expect(result).not.toContain('# Title');
         expect(result).toContain('bold');
         expect(result).toContain('italic');
         expect(result).toContain(' JAVASCRIPT ');
         expect(result).toContain('console.log(1)');
-        expect(result).toContain('┃');
+        expect(result).toContain('│');
         expect(result).toContain('A quote');
-        expect(result).toContain('→');
+        expect(result).toContain('1.');
         expect(result).toContain('First');
         expect(result).toContain('Second');
-        expect(result).toContain('─'.repeat(60));
+        expect(result).toContain('─'.repeat(56));
     });
 });

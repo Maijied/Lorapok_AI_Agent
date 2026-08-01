@@ -85,4 +85,20 @@ describe('Per-theme larva logos', () => {
         expect(plain).toContain('AI CODING');
         expect(plain).toContain('Agent Core|');
     });
+
+    test('branding uses shared left gutter for welcome + hero frame', () => {
+        const raw = TerminalUI.getBranding('Lorapok', 0, '1.4.0', 'gemini-flash-latest',
+            '/home/maizied/Desktop/Personal_Projects/lorapok_ai_agent', 'classic');
+        const plain = raw.replace(/\u001b\[[0-9;]*m/g, '');
+        const lines = plain.split('\n').filter(l => l.trim());
+        // Every content line starts with the 2-space gutter
+        for (const line of lines.slice(0, 8)) {
+            expect(line.startsWith('  ')).toBe(true);
+        }
+        expect(plain).toMatch(/Welcome to Lorapok AI/);
+        expect(plain).toMatch(/Lorapok AI Coding Agent/);
+        // Path shortened professionally (not mid-word …sktop)
+        expect(plain).not.toMatch(/…sktop/);
+        expect(plain).toMatch(/…\/Personal_Projects\/lorapok_ai_agent|lorapok_ai_agent/);
+    });
 });

@@ -63,7 +63,10 @@ function getStatusIcon(mm, item, hasAccess, showCatalog) {
     const icon = mm.getStatusIcon(item, hasAccess, showCatalog);
     if (icon === '🔒') return 'locked';
     if (icon === '🟢') return 'free';
-    if (icon === '🔵') return 'rate-limited';
+    if (icon === '🔵') return 'google-lower-rpm';
+    if (icon === '🟣') return 'openrouter-daily';
+    if (icon === '🔴') return 'hot-limited';
+    if (icon === '⚪') return 'unverified';
     if (icon === '✅') return 'accessible-paid';
     return 'paid';
 }
@@ -83,9 +86,30 @@ describe('ModelMenuFiltering — Tier Labels (settings.js logic)', () => {
         expect(getTierLabel(mm, item, true, false)).toBe('Free Tier');
     });
 
-    test('Google pro-tier model gets "Rate Limited — Free API Key" (NOT credits required)', () => {
-        const item = { ...DEFAULT_GOOGLE_MODELS['gemini-2.5-pro'], available: true };
-        expect(getTierLabel(mm, item, true, false)).toBe('Rate Limited — Free API Key');
+    test('Google 2.0 Flash accessible gets Free Tier (still offered by Google API)', () => {
+        const item = {
+            ...DEFAULT_GOOGLE_MODELS['gemini-2.0-flash'],
+            available: true,
+            accessState: 'accessible',
+            paymentRequired: false,
+            rateLimited: false
+        };
+        expect(getTierLabel(mm, item, true, false)).toBe('Free Tier');
+    });
+
+    test('Google pro free-API model gets "Free API — lower RPM" (NOT credits required)', () => {
+        const item = { ...DEFAULT_GOOGLE_MODELS['gemini-2.5-pro'], available: true, accessState: 'accessible' };
+        expect(getTierLabel(mm, item, true, false)).toBe('Free API — lower RPM');
+    });
+
+    test('Live HTTP 429 probe state gets Hit rate limit label', () => {
+        const item = {
+            ...DEFAULT_GOOGLE_MODELS['gemini-2.0-flash'],
+            available: true,
+            accessState: 'rate_limited',
+            paymentRequired: false
+        };
+        expect(getTierLabel(mm, item, true, false)).toBe('Hit rate limit — retry later');
     });
 
     test('OpenRouter pro-tier unverified model gets "Pro — Unverified"', () => {
@@ -103,9 +127,9 @@ describe('ModelMenuFiltering — Tier Labels (settings.js logic)', () => {
         expect(getTierLabel(mm, item, true, true)).toBe('Pro — Credits Required / Locked');
     });
 
-    test('OpenRouter free-tier model gets "Free Tier"', () => {
-        const item = { ...DEFAULT_OPENROUTER_MODELS['deepseek/deepseek-r1'], available: true };
-        expect(getTierLabel(mm, item, true, false)).toBe('Free Tier');
+    test('OpenRouter free-tier model gets daily-limits label', () => {
+        const item = { ...DEFAULT_OPENROUTER_MODELS['deepseek/deepseek-r1'], available: true, accessState: 'accessible' };
+        expect(getTierLabel(mm, item, true, false)).toBe('Free Tier — daily limits');
     });
 
     test('Perplexity pro-tier accessible model gets "Pro — Accessible"', () => {
@@ -143,19 +167,39 @@ describe('ModelMenuFiltering — Status Icons', () => {
         expect(getStatusIcon(mm, item, true, false)).toBe('free');
     });
 
-    test('Google pro-tier accessible = "rate-limited" icon (blue, not paid/yellow)', () => {
+    test('Google pro-tier accessible = cyan lower-RPM icon (not paid/yellow)', () => {
         const item = DEFAULT_GOOGLE_MODELS['gemini-2.5-pro'];
-        expect(getStatusIcon(mm, item, true, false)).toBe('rate-limited');
+        expect(getStatusIcon(mm, item, true, false)).toBe('google-lower-rpm');
     });
 
-    test('OpenRouter paid accessible = "paid" icon', () => {
-        const item = DEFAULT_OPENROUTER_MODELS['anthropic/claude-3.5-sonnet'];
-        expect(getStatusIcon(mm, item, true, false)).toBe('paid');
+    test('OpenRouter paid accessible = accessible-paid icon', () => {
+        const item = { ...DEFAULT_OPENROUTER_MODELS['anthropic/claude-3.5-sonnet'], accessState: 'accessible' };
+        expect(getStatusIcon(mm, item, true, false)).toBe('accessible-paid');
+        expect(mm.getTierStyle(item, true, false).color).toBe('yellow');
     });
 
-    test('OpenRouter free accessible = "free" icon', () => {
-        const item = DEFAULT_OPENROUTER_MODELS['deepseek/deepseek-r1'];
-        expect(getStatusIcon(mm, item, true, false)).toBe('free');
+    test('OpenRouter free accessible = magenta daily-limits icon', () => {
+        const item = { ...DEFAULT_OPENROUTER_MODELS['deepseek/deepseek-r1'], accessState: 'accessible' };
+        expect(getStatusIcon(mm, item, true, false)).toBe('openrouter-daily');
+    });
+
+    test('Live 429 accessState = red hot-limited icon', () => {
+        const item = {
+            ...DEFAULT_GOOGLE_MODELS['gemini-2.0-flash'],
+            available: true,
+            accessState: 'rate_limited',
+            paymentRequired: false
+        };
+        expect(getStatusIcon(mm, item, true, false)).toBe('hot-limited');
+        expect(mm.getTierStyle(item, true, false).color).toBe('red');
+    });
+
+    test('Tier legend lists distinct colors for each access level', () => {
+        const { ModelManager } = require('../services/ModelManager');
+        const legend = ModelManager.getTierLegend();
+        const colors = legend.map(r => r.color);
+        expect(colors).toEqual(expect.arrayContaining(['green', 'cyan', 'magenta', 'red', 'yellow', 'gray']));
+        expect(new Set(legend.map(r => r.icon)).size).toBe(legend.length);
     });
 
     test('Catalog + no key = "locked" icon regardless of tier', () => {
@@ -432,7 +476,7 @@ describe('ModelMenuFiltering — View All → Paid Catalog', () => {
         const accessible = getFreeAccessibleKeys(models, mm);
         expect(accessible).toContain('gemini-2.5-pro');
         expect(models['gemini-2.5-pro'].available).toBe(true);
-        expect(getStatusIcon(mm, models['gemini-2.5-pro'], true, false)).toBe('rate-limited');
+        expect(getStatusIcon(mm, models['gemini-2.5-pro'], true, false)).toBe('google-lower-rpm');
     });
 
     test('Paid catalog: OR pro models with no key = LOCKED (disabled)', () => {
@@ -554,7 +598,7 @@ describe('ModelMenuFiltering — Selection Confirmation Messages', () => {
         const item = { ...DEFAULT_GOOGLE_MODELS['gemini-2.5-pro'], id: 'gemini-2.5-pro' };
         expect(mm.isFreeTier(item)).toBe(true);
         expect(item.provider).toBe('google-ai-studio');
-        expect(getStatusIcon(mm, item, true, false)).toBe('rate-limited');
+        expect(getStatusIcon(mm, item, true, false)).toBe('google-lower-rpm');
     });
 
     test('OR paid model (from Paid Catalog): displays credits-required warning', () => {

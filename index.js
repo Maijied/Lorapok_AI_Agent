@@ -56,10 +56,14 @@ const setupExitHandlers = () => {
         ctrlCCount++;
         if (ctrlCCount >= 2) {
             if (ctrlCTimer) clearTimeout(ctrlCTimer);
+            const finish = () => process.exit(0);
             if (sessionData) {
-                TerminalUI.showInteractionSummary(sessionData);
+                TerminalUI.exitSession(sessionData)
+                    .then(finish)
+                    .catch(finish);
+                return;
             }
-            process.exit(0);
+            finish();
         }
 
         // Single Ctrl+C does nothing silently
@@ -374,7 +378,6 @@ async function chatLoop() {
             if (input === null) {
                 ctrlCCount++;
                 if (ctrlCCount >= 2) {
-                    console.log(chalk.gray('\nExiting Lorapok AI...'));
                     break;
                 }
                 console.log(chalk.yellow('\n(Press Ctrl+C again to exit)'));
@@ -510,7 +513,7 @@ async function main() {
 
     await chatLoop();
 
-    TerminalUI.showInteractionSummary(sessionData, { themeId: config.getBrandingFont() });
+    await TerminalUI.exitSession(sessionData, { themeId: config.getBrandingFont() });
     process.exit(0);
 }
 

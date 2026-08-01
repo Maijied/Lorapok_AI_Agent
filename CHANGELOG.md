@@ -16,7 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **models:** Probe/verify use `max_tokens: 16` (Perplexity rejects `1`); clear stale access cache on key save
 * **cli:** Provider browse shows all keyed models (free + paid); Perplexity Sonar catalog is 4 official models (not a large public list)
 * **cli:** Category browse uses usable∩domain; Model Selection menu coverage tests; README system architecture section
-* **tests:** 321 passing (33 suites)
+* **cli:** Distinct model-status colors/icons (🟢 cyan 🔵 magenta 🟣 red 🔴 …); legend in `/help`, `/guide`, and Docs/cli/MENUS.md
+* **cli:** Professional response frame (`LORAPOK · response`), heading hierarchy colors, quieter lists; `/analyze` Next steps panel; RESPONSE VIEW section in `/help`
+* **cli:** Response panel soft-wraps to frame width (full rule); polished Hi/identity greeting copy
+* **cli:** Fix response break — code boxes sized to panel; never wrapAnsi box borders (stops green TERMINAL bleed)
+* **cli:** Professional SESSION RECAP (aligned metrics + model usage) with animated exit sequence (TTY; skipped in CI)
+* **cli:** Header/theme alignment — shared 2-col gutter, framed hero+meta, welcome width match, path shorten `…/dir/name`
+* **tests:** 332 passing (33 suites)
 
 ## [1.4.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.3.1...v1.4.0) (2026-08-01)
 

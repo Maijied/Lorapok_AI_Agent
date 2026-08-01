@@ -118,7 +118,8 @@ describe('LorapokCodingAgent', () => {
     test('should intercept identity queries locally', async () => {
         const response1 = await agent.chat('Hi Lorapok');
         expect(response1.success).toBe(true);
-        expect(response1.content).toContain('all programming languages');
+        expect(response1.content).toContain('expert AI coding agent');
+        expect(response1.content).toContain('Capabilities');
 
         const response2 = await agent.chat('who created you');
         expect(response2.content).toContain('expert AI coding agent');

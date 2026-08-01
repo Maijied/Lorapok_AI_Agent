@@ -11,7 +11,7 @@ describe('Renderer (Markdown)', () => {
         const input = '**bold** *italic* ***both***';
         const output = renderMarkdownSync(input);
         expect(output).toContain(chalk.whiteBright.bold('bold'));
-        expect(output).toContain(chalk.cyanBright.italic('italic'));
+        expect(output).toContain(chalk.cyan.italic('italic'));
         expect(output).toContain(chalk.whiteBright.bold.italic('both'));
     });
 
@@ -25,7 +25,7 @@ describe('Renderer (Markdown)', () => {
     test('should style checkboxes in lists', () => {
         const input = '- [ ] Task 1\n- [x] Task 2';
         const output = renderMarkdownSync(input);
-        expect(output).toContain(chalk.cyanBright('  ▢ '));
+        expect(output).toContain(chalk.cyan('  ▢ '));
         expect(output).toContain(chalk.greenBright('  ✔ '));
     });
 
@@ -46,5 +46,19 @@ describe('Renderer (Markdown)', () => {
 
         const proOutput = createCodeBox('member(X, [1, 2]).', 'pro');
         expect(proOutput).toContain('PROLOG');
+    });
+
+    test('code boxes fit inside shared response layout width', () => {
+        const { getResponseLayout, createCodeBox: box } = require('../lib/renderer');
+        const { contentW, codeBoxWidth } = getResponseLayout();
+        const strip = (s) => String(s).replace(/\u001b\[[0-9;]*m/g, '');
+        const output = box('find . -maxdepth 3 -not -path "*/.*" -not -path "./node_modules*"', 'bash');
+        const lines = output.split('\n').filter(l => strip(l).trim());
+        for (const line of lines) {
+            expect(strip(line).length).toBeLessThanOrEqual(contentW);
+            expect(strip(line).length).toBeLessThanOrEqual(codeBoxWidth + 2);
+        }
+        expect(output).toContain('TERMINAL');
+        expect(output).toContain('...');
     });
 });

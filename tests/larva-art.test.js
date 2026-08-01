@@ -60,7 +60,8 @@ describe('Per-theme larva logos', () => {
     test('AI Coding badge is polished center panel', () => {
         const theme = getTheme('Lorapok');
         const badge = renderAiCodingBadge(theme);
-        const text = badge.join('\n');
+        // CI sets FORCE_COLOR=1 — chalk wraps each glyph; strip before content asserts
+        const text = badge.join('\n').replace(/\u001b\[[0-9;]*m/g, '');
         expect(text).toMatch(/AI CODING/);
         expect(text).toContain('</>');
         expect(text).toMatch(/Agent Core\|/);

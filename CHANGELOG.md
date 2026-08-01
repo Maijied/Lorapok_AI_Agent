@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.6.0...v1.7.0) (2026-08-01)
+
+
+### Features
+
+* **website:** add splash and lighting animations to marketing banner ([93a2427](https://github.com/Maijied/Lorapok_AI_Agent/commit/93a24275eb6e893ad92a64d15366d36a0d579f24))
+
+
+### Bug Fixes
+
+* **website:** add missing LorapokOrginalcLI.png to public/assets to fix broken image ([ce9f744](https://github.com/Maijied/Lorapok_AI_Agent/commit/ce9f7449d5554e13d590b17d6a9153c30722b09d))
+
 ## [1.6.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.5.0...v1.6.0) (2026-08-01)
 
 

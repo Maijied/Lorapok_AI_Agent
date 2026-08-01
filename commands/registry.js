@@ -39,7 +39,7 @@ const COMMANDS = [
     { name: '/actions', aliases: ['/ci'], section: 'devops', description: 'Background actions & workflows', icon: '🎬', handler: 'actions', inAutocomplete: true, inSystemMenu: true },
     { name: '/files', section: 'devops', description: 'Show project file tree', icon: '📁', handler: 'files', inAutocomplete: true, inSystemMenu: true },
     { name: '/guide', aliases: ['/howtouse', '/manual'], section: 'system', description: 'How to use Lorapok', icon: '📖', handler: 'guide', inAutocomplete: true, inSystemMenu: true },
-    { name: '/help', aliases: ['/?'], section: 'system', description: 'Command reference', icon: '❓', handler: 'help', inAutocomplete: true, inSystemMenu: true },
+    { name: '/help', aliases: ['/?'], section: 'system', description: 'Command reference + model status color legend', icon: '❓', handler: 'help', inAutocomplete: true, inSystemMenu: true },
     { name: '/logs', section: 'system', description: 'View recent logs', icon: '📜', handler: 'logs', inAutocomplete: true, inSystemMenu: true },
     { name: '/sessions', section: 'system', description: 'Browse saved session recaps', icon: '📁', handler: 'sessions', inAutocomplete: true, inSystemMenu: true },
     { name: '/clear', section: 'system', description: 'Clear the terminal', icon: '🧹', handler: 'clear', inAutocomplete: true, inSystemMenu: true },

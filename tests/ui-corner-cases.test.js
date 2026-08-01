@@ -272,8 +272,58 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
             }
         };
 
-        expect(() => TerminalUI.showInteractionSummary(mockData)).not.toThrow();
-        expect(spyLog).toHaveBeenCalled();
+        expect(() => TerminalUI.showInteractionSummary(mockData, { skipAnimation: true })).not.toThrow();
+        const joined = spyLog.mock.calls.map(c => String(c[0])).join('\n');
+        const strip = (s) => s.replace(/\u001b\[[0-9;]*m/g, '');
+        expect(strip(joined)).toMatch(/SESSION RECAP/);
+        expect(strip(joined)).toMatch(/METRICS/);
+        expect(strip(joined)).toMatch(/MODEL USAGE/);
+        expect(strip(joined)).toMatch(/TEST1234/);
+        expect(strip(joined)).toMatch(/Total tokens/);
+        // Values right-aligned: numeric columns share a common end column band
+        const totalLine = strip(joined).split('\n').find(l => l.includes('Total tokens'));
+        expect(totalLine).toBeTruthy();
+        expect(totalLine).toMatch(/800/);
+        spyLog.mockRestore();
+    });
+
+    test('1b. exitSession runs animation stub then recap (non-TTY / CI safe)', async () => {
+        const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const prevCI = process.env.CI;
+        process.env.CI = '1';
+        await expect(TerminalUI.exitSession({
+            id: 'EXIT01',
+            count: 1,
+            successRate: 100,
+            tokens: { prompt: 10, completion: 5, total: 15 },
+            modelUsage: {}
+        })).resolves.toBeUndefined();
+        const joined = spyLog.mock.calls.map(c => String(c[0])).join('\n');
+        expect(joined).toMatch(/Closing session|SESSION RECAP|METRICS/);
+        process.env.CI = prevCI;
+        spyLog.mockRestore();
+    });
+
+    test('1c. metric labels and values share fixed columns', () => {
+        const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+        TerminalUI.showInteractionSummary({
+            id: 'ALIGN01',
+            count: 12,
+            successRate: 95,
+            tokens: { prompt: 1234, completion: 56, total: 1290 },
+            modelUsage: {
+                m1: { name: 'gemini-flash-lite-latest', requests: 3, prompt: 1234, completion: 56, total: 1290 }
+            }
+        }, { viewOnly: true });
+        const strip = (s) => s.replace(/\u001b\[[0-9;]*m/g, '');
+        const joined = strip(spyLog.mock.calls.map(c => String(c[0])).join('\n'));
+        expect(joined).toMatch(/METRICS/);
+        expect(joined).toMatch(/ALIGN01/);
+        expect(joined).toMatch(/gemini-flash-lite-latest/);
+        expect(joined).toMatch(/1,234/);
+        expect(joined).toMatch(/MODEL USAGE/);
+        const totalLine = joined.split('\n').find(l => /Total tokens/.test(l));
+        expect(totalLine).toMatch(/Total tokens\s+1,290/);
         spyLog.mockRestore();
     });
 
@@ -281,6 +331,55 @@ describe('TerminalUI.showInteractionSummary corner cases', () => {
         const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
         expect(() => TerminalUI.showHowToUse()).not.toThrow();
         expect(spyLog).toHaveBeenCalled();
+        spyLog.mockRestore();
+    });
+
+    test('3. /help includes model status color legend', () => {
+        const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+        expect(() => TerminalUI.showHelp()).not.toThrow();
+        const joined = spyLog.mock.calls.map(c => String(c[0])).join('\n');
+        expect(joined).toMatch(/MODEL STATUS LEGEND/);
+        expect(joined).toMatch(/Free Tier/);
+        expect(joined).toMatch(/Hit rate limit/);
+        expect(joined).toMatch(/daily limits/);
+        expect(joined).toMatch(/RESPONSE VIEW/);
+        expect(joined).toMatch(/H1/);
+        spyLog.mockRestore();
+    });
+
+    test('4. printAgentResponse uses professional titled frame', () => {
+        const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const long = 'A'.repeat(120) + ' next word finishes the wrap test line cleanly.';
+        expect(() => TerminalUI.printAgentResponse(long)).not.toThrow();
+        const joined = spyLog.mock.calls.map(c => String(c[0])).join('\n');
+        expect(joined).toMatch(/LORAPOK/);
+        expect(joined).toMatch(/response/);
+        expect(joined).toMatch(/─{40,}/);
+        expect(joined).toMatch(/next word/);
+        const ruleLine = joined.split('\n').find(l => /─{20,}/.test(l.replace(/\u001b\[[0-9;]*m/g, '')));
+        expect(ruleLine).toBeTruthy();
+        spyLog.mockRestore();
+    });
+
+    test('5. printAgentResponse does not wrapAnsi code-box borders (no color bleed)', () => {
+        const { createCodeBox } = require('../lib/renderer');
+        const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const nested = 'ACTION: RUN COMMAND: list dirs\n' + createCodeBox(
+            "find . -maxdepth 3 -not -path '*/.*' -not -path './node_modules*'",
+            'bash'
+        );
+        expect(() => TerminalUI.printAgentResponse(nested)).not.toThrow();
+        const joined = spyLog.mock.calls.map(c => String(c[0])).join('\n');
+        const strip = (s) => s.replace(/\u001b\[[0-9;]*m/g, '');
+        expect(strip(joined)).toContain('TERMINAL');
+        expect(strip(joined)).toContain('┌');
+        expect(strip(joined)).toContain('└');
+        // Top border must remain a single intact line (not split mid-run of ─)
+        const top = strip(joined).split('\n').find(l => l.includes('TERMINAL') && l.includes('┌'));
+        expect(top).toBeTruthy();
+        expect(top).toContain('┐');
+        // Must not be a mid-wrapped fragment (would start with leftover ─ runs, no ┌)
+        expect(top).toMatch(/┌──/);
         spyLog.mockRestore();
     });
 });

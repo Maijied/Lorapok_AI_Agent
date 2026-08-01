@@ -286,25 +286,36 @@ async function handleModelSelection(agent, config) {
     const accessibleKeys = mm.getUsableModelIds(models);
     const paidKeys = mm.getPaidCatalogIds(models);
     console.log(chalk.cyan(`\n🧠 Loaded ${Object.keys(models).length} models — ${chalk.green(accessibleKeys.length + ' free accessible')} | ${chalk.yellow(paidKeys.length + ' paid')} (see 💰 Paid Catalog).\n`));
+    const hotLimited = accessibleKeys.filter(id => {
+        const a = models[id]?.accessState || '';
+        return a === 'rate_limited';
+    }).length;
+    if (hotLimited > 0) {
+        console.log(chalk.red(`  ${hotLimited} usable model(s) recently hit provider rate limits (🔴). Prefer 🟢 Free Tier / Flash models until quotas reset.\n`));
+    }
     if (accessibleKeys.length === 0 && config.getPerplexityApiKey && config.getPerplexityApiKey()) {
         console.log(chalk.gray('  Perplexity key is set. Sonar is free-tier once live probe succeeds; Pro models live under 💰 Paid Catalog (API credits required).\n'));
     }
 
+    const chalkByColor = {
+        green: chalk.green,
+        cyan: chalk.cyan,
+        magenta: chalk.magenta,
+        red: chalk.red,
+        yellow: chalk.yellow,
+        gray: chalk.gray
+    };
+
     const getTierLabel = (item, hasAccess, showCatalog) => {
-        const label = mm.getTierLabel(item, hasAccess, showCatalog);
-        if (label.includes('No Key') || label.includes('Locked')) return chalk.gray(label);
-        if (label.includes('Accessible')) return chalk.green(label);
-        if (label.includes('Free Tier')) return chalk.green(label);
-        if (label.includes('Rate Limited')) return chalk.blue(label);
-        return chalk.yellow(label);
+        const style = mm.getTierStyle(item, hasAccess, showCatalog);
+        const paint = chalkByColor[style.color] || chalk.white;
+        return paint(style.label);
     };
 
     const getStatusIcon = (item, hasAccess, showCatalog) => {
-        const icon = mm.getStatusIcon(item, hasAccess, showCatalog);
-        if (icon === '🔒') return chalk.gray(icon);
-        if (icon === '🟢' || icon === '✅') return chalk.green(icon);
-        if (icon === '🔵') return chalk.blue(icon);
-        return chalk.yellow(icon);
+        const style = mm.getTierStyle(item, hasAccess, showCatalog);
+        const paint = chalkByColor[style.color] || chalk.white;
+        return paint(style.icon);
     };
 
     while (true) {

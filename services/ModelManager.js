@@ -847,6 +847,23 @@ class ModelManager {
         return [...set];
     }
 
+    /**
+     * Single legend for /help, menus, and Docs — keep icons/colors in sync.
+     * color: chalk color name used by CLI renderers.
+     */
+    static getTierLegend() {
+        return [
+            { icon: '🟢', color: 'green', title: 'Free Tier', detail: 'No payment; normal free-API / free-tier limits (Google Flash, Sonar, etc.).' },
+            { icon: '🔵', color: 'cyan', title: 'Free API — lower RPM', detail: 'Google Pro/Ultra on a free AI Studio key — usable, tighter RPM/TPM.' },
+            { icon: '🟣', color: 'magenta', title: 'Free Tier — daily limits', detail: 'OpenRouter :free models — usable with daily/reset windows.' },
+            { icon: '🔴', color: 'red', title: 'Hit rate limit', detail: 'Live probe got HTTP 429 — still listed; retry after quota resets or pick another model.' },
+            { icon: '✅', color: 'yellow', title: 'Pro — Accessible', detail: 'Payment-tier model your key can call (credits may still apply).' },
+            { icon: '⚪', color: 'gray', title: 'Pro — Unverified', detail: 'Keyed but not live-probed yet — run /refresh-models.' },
+            { icon: '💳', color: 'yellow', title: 'Pro — Credits / Locked', detail: 'Paid catalog entry needing credits or provider unlock.' },
+            { icon: '🔒', color: 'gray', title: 'No Key', detail: 'Add the provider API key in /settings to unlock.' }
+        ];
+    }
+
     getTierLabel(item, hasAccess, showCatalog) {
         const access = item.accessState || modelAccessService.getAccessState(item.id);
         if (access === 'locked' || (showCatalog && !hasAccess)) {
@@ -854,13 +871,20 @@ class ModelManager {
             return '(Pro — Credits Required / Locked)';
         }
         const idName = `${item.id || ''} ${item.name || ''}`.toLowerCase();
-        const googleRateLimited = item.provider === 'google-ai-studio' &&
+        const googleLowerRpm = item.provider === 'google-ai-studio' &&
             (item.rateLimited || idName.includes('pro') || idName.includes('ultra'));
+
+        // Live probe received HTTP 429 — still selectable, but quota is hot right now
+        if (access === 'rate_limited') {
+            return '(Hit rate limit — retry later)';
+        }
+
         if (this.isFreeTier(item)) {
-            if (access === 'rate_limited' || googleRateLimited) return '(Rate Limited — Free API Key)';
+            if (googleLowerRpm) return '(Free API — lower RPM)';
+            if (item.provider === 'openrouter') return '(Free Tier — daily limits)';
             return '(Free Tier)';
         }
-        if (access === 'accessible' || access === 'rate_limited') return '(Pro — Accessible)';
+        if (access === 'accessible') return '(Pro — Accessible)';
         if (access === 'unverified') return '(Pro — Unverified)';
         return '(Pro — Credits Required / Locked)';
     }
@@ -869,13 +893,36 @@ class ModelManager {
         const access = item.accessState || modelAccessService.getAccessState(item.id);
         if (access === 'locked' || (showCatalog && !hasAccess)) return '🔒';
         const idName = `${item.id || ''} ${item.name || ''}`.toLowerCase();
-        const googleRateLimited = item.provider === 'google-ai-studio' &&
+        const googleLowerRpm = item.provider === 'google-ai-studio' &&
             (item.rateLimited || idName.includes('pro') || idName.includes('ultra'));
+
+        if (access === 'rate_limited') return '🔴';
         if (this.isFreeTier(item)) {
-            return (access === 'rate_limited' || googleRateLimited) ? '🔵' : '🟢';
+            if (googleLowerRpm) return '🔵';
+            if (item.provider === 'openrouter') return '🟣';
+            return '🟢';
         }
-        if (access === 'accessible' || access === 'rate_limited') return '✅';
+        if (access === 'accessible') return '✅';
+        if (access === 'unverified') return '⚪';
         return '💳';
+    }
+
+    /**
+     * Icon + chalk color + label for one model row (menus / help stay consistent).
+     * @returns {{ icon: string, color: string, label: string }}
+     */
+    getTierStyle(item, hasAccess, showCatalog) {
+        const label = this.getTierLabel(item, hasAccess, showCatalog);
+        const icon = this.getStatusIcon(item, hasAccess, showCatalog);
+        let color = 'yellow';
+        if (label.includes('No Key') || label.includes('Unverified')) color = 'gray';
+        else if (label.includes('Hit rate limit')) color = 'red';
+        else if (label.includes('lower RPM')) color = 'cyan';
+        else if (label.includes('daily limits')) color = 'magenta';
+        else if (label.includes('Free Tier')) color = 'green';
+        else if (label.includes('Accessible')) color = 'yellow';
+        else if (label.includes('Credits') || label.includes('Locked')) color = 'yellow';
+        return { icon, color, label };
     }
 
     /**

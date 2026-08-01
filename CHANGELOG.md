@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Features
+
+* **cli:** `lib/menu-format.js` — padded icon columns for Settings, model, Git, Actions, auth, and system menus
+* **cli:** API key save now live-tests provider connection (Connected / rejected / billing) for Google, OpenRouter, Perplexity
+* **cli:** Fix `/bypass` menu alignment (⚡ counted as wide emoji)
+* **models:** Wire `checkAvailableModels` through live sanitize/probe (fixes Perplexity `0 free accessible` after key save)
+* **models:** Probe/verify use `max_tokens: 16` (Perplexity rejects `1`); clear stale access cache on key save
+* **cli:** Provider browse shows all keyed models (free + paid); Perplexity Sonar catalog is 4 official models (not a large public list)
+* **cli:** Category browse uses usable∩domain; Model Selection menu coverage tests; README system architecture section
+* **tests:** 321 passing (33 suites)
+
 ## [1.4.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.3.1...v1.4.0) (2026-08-01)
 
 

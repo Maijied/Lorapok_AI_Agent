@@ -14,6 +14,7 @@ const TerminalUI = require('../lib/ui');
 const boxen = require('boxen');
 const GithubAuth = require('../services/GithubAuth');
 const modelCacheService = require('../services/ModelCacheService');
+const { menuChoice, backChoice, menuMessage } = require('../lib/menu-format');
 
 async function openBrowserUrl(url) {
     const ghAuth = new GithubAuth();
@@ -61,15 +62,121 @@ function getGoogleInstructions() {
     ].join('\n');
 }
 
-async function handleApiKeySettings(config) {
+async function reportKeyConnection(providerLabel, verifyResult) {
+    const state = verifyResult?.state || 'error';
+    const detail = verifyResult?.detail || 'Unknown error';
+    if (verifyResult?.connected) {
+        const suffix = state === 'rate_limited' ? ' (rate limited — key is valid)' : '';
+        console.log(TerminalUI.formatSuccess(`Connected to ${providerLabel}${suffix}.`));
+        if (detail && !/^OK$/i.test(detail) && !detail.toLowerCase().includes('accepted')) {
+            console.log(chalk.gray(`  ${detail}`));
+        }
+        return;
+    }
+    if (state === 'locked') {
+        console.log(TerminalUI.formatError(
+            `${providerLabel} rejected the key or requires billing/credits.`
+        ));
+    } else {
+        console.log(TerminalUI.formatError(
+            `Could not connect to ${providerLabel}.`
+        ));
+    }
+    if (detail) console.log(chalk.gray(`  ${detail}`));
+    if (verifyResult?.status) console.log(chalk.gray(`  HTTP ${verifyResult.status}`));
+}
+
+/**
+ * Save key, live-verify provider connection, invalidate model caches.
+ * @param {Object} config
+ * @param {'google'|'openrouter'|'perplexity'} which
+ * @param {string} rawKey
+ * @param {Object} [agent] - Optional agent to flush in-memory model cache
+ */
+async function saveAndVerifyApiKey(config, which, rawKey, agent = null) {
+    const ora = require('ora');
+    const modelAccessService = require('../services/ModelAccessService');
+    const key = String(rawKey || '').trim();
+    if (!key) return;
+
+    const map = {
+        google: {
+            set: () => config.setGoogleApiKey(key),
+            provider: 'google-ai-studio',
+            label: 'Google AI Studio',
+            saved: 'Google AI Studio API Key saved successfully.'
+        },
+        openrouter: {
+            set: () => config.setOpenRouterApiKey(key),
+            provider: 'openrouter',
+            label: 'OpenRouter',
+            saved: 'OpenRouter API Key saved successfully.'
+        },
+        perplexity: {
+            set: () => config.setPerplexityApiKey(key),
+            provider: 'perplexity',
+            label: 'Perplexity',
+            saved: 'Perplexity API Key saved successfully.'
+        }
+    };
+    const entry = map[which];
+    if (!entry) return;
+
+    entry.set();
+    console.log(TerminalUI.formatSuccess(entry.saved));
+
+    // Drop stale probe/catalog failures before the live check (e.g. old max_tokens:1 400s).
+    try {
+        if (typeof modelCacheService.clearCache === 'function') modelCacheService.clearCache();
+        else if (typeof modelCacheService.clearFailedModels === 'function') modelCacheService.clearFailedModels();
+        if (typeof modelAccessService.clearCache === 'function') modelAccessService.clearCache();
+        if (agent && agent.cache && typeof agent.cache.del === 'function') {
+            agent.cache.del('availableModels');
+            agent.cache.del('allModels');
+        }
+        if (agent && agent.modelManager && agent.modelManager.cache && typeof agent.modelManager.cache.del === 'function') {
+            agent.modelManager.cache.del('allModels');
+            agent.modelManager.cache.del('availableModels');
+        }
+        if (agent && typeof agent.apiKey !== 'undefined' && which === 'perplexity') {
+            agent.apiKey = key;
+        }
+    } catch (_) { /* ignore cache refresh errors */ }
+
+    let spinner = null;
+    if (process.stdout.isTTY) {
+        spinner = ora(`Testing connection to ${entry.label}...`).start();
+    }
+    let result;
+    try {
+        result = await modelAccessService.verifyProviderKey(entry.provider, key);
+    } catch (err) {
+        result = {
+            connected: false,
+            ok: false,
+            state: 'error',
+            detail: err.message || 'Connection test failed',
+            status: null
+        };
+    }
+    if (spinner) spinner.stop();
+
+    reportKeyConnection(entry.label, result);
+
+    if (result?.connected) {
+        console.log(chalk.gray('  Re-open Model Selection to refresh the usable catalog.'));
+    }
+}
+
+async function handleApiKeySettings(config, agent = null) {
     const keyMenu = new Select({
         message: '🔑 Select API Key Provider to Update:',
         choices: [
-            { name: 'google', message: '✨ Google AI Studio API Key (https://aistudio.google.com/app/apikey)' },
-            { name: 'openrouter', message: '🌐 OpenRouter API Key (https://openrouter.ai/keys)' },
-            { name: 'perplexity', message: '🟣 Perplexity API Key (https://www.perplexity.ai/settings/api)' },
-            { name: 'instructions', message: '📖 View Detailed Key Creation Instructions' },
-            { name: 'back', message: '🔙 Back' }
+            menuChoice('google', '✨', 'Google AI Studio API Key (https://aistudio.google.com/app/apikey)'),
+            menuChoice('openrouter', '🌐', 'OpenRouter API Key (https://openrouter.ai/keys)'),
+            menuChoice('perplexity', '🟣', 'Perplexity API Key (https://www.perplexity.ai/settings/api)'),
+            menuChoice('instructions', '📖', 'View Detailed Key Creation Instructions'),
+            backChoice()
         ],
         result(name) { return this.map(name)[name]; }
     });
@@ -91,8 +198,8 @@ async function handleApiKeySettings(config) {
         const openAns = await new Select({
             message: 'Open https://aistudio.google.com/app/apikey in your browser now?',
             choices: [
-                { name: 'open', message: '🌐 Yes, open browser' },
-                { name: 'skip', message: '⏩ Skip opening, I will paste my key' }
+                menuChoice('open', '🌐', 'Yes, open browser'),
+                menuChoice('skip', '⏩', 'Skip opening, I will paste my key')
             ],
             result(name) { return this.map(name)[name]; }
         }).run().catch(() => 'skip');
@@ -104,8 +211,7 @@ async function handleApiKeySettings(config) {
 
         const keyRes = await new Input({ message: '🔑 Enter/Paste Google AI Studio API Key:' }).run().catch(() => null);
         if (keyRes && keyRes.trim()) {
-            config.setGoogleApiKey(keyRes.trim());
-            console.log(TerminalUI.formatSuccess('Google AI Studio API Key saved successfully.'));
+            await saveAndVerifyApiKey(config, 'google', keyRes, agent);
         }
     }
 
@@ -116,8 +222,8 @@ async function handleApiKeySettings(config) {
         const openAns = await new Select({
             message: 'Open https://openrouter.ai/keys in your browser now?',
             choices: [
-                { name: 'open', message: '🌐 Yes, open browser' },
-                { name: 'skip', message: '⏩ Skip opening, I will paste my key' }
+                menuChoice('open', '🌐', 'Yes, open browser'),
+                menuChoice('skip', '⏩', 'Skip opening, I will paste my key')
             ],
             result(name) { return this.map(name)[name]; }
         }).run().catch(() => 'skip');
@@ -129,8 +235,7 @@ async function handleApiKeySettings(config) {
 
         const keyRes = await new Input({ message: '🔑 Enter/Paste OpenRouter API Key:' }).run().catch(() => null);
         if (keyRes && keyRes.trim()) {
-            config.setOpenRouterApiKey(keyRes.trim());
-            console.log(TerminalUI.formatSuccess('OpenRouter API Key saved successfully.'));
+            await saveAndVerifyApiKey(config, 'openrouter', keyRes, agent);
         }
     } else if (subChoice === 'perplexity') {
         const url = 'https://www.perplexity.ai/settings/api';
@@ -139,8 +244,8 @@ async function handleApiKeySettings(config) {
         const openAns = await new Select({
             message: 'Open https://www.perplexity.ai/settings/api in your browser now?',
             choices: [
-                { name: 'open', message: '🌐 Yes, open browser' },
-                { name: 'skip', message: '⏩ Skip opening, I will paste my key' }
+                menuChoice('open', '🌐', 'Yes, open browser'),
+                menuChoice('skip', '⏩', 'Skip opening, I will paste my key')
             ],
             result(name) { return this.map(name)[name]; }
         }).run().catch(() => 'skip');
@@ -152,8 +257,7 @@ async function handleApiKeySettings(config) {
 
         const keyRes = await new Input({ message: '🔑 Enter/Paste Perplexity API Key:' }).run().catch(() => null);
         if (keyRes && keyRes.trim()) {
-            config.setPerplexityApiKey(keyRes.trim());
-            console.log(TerminalUI.formatSuccess('Perplexity API Key saved successfully.'));
+            await saveAndVerifyApiKey(config, 'perplexity', keyRes, agent);
         }
     }
 }
@@ -170,7 +274,7 @@ async function handleModelSelection(agent, config) {
 
     let models = {};
     try {
-        models = await agent.checkAvailableModels();
+        models = await agent.checkAvailableModels({ force: true });
         if (spinner) spinner.stop();
     } catch (e) {
         if (spinner) spinner.fail('Failed to fetch models: ' + e.message);
@@ -182,10 +286,14 @@ async function handleModelSelection(agent, config) {
     const accessibleKeys = mm.getUsableModelIds(models);
     const paidKeys = mm.getPaidCatalogIds(models);
     console.log(chalk.cyan(`\n🧠 Loaded ${Object.keys(models).length} models — ${chalk.green(accessibleKeys.length + ' free accessible')} | ${chalk.yellow(paidKeys.length + ' paid')} (see 💰 Paid Catalog).\n`));
+    if (accessibleKeys.length === 0 && config.getPerplexityApiKey && config.getPerplexityApiKey()) {
+        console.log(chalk.gray('  Perplexity key is set. Sonar is free-tier once live probe succeeds; Pro models live under 💰 Paid Catalog (API credits required).\n'));
+    }
 
     const getTierLabel = (item, hasAccess, showCatalog) => {
         const label = mm.getTierLabel(item, hasAccess, showCatalog);
-        if (label.includes('No Key')) return chalk.gray(label);
+        if (label.includes('No Key') || label.includes('Locked')) return chalk.gray(label);
+        if (label.includes('Accessible')) return chalk.green(label);
         if (label.includes('Free Tier')) return chalk.green(label);
         if (label.includes('Rate Limited')) return chalk.blue(label);
         return chalk.yellow(label);
@@ -194,7 +302,7 @@ async function handleModelSelection(agent, config) {
     const getStatusIcon = (item, hasAccess, showCatalog) => {
         const icon = mm.getStatusIcon(item, hasAccess, showCatalog);
         if (icon === '🔒') return chalk.gray(icon);
-        if (icon === '🟢') return chalk.green(icon);
+        if (icon === '🟢' || icon === '✅') return chalk.green(icon);
         if (icon === '🔵') return chalk.blue(icon);
         return chalk.yellow(icon);
     };
@@ -203,11 +311,11 @@ async function handleModelSelection(agent, config) {
         const mainMenu = new Select({
             message: '🧠 Model Selection & Configuration',
             choices: [
-                { name: 'ready', message: '🟢 Currently Usable (Accessible With Your Active Keys)' },
-                { name: 'category', message: '📁 Browse by Domain / Category' },
-                { name: 'provider', message: '🏢 Browse by AI Provider' },
-                { name: 'all', message: '🌐 View All Supported Models' },
-                { name: 'back', message: '🔙 Back to Settings' }
+                menuChoice('ready', '🟢', 'Currently Usable (accessible with your keys)'),
+                menuChoice('category', '📁', 'Browse by domain / category'),
+                menuChoice('provider', '🏢', 'Browse by AI provider'),
+                menuChoice('all', '🌐', 'View all supported models'),
+                backChoice('back')
             ],
             result(name) { return this.map(name)[name]; }
         });
@@ -227,25 +335,28 @@ async function handleModelSelection(agent, config) {
             const categoryMenu = new Select({
                 message: '📁 Select Category (chat-compatible models only):',
                 choices: [
-                    { name: 'coding', message: '💻 Coding & Engineering' },
-                    { name: 'reasoning', message: '🔬 Complex Logic & Reasoning' },
-                    { name: 'research', message: '🔍 Web Research & Search' },
-                    { name: 'agent', message: '🤖 Autonomous Agents & Tools' },
-                    { name: 'openweights', message: '🦙 Open Weights & Open Source' },
-                    { name: 'fast', message: '🚀 Fast & Lightweight' },
-                    { name: 'general', message: '🌐 General Intelligence' },
-                    { name: 'back', message: '🔙 Back to Main Menu' }
+                    menuChoice('coding', '💻', 'Coding & Engineering'),
+                    menuChoice('reasoning', '🔬', 'Complex Logic & Reasoning'),
+                    menuChoice('research', '🔍', 'Web Research & Search'),
+                    menuChoice('agent', '🤖', 'Autonomous Agents & Tools'),
+                    menuChoice('openweights', '🦙', 'Open Weights & Open Source'),
+                    menuChoice('fast', '🚀', 'Fast & Lightweight'),
+                    menuChoice('general', '🌐', 'General Intelligence'),
+                    backChoice('back')
                 ],
                 result(name) { return this.map(name)[name]; }
             });
             const cat = await categoryMenu.run().catch(() => 'back');
             if (cat === 'back') continue;
-            filteredModelKeys = mm.getModelsByCategoryView(models, cat);
+            filteredModelKeys = typeof mm.getUsableModelsByCategoryView === 'function'
+                ? mm.getUsableModelsByCategoryView(models, cat)
+                : mm.getModelsByCategoryView(models, cat);
             menuTitle = `Category: ${cat}`;
 
         } else if (filterMode === 'provider') {
-            const usable = mm.getUsableModelIds(models);
-            const accessibleProviders = [...new Set(usable.map(id => models[id].provider))].filter(Boolean);
+            const accessibleProviders = mm.getKeyedProviders
+                ? mm.getKeyedProviders(models)
+                : [...new Set(mm.getUsableModelIds(models).map(id => models[id].provider))].filter(Boolean);
             if (accessibleProviders.length === 0) {
                 console.log(chalk.yellow('\n⚠️  No accessible providers found.'));
                 console.log(chalk.gray('   Add an API key in Settings → Update API Key to browse by provider.'));
@@ -255,14 +366,14 @@ async function handleModelSelection(agent, config) {
                 continue;
             }
             const providerChoices = accessibleProviders.map(p => {
-                let pName = p;
-                if (p === 'google-ai-studio') pName = '✨ Google AI Studio';
-                else if (p === 'perplexity') pName = '🟣 Perplexity AI';
-                else if (p === 'openrouter') pName = '🔵 OpenRouter';
-                else pName = `🏢 ${p.charAt(0).toUpperCase() + p.slice(1)}`;
-                return { name: p, message: pName };
+                let icon = '🏢';
+                let label = p.charAt(0).toUpperCase() + p.slice(1);
+                if (p === 'google-ai-studio') { icon = '✨'; label = 'Google AI Studio'; }
+                else if (p === 'perplexity') { icon = '🟣'; label = 'Perplexity AI (Sonar API — 4 models)'; }
+                else if (p === 'openrouter') { icon = '🔵'; label = 'OpenRouter'; }
+                return menuChoice(p, icon, label);
             });
-            providerChoices.push({ name: 'back', message: '🔙 Back to Main Menu' });
+            providerChoices.push(menuChoice('back', '←', 'Back to Main Menu'));
 
             const provMenu = new Select({
                 message: '🏢 Select Provider (Active keys only):',
@@ -273,14 +384,18 @@ async function handleModelSelection(agent, config) {
             if (prov === 'back') continue;
             filteredModelKeys = mm.getModelsByProviderView(models, prov);
             menuTitle = `Provider: ${prov}`;
+            // Provider browse includes paid models with a key — use paid-catalog labels
+            if (prov === 'perplexity' || prov === 'openrouter') {
+                showAllPaidCatalog = filteredModelKeys.some(id => !mm.isFreeTier({ ...models[id], id }));
+            }
 
         } else if (filterMode === 'all') {
             const allSubMenu = new Select({
                 message: '🌐 View All Supported Models:',
                 choices: [
-                    { name: 'usable', message: '🟢 Currently Usable (Accessible With Your Keys)' },
-                    { name: 'paid', message: '💰 Paid / Pro Tier Catalog (All — For Reference & Purchasing)' },
-                    { name: 'back', message: '🔙 Back to Main Menu' }
+                    menuChoice('usable', '🟢', 'Currently Usable (Accessible With Your Keys)'),
+                    menuChoice('paid', '💰', 'Paid / Pro Tier Catalog (All — For Reference & Purchasing)'),
+                    menuChoice('back', '←', 'Back to Main Menu')
                 ],
                 result(name) { return this.map(name)[name]; }
             });
@@ -298,13 +413,22 @@ async function handleModelSelection(agent, config) {
         }
 
         if (filteredModelKeys.length === 0) {
-            console.log(chalk.yellow(`\n⚠️  No models found for ${menuTitle}.`));
+            const { getTheme, getDefaultThemeId } = require('../lib/theme');
+            const theme = getTheme(config.getBrandingFont ? config.getBrandingFont() : getDefaultThemeId());
+            let detail = 'No models matched this view.';
             if (menuTitle.startsWith('Category:')) {
-                console.log(chalk.gray('   No accessible models in this category yet.'));
-                console.log(chalk.gray('   Try adding API keys, or use /refresh-models to re-check.\n'));
+                detail = 'No free-accessible models in this category yet. Try another category, add a free-tier key, or open 💰 Paid Catalog.';
             } else if (menuTitle.startsWith('Currently')) {
-                console.log(chalk.gray('   Add an API key in Settings → Update API Key to unlock models.\n'));
+                detail = 'Add an API key in Settings → Update API Key, then wait for live probes (or /refresh-models).';
+            } else if (menuTitle.startsWith('Provider:')) {
+                detail = 'No keyed models for this provider. Re-save the API key or run /refresh-models.';
+            } else if (menuTitle.includes('Paid')) {
+                detail = 'Paid catalog is empty after filters. Try /refresh-models.';
             }
+            console.log(theme.box(
+                theme.warning(`No models — ${menuTitle}`) + '\n' + theme.muted(detail),
+                { padding: { top: 0, bottom: 0, left: 1, right: 1 }, margin: { top: 1, bottom: 1 } }
+            ));
             continue;
         }
 
@@ -354,7 +478,10 @@ async function handleModelSelection(agent, config) {
             const limitTag = limits.length > 0 ? chalk.gray(` | ${limits.join(' | ')}`) : '';
 
             let disabledReason = false;
-            if (showAllPaidCatalog && !hasKeyAccess) {
+            const access = item.accessState || 'unverified';
+            if (access === 'locked' || access === 'unavailable') {
+                disabledReason = access === 'locked' ? '(Pro — Locked)' : '(Unavailable)';
+            } else if (showAllPaidCatalog && !hasKeyAccess) {
                 let keyUrl = 'https://openrouter.ai/keys';
                 if (item.provider === 'perplexity') keyUrl = 'https://www.perplexity.ai/settings/api';
                 if (item.provider === 'google-ai-studio') keyUrl = 'https://aistudio.google.com/app/apikey';
@@ -365,12 +492,12 @@ async function handleModelSelection(agent, config) {
 
             choices.push({
                 name: id,
-                message: `${statusIcon} ${cleanName} ${providerTag} ${catTag} ${tierTag}${limitTag}`,
+                message: menuMessage(statusIcon, `${cleanName} ${providerTag} ${catTag} ${tierTag}${limitTag}`),
                 disabled: disabledReason || false
             });
         }
 
-        choices.push({ name: 'back', message: '🔙 Back to Filter Menu' });
+        choices.push(menuChoice('back', '←', 'Back to Filter Menu'));
 
         const modelSelect = new Select({
             message: `🧠 Select from ${menuTitle} (${filteredModelKeys.length} models):`,
@@ -385,17 +512,41 @@ async function handleModelSelection(agent, config) {
             const cleanSelectedName = (selectedModel?.name || model)
                 .replace(/\s*\((Google AI Studio|Perplexity|OpenRouter)\)/gi, '')
                 .trim();
-            if (!mm.canSelectModel(model, models) && !(showAllPaidCatalog && selectedModel?.available)) {
+
+            // Live probe before allowing selection (paid or unverified)
+            const modelAccessService = require('../services/ModelAccessService');
+            const keys = {
+                googleKey: config.getGoogleApiKey(),
+                openRouterKey: config.getOpenRouterApiKey(),
+                perplexityKey: config.getPerplexityApiKey()
+            };
+            let probeSpinner = null;
+            if (process.stdout.isTTY) {
+                probeSpinner = ora(`Verifying access to '${cleanSelectedName}'...`).start();
+            }
+            const probe = await modelAccessService.probeModel(model, keys, selectedModel || {});
+            if (probeSpinner) probeSpinner.stop();
+            models[model] = { ...selectedModel, accessState: probe.state, id: model };
+
+            if (probe.state === 'locked' || probe.state === 'unavailable' || probe.state === 'error') {
+                console.log(chalk.red(`\n❌ Model '${cleanSelectedName}' is not selectable (${probe.state}).`));
+                if (probe.detail) console.log(chalk.gray(`   ${probe.detail}\n`));
+                continue;
+            }
+            if (!mm.canSelectModel(model, models)) {
                 console.log(chalk.red(`\n❌ Model '${cleanSelectedName}' is not accessible with your current keys.\n`));
                 continue;
             }
 
-            const isSelectedPaid = !mm.isFreeTier(selectedModel);
-            if (isSelectedPaid) {
+            const isSelectedPaid = !mm.isFreeTier(models[model]);
+            if (isSelectedPaid && probe.state === 'accessible') {
+                console.log(chalk.green(`\n✅ PAID MODEL ACCESSIBLE: '${cleanSelectedName}' works with your key.`));
+                console.log(chalk.gray('   Provider credits may still apply depending on your plan.\n'));
+            } else if (isSelectedPaid) {
                 let purchaseUrl = 'https://openrouter.ai/keys';
                 if (selectedModel?.provider === 'perplexity') purchaseUrl = 'https://www.perplexity.ai/settings/api';
-                console.log(chalk.yellow(`\n💳 PAID MODEL: '${cleanSelectedName}' requires credits or a paid plan.`));
-                console.log(chalk.cyan(`   To purchase credits: ${purchaseUrl}\n`));
+                console.log(chalk.yellow(`\n💳 PAID MODEL: '${cleanSelectedName}' may require credits or a paid plan.`));
+                console.log(chalk.cyan(`   Manage billing: ${purchaseUrl}\n`));
             } else if (selectedModel?.provider === 'google-ai-studio' && selectedModel?.rateLimited) {
                 console.log(chalk.blue(`\n🔵 RATE LIMITED MODEL: '${cleanSelectedName}' is accessible with your free Google AI Studio key.`));
                 console.log(chalk.gray(`   Lower rate limits apply. Upgrade plan at: https://aistudio.google.com/app/plan\n`));
@@ -404,15 +555,17 @@ async function handleModelSelection(agent, config) {
             const confirm = new Select({
                 message: `Switch active AI model to '${cleanSelectedName}'?`,
                 choices: [
-                    { name: 'save', message: '🟢 Switch & Save Model' },
-                    { name: 'reject', message: '❌ Reject / Cancel' }
+                    menuChoice('save', '🟢', 'Switch & Save Model'),
+                    menuChoice('reject', '❌', 'Reject / Cancel')
                 ],
                 result(name) { return this.map(name)[name]; }
             });
             const ans = await confirm.run().catch(() => 'reject');
             if (ans === 'save') {
                 config.setModel(model);
-                console.log(TerminalUI.formatSuccess(`AI Model updated to ${cleanSelectedName}.`));
+                const { ActiveModelService } = require('../services/ActiveModelService');
+                const status = new ActiveModelService(mm).getStatus(config, models);
+                console.log(TerminalUI.formatSuccess(`AI Model updated to ${status.shortLine}.`));
                 return;
             } else {
                 console.log(chalk.yellow('\n⚠️  Model change rejected. Kept current model.\n'));
@@ -428,145 +581,233 @@ async function handleModelSelection(agent, config) {
  * @returns {Promise<{ success: boolean, message?: string }>} Execution result status
  */
 async function showSettings(agent, config) {
+    while (true) {
+        const select = new Select({
+            name: 'setting',
+            message: 'Settings & Preferences',
+            styles: { underline: str => str, em: chalk.cyan.bold },
+            pointer(choice, i) {
+                return this.state.index === i ? chalk.cyan.bold('❯ ') : '  ';
+            },
+            choices: [
+                menuChoice('name', '👤', 'Change user name'),
+                menuChoice('model', '🧠', 'LLM model configuration'),
+                menuChoice('sessions', '📁', 'Session info'),
+                menuChoice('cache', '💾', 'Response cache'),
+                menuChoice('language', '🌐', 'Default language'),
+                menuChoice('theme', '🎨', 'CLI theme'),
+                menuChoice('logo', '🐛', 'Logo style (cyber / classic)'),
+                menuChoice('key', '🔑', 'Update API key (encrypted vault)'),
+                menuChoice('reset', '♻', 'Reset Lorapok AI'),
+                backChoice('back')
+            ],
+            result(name) { return this.map(name)[name]; }
+        });
 
-    const select = new Select({
-        name: 'setting',
-        message: 'Settings & Preferences:',
-        styles: {
-            underline: str => str,
-            em: chalk.cyan.bold
-        },
-        pointer(choice, i) {
-            return this.state.index === i ? chalk.cyan.bold('❯ ') : '  ';
-        },
-        choices: [
-            { name: 'name', message: '👤 Change User Name' },
-            { name: 'model', message: '🧠 LLM Model Configuration' },
-            { name: 'cache', message: '⚡ LLM Response Cache Engine' },
-            { name: 'language', message: '🌐 Change Default Language' },
-            { name: 'theme', message: '🎨 CLI Theme Customizer' },
-            { name: 'key', message: '🔑 Update API Key' },
-            { name: 'back', message: '🔙 Back to Main Menu' }
-        ],
-        result(name) { return this.map(name)[name]; }
-    });
+        const choice = await select.run().catch(() => 'back');
+        if (choice === 'back') return { success: true };
 
-    const choice = await select.run().catch(() => 'back');
-    if (choice === 'back' || choice === 'Back') return { success: true };
+        let saved = false;
 
-    if (choice === 'cache') {
-        await handleCacheCommand(null, { agent, config, ui: TerminalUI });
-        return { success: true };
-    }
-
-    if (choice === 'name') {
-        const currentName = config.getUserName() || 'Developer';
-        const nameRes = await new Input({
-            message: '👤 Enter New User Name:',
-            initial: currentName
-        }).run().catch(() => null);
-
-        if (nameRes && nameRes.trim() !== currentName) {
-            const confirm = new Select({
-                message: `Save user name as '${nameRes.trim()}'?`,
-                choices: [
-                    { name: 'save', message: '🟢 Save Changes' },
-                    { name: 'reject', message: '❌ Reject / Cancel' }
-                ],
-                result(name) { return this.map(name)[name]; }
-            });
-            const ans = await confirm.run().catch(() => 'reject');
-            if (ans === 'save') {
-                config.setUserName(nameRes.trim());
-                console.log(TerminalUI.formatSuccess(`User name updated to '${nameRes.trim()}'.`));
-            } else {
-                console.log(chalk.yellow('\n⚠️ Changes rejected. User name kept unchanged.'));
-            }
+        if (choice === 'cache') {
+            await handleCacheCommand(null, { agent, config, ui: TerminalUI });
+            continue;
         }
-    } else if (choice === 'model') {
-        await handleModelSelection(agent, config);
-    } else if (choice === 'language') {
 
-        const langRes = await new Input({ message: '🌐 Default Language:' }).run().catch(() => null);
-        if (langRes) {
-            const confirm = new Select({
-                message: `Set default language to '${langRes.trim()}'?`,
-                choices: [
-                    { name: 'save', message: '🟢 Save Language Preference' },
-                    { name: 'reject', message: '❌ Reject / Cancel' }
-                ],
-                result(name) { return this.map(name)[name]; }
-            });
-            const ans = await confirm.run().catch(() => 'reject');
-            if (ans === 'save') {
-                config.setLanguage(langRes.trim());
-                console.log(TerminalUI.formatSuccess('Language preference updated.'));
-            } else {
-                console.log(chalk.yellow('\n⚠️ Language change rejected.'));
-            }
+        if (choice === 'sessions') {
+            await showSessionInfo(config);
+            continue;
         }
-    } else if (choice === 'key') {
-        await handleApiKeySettings(config);
-    } else if (choice === 'theme') {
-        await TerminalUI.previewThemes(config);
-    }
 
-    console.log(TerminalUI.formatSuccess('Settings updated.'));
-    return { success: true };
+        if (choice === 'name') {
+            const currentName = config.getUserName() || 'Developer';
+            const nameRes = await new Input({
+                message: 'Enter new user name:',
+                initial: currentName
+            }).run().catch(() => null);
+
+            if (nameRes && nameRes.trim() !== currentName) {
+                const ans = await new Select({
+                    message: `Save user name as '${nameRes.trim()}'?`,
+                    choices: [
+                        menuChoice('save', '✓', 'Save changes'),
+                        backChoice('reject')
+                    ]
+                }).run().catch(() => 'reject');
+                if (ans === 'save') {
+                    config.setUserName(nameRes.trim());
+                    console.log(TerminalUI.formatSuccess(`User name updated to '${nameRes.trim()}'.`, config));
+                    saved = true;
+                }
+            }
+        } else if (choice === 'model') {
+            await handleModelSelection(agent, config);
+            continue;
+        } else if (choice === 'language') {
+            const langRes = await new Input({ message: 'Default language:' }).run().catch(() => null);
+            if (langRes) {
+                const ans = await new Select({
+                    message: `Set default language to '${langRes.trim()}'?`,
+                    choices: [
+                        menuChoice('save', '✓', 'Save language preference'),
+                        backChoice('reject')
+                    ]
+                }).run().catch(() => 'reject');
+                if (ans === 'save') {
+                    config.setLanguage(langRes.trim());
+                    console.log(TerminalUI.formatSuccess('Language preference updated.', config));
+                    saved = true;
+                }
+            }
+        } else if (choice === 'key') {
+            await handleApiKeySettings(config, agent);
+            continue;
+        } else if (choice === 'theme') {
+            await TerminalUI.previewThemes(config);
+            continue;
+        } else if (choice === 'logo') {
+            await TerminalUI.previewLogos(config);
+            continue;
+        } else if (choice === 'reset') {
+            const mode = await new Select({
+                message: 'Reset Lorapok AI to factory defaults?',
+                choices: [
+                    menuChoice('soft', '🔄', 'Soft reset — theme/prefs (keep vault keys)'),
+                    menuChoice('hard', '⚠', 'Hard reset — clear prefs, history, and vault keys'),
+                    backChoice('cancel')
+                ]
+            }).run().catch(() => 'cancel');
+            if (mode === 'cancel') continue;
+            const confirm = await new Select({
+                message: mode === 'hard'
+                    ? 'Confirm HARD reset? Clears preferences, history, and encrypted secrets.'
+                    : 'Confirm soft reset? Theme returns to Lorapok; vault keys kept.',
+                choices: [
+                    menuChoice('yes', '✓', 'Yes, reset now'),
+                    backChoice('no')
+                ]
+            }).run().catch(() => 'no');
+            if (confirm !== 'yes') continue;
+            const modelCacheSvc = require('../services/ModelCacheService');
+            const modelAccessSvc = require('../services/ModelAccessService');
+            modelCacheSvc.clearFailedModels();
+            modelAccessSvc.clearCache();
+            const result = config.resetToDefaults({ hard: mode === 'hard' });
+            console.log(TerminalUI.formatSuccess(`Lorapok AI reset complete (theme: ${result.theme}).`, config));
+            const pkg = require('../package.json');
+            TerminalUI.showHeader(pkg.version, config.getModel() || '', process.cwd(), config);
+            saved = true;
+        }
+
+        if (saved) {
+            console.log(TerminalUI.formatSuccess('Settings updated.', config));
+        }
+    }
 }
 
 /**
  * Display formatted system diagnostic logs table.
  * @returns {Promise<{ success: boolean, error?: string }>} Execution status
  */
-async function showLogs() {
+async function showLogs(config = null) {
+    const { getTheme, getDefaultThemeId } = require('../lib/theme');
+    const theme = getTheme(config && config.getBrandingFont ? config.getBrandingFont() : getDefaultThemeId());
     const logPath = path.join(os.homedir(), '.lorapok', 'logs', 'combined.log');
-    console.log(chalk.cyan.bold('\n📊 SYSTEM DIAGNOSTIC LOGS\n'));
+    const cols = process.stdout.columns || 100;
+    const msgW = Math.max(40, Math.min(80, cols - 28));
+
+    console.log(theme.box(theme.color('info', 'System logs'), {
+        padding: { top: 0, bottom: 0, left: 1, right: 1 },
+        margin: { top: 1, bottom: 1 }
+    }));
 
     try {
         if (!fs.existsSync(logPath)) {
-            console.log(chalk.yellow('  No log file found yet.'));
-            await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run().catch(() => null);
-            return { success: true };
+            console.log(theme.warning('  No log file found yet.'));
+        } else {
+            const rawLogs = fs.readFileSync(logPath, 'utf8').trim().split('\n').slice(-30);
+            const Table = require('cli-table3');
+            const table = new Table({
+                head: [theme.color('info', 'Time'), theme.color('info', 'Level'), theme.color('info', 'Message')],
+                style: { head: [], border: [] },
+                colWidths: [10, 8, msgW],
+                wordWrap: true
+            });
+
+            rawLogs.forEach(line => {
+                try {
+                    const log = JSON.parse(line);
+                    const time = new Date(log.timestamp).toLocaleTimeString([], { hour12: false });
+                    const lvl = String(log.level || 'info').toUpperCase();
+                    let levelBadge = theme.muted(` ${lvl.padEnd(5)} `);
+                    if (lvl === 'ERROR') levelBadge = theme.error(` ${lvl.padEnd(5)} `);
+                    else if (lvl === 'WARN') levelBadge = theme.warning(` ${lvl.padEnd(5)} `);
+                    else if (lvl === 'INFO') levelBadge = theme.color('info', ` ${lvl.padEnd(5)} `);
+                    table.push([theme.muted(time), levelBadge, theme.color('text', String(log.message || ''))]);
+                } catch (e) {
+                    if (line.trim()) table.push(['—', theme.muted(' RAW '), theme.muted(line.trim())]);
+                }
+            });
+            console.log(table.toString());
         }
-
-        const rawLogs = fs.readFileSync(logPath, 'utf8').trim().split('\n').slice(-15);
-        const Table = require('cli-table3');
-        const table = new Table({
-            head: [chalk.cyan('Time'), chalk.cyan('Level'), chalk.cyan('Message')],
-            style: { head: [], border: ['gray'] },
-            colWidths: [12, 10, 50]
-        });
-
-        rawLogs.forEach(line => {
-            try {
-                const log = JSON.parse(line);
-                const time = new Date(log.timestamp).toLocaleTimeString([], { hour12: false });
-                let level = log.level.toUpperCase();
-
-                if (level === 'ERROR') level = chalk.red.bold(level);
-                else if (level === 'WARN') level = chalk.yellow.bold(level);
-                else level = chalk.blue(level);
-
-                table.push([chalk.gray(time), level, chalk.white(log.message)]);
-            } catch (e) {
-                if (line.trim()) table.push(['-', '-', line.trim()]);
-            }
-        });
-
-        console.log(table.toString());
     } catch (e) {
-        console.log(TerminalUI.formatError(`Could not read logs: ${e.message}`));
+        console.log(TerminalUI.formatError(`Could not read logs: ${e.message}`, config));
         return { success: false, error: e.message };
     }
     console.log('');
-    await new Input({ message: 'Press Enter to continue ⏎ ‣' }).run().catch(() => null);
+    await new Select({
+        message: 'Logs',
+        choices: [backChoice()]
+    }).run().catch(() => 'back');
     return { success: true };
 }
 
 /**
- * Slash command handler for switching active LLM model (`/model <modelId>`).
- * @param {string} modelId - Target model identifier
+ * Browse persisted SESSION RECAP files under ~/.lorapok/sessions.
+ */
+async function showSessionInfo(config = null) {
+    const { SessionStore } = require('../services/SessionStore');
+    const { getTheme, getDefaultThemeId } = require('../lib/theme');
+    const theme = getTheme(config && config.getBrandingFont ? config.getBrandingFont() : getDefaultThemeId());
+    const store = new SessionStore(config && config.configDir);
+
+    while (true) {
+        const rows = store.list(20);
+        if (rows.length === 0) {
+            console.log(theme.box(theme.muted('No saved sessions yet. Exit a chat (/q) to save a recap.'), {
+                padding: { top: 0, bottom: 0, left: 1, right: 1 },
+                margin: { top: 1, bottom: 1 }
+            }));
+            await new Select({
+                message: 'Session info',
+                choices: [backChoice()]
+            }).run().catch(() => 'back');
+            return { success: true };
+        }
+
+        const choice = await new Select({
+            message: 'Session info',
+            choices: [
+                ...rows.map(r => ({
+                    name: r.id,
+                    message: `  ${r.id}  ·  ${r.savedAt ? r.savedAt.slice(0, 19).replace('T', ' ') : '—'}  ·  ${r.count || 0} turns`
+                })),
+                backChoice()
+            ]
+        }).run().catch(() => 'back');
+
+        if (choice === 'back') return { success: true };
+        const data = store.load(choice);
+        if (data) {
+            TerminalUI.showInteractionSummary(data, { themeId: theme.id, viewOnly: true });
+            await new Select({
+                message: 'Session recap',
+                choices: [backChoice()]
+            }).run().catch(() => 'back');
+        }
+    }
+}
+
 /**
  * Slash command handler for inspecting, switching, or listing LLM models (`/model [subcommand/modelId]`).
  * @param {Array<string>|string} [args] - Subcommands ('info', 'list', 'set') or target model ID
@@ -690,11 +931,22 @@ async function handleModelCommand(args, context) {
  */
 async function handleConfigCommand(key, value, context) {
     const { config, ui } = context;
+    const { getTheme, getDefaultThemeId } = require('../lib/theme');
+    const theme = getTheme(config && config.getBrandingFont ? config.getBrandingFont() : getDefaultThemeId());
     if (!key) {
-        console.log(chalk.cyan(`Config summary:`));
-        console.log(`  Model: ${config.getModel()}`);
-        console.log(`  Language: ${config.getLanguage()}`);
-        console.log(`  User: ${config.getUserName()}`);
+        const body = [
+            theme.color('info', 'Config summary'),
+            '',
+            theme.muted('Model') + '     ' + theme.color('text', config.getModel() || '—'),
+            theme.muted('Language') + '  ' + theme.color('text', config.getLanguage() || '—'),
+            theme.muted('User') + '      ' + theme.color('text', config.getUserName() || '—'),
+            theme.muted('Theme') + '     ' + theme.color('text', config.getBrandingFont() || '—'),
+            theme.muted('Logo') + '      ' + theme.color('text', (config.getLogoStyle && config.getLogoStyle()) || 'cyber')
+        ].join('\n');
+        console.log(theme.box(body, {
+            padding: { top: 0, bottom: 0, left: 2, right: 2 },
+            margin: { top: 1, bottom: 1 }
+        }));
         return { success: true };
     }
 
@@ -783,9 +1035,9 @@ async function handleCacheCommand(subCommand, context) {
     const cacheMenu = new Select({
         message: 'Cache Management:',
         choices: [
-            { name: 'toggle', message: stats.enabled ? '⏸ Disable Response Caching' : '▶ Enable Response Caching' },
-            { name: 'clear', message: '🗑 Clear All Cached Responses' },
-            { name: 'back', message: '🔙 Back' }
+            menuChoice('toggle', stats.enabled ? '⏸' : '▶', stats.enabled ? 'Disable Response Caching' : 'Enable Response Caching'),
+            menuChoice('clear', '🗑', 'Clear All Cached Responses'),
+            backChoice()
         ],
         result(name) { return this.map(name)[name]; }
     });
@@ -808,8 +1060,10 @@ async function handleCacheCommand(subCommand, context) {
 module.exports = {
     showSettings,
     showLogs,
+    showSessionInfo,
     handleModelCommand,
     handleConfigCommand,
-    handleCacheCommand
+    handleCacheCommand,
+    saveAndVerifyApiKey
 };
 

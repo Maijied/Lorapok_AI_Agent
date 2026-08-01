@@ -12,6 +12,7 @@
     "cli": "node bin/lorapok.js",
     "dev": "nodemon index.js",
     "test": "jest",
+    "probe-models": "node scripts/probe-models.js",
     "test:docker": "docker compose run --rm lorapok npm test",
     "docker:build": "docker compose build",
     "docker:run": "docker compose run --rm lorapok",

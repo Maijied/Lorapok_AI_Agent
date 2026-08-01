@@ -8,7 +8,7 @@
  *  - Strict free/paid separation: paid models ONLY in Paid Catalog
  *  - Currently Usable: free-tier accessible only
  *  - Category browse: free-tier accessible only
- *  - Provider browse: free-tier accessible only
+ *  - Provider browse: all keyed models for that provider (free + paid)
  *  - View All → Paid: all pro-tier (selectable if keyed, locked if not)
  *  - View All → Usable: same as Currently Usable (free-tier only)
  *  - Tier label / icon correctness
@@ -19,6 +19,7 @@
 const { ModelManager, DEFAULT_GOOGLE_MODELS, DEFAULT_OPENROUTER_MODELS, DEFAULT_PERPLEXITY_MODELS } = require('../services/ModelManager');
 const modelValidator = require('../services/ModelValidator');
 const modelCacheService = require('../services/ModelCacheService');
+const modelAccessService = require('../services/ModelAccessService');
 
 // ── Helpers mirroring logic in commands/settings.js ──────────────────────────
 
@@ -28,7 +29,18 @@ function buildValidatedModels(keys = {}) {
         ...DEFAULT_OPENROUTER_MODELS,
         ...DEFAULT_GOOGLE_MODELS
     };
-    return modelValidator.validateUsableModels(allModels, keys);
+    const validated = modelValidator.validateUsableModels(allModels, keys);
+    // Menu usable/selectable require live-probed access — simulate successful probes for keyed free models.
+    for (const [id, meta] of Object.entries(validated)) {
+        if (meta.available) {
+            meta.accessState = 'accessible';
+            meta.paymentRequired = typeof meta.paymentRequired === 'boolean'
+                ? meta.paymentRequired
+                : meta.tier === 'pro' && meta.provider !== 'google-ai-studio';
+            if (meta.provider === 'google-ai-studio') meta.paymentRequired = false;
+        }
+    }
+    return validated;
 }
 
 /** accessibleKeys = service-layer usable view */
@@ -52,6 +64,7 @@ function getStatusIcon(mm, item, hasAccess, showCatalog) {
     if (icon === '🔒') return 'locked';
     if (icon === '🟢') return 'free';
     if (icon === '🔵') return 'rate-limited';
+    if (icon === '✅') return 'accessible-paid';
     return 'paid';
 }
 
@@ -61,11 +74,12 @@ describe('ModelMenuFiltering — Tier Labels (settings.js logic)', () => {
     let mm;
     beforeEach(() => {
         modelCacheService.clearCache();
+        modelAccessService.clearCache();
         mm = new ModelManager();
     });
 
     test('Google free-tier model gets "Free Tier" label', () => {
-        const item = { ...DEFAULT_GOOGLE_MODELS['gemini-2.5-flash'], available: true };
+        const item = { ...DEFAULT_GOOGLE_MODELS['gemini-flash-latest'], available: true, accessState: 'accessible' };
         expect(getTierLabel(mm, item, true, false)).toBe('Free Tier');
     });
 
@@ -74,9 +88,19 @@ describe('ModelMenuFiltering — Tier Labels (settings.js logic)', () => {
         expect(getTierLabel(mm, item, true, false)).toBe('Rate Limited — Free API Key');
     });
 
-    test('OpenRouter pro-tier model gets "Pro — Credits Required"', () => {
-        const item = { ...DEFAULT_OPENROUTER_MODELS['anthropic/claude-3.5-sonnet'], available: true };
-        expect(getTierLabel(mm, item, true, false)).toBe('Pro — Credits Required');
+    test('OpenRouter pro-tier unverified model gets "Pro — Unverified"', () => {
+        const item = { ...DEFAULT_OPENROUTER_MODELS['anthropic/claude-3.5-sonnet'], available: true, accessState: 'unverified' };
+        expect(getTierLabel(mm, item, true, false)).toBe('Pro — Unverified');
+    });
+
+    test('OpenRouter pro-tier accessible model gets "Pro — Accessible"', () => {
+        const item = { ...DEFAULT_OPENROUTER_MODELS['anthropic/claude-3.5-sonnet'], available: true, accessState: 'accessible' };
+        expect(getTierLabel(mm, item, true, false)).toBe('Pro — Accessible');
+    });
+
+    test('OpenRouter pro-tier locked model gets "Pro — Credits Required / Locked"', () => {
+        const item = { ...DEFAULT_OPENROUTER_MODELS['anthropic/claude-3.5-sonnet'], available: true, accessState: 'locked' };
+        expect(getTierLabel(mm, item, true, true)).toBe('Pro — Credits Required / Locked');
     });
 
     test('OpenRouter free-tier model gets "Free Tier"', () => {
@@ -84,9 +108,9 @@ describe('ModelMenuFiltering — Tier Labels (settings.js logic)', () => {
         expect(getTierLabel(mm, item, true, false)).toBe('Free Tier');
     });
 
-    test('Perplexity pro-tier model gets "Pro — Credits Required"', () => {
-        const item = { ...DEFAULT_PERPLEXITY_MODELS['sonar-pro'], available: true };
-        expect(getTierLabel(mm, item, true, false)).toBe('Pro — Credits Required');
+    test('Perplexity pro-tier accessible model gets "Pro — Accessible"', () => {
+        const item = { ...DEFAULT_PERPLEXITY_MODELS['sonar-pro'], available: true, accessState: 'accessible', paymentRequired: true };
+        expect(getTierLabel(mm, item, true, false)).toBe('Pro — Accessible');
     });
 
     test('Perplexity free-tier model gets "Free Tier"', () => {
@@ -115,7 +139,7 @@ describe('ModelMenuFiltering — Status Icons', () => {
     });
 
     test('Google free-tier accessible = "free" icon', () => {
-        const item = DEFAULT_GOOGLE_MODELS['gemini-2.5-flash'];
+        const item = DEFAULT_GOOGLE_MODELS['gemini-flash-latest'];
         expect(getStatusIcon(mm, item, true, false)).toBe('free');
     });
 
@@ -167,7 +191,7 @@ describe('ModelMenuFiltering — Currently Usable (FREE-TIER ONLY)', () => {
     test('With Google key only: gemini-2.5-flash included (free tier)', () => {
         const models = buildValidatedModels({ googleKey: 'AIzaSyTest' });
         const accessible = getFreeAccessibleKeys(models, mm);
-        expect(accessible).toContain('gemini-2.5-flash');
+        expect(accessible).toContain('gemini-flash-latest');
     });
 
     test('With Google key only: gemini-2.5-pro INCLUDED (free API key, rate-limited — not paid)', () => {
@@ -230,10 +254,10 @@ describe('ModelMenuFiltering — Currently Usable (FREE-TIER ONLY)', () => {
     });
 
     test('Failed models excluded from Currently Usable', () => {
-        modelCacheService.addFailedModel('gemini-2.5-flash', '429 Quota Exceeded');
+        modelCacheService.addFailedModel('gemini-flash-latest', '429 Quota Exceeded');
         const models = buildValidatedModels({ googleKey: 'AIzaSyTest' });
         const accessible = getFreeAccessibleKeys(models, mm);
-        expect(accessible).not.toContain('gemini-2.5-flash');
+        expect(accessible).not.toContain('gemini-flash-latest');
     });
 
     test('TTS models never appear in Currently Usable', () => {
@@ -268,7 +292,7 @@ describe('ModelMenuFiltering — Category Browse (FREE-TIER ONLY)', () => {
             const cats = Array.isArray(models[id].category) ? models[id].category : [models[id].category];
             return cats.includes('coding');
         });
-        expect(coding).toContain('gemini-2.5-flash');
+        expect(coding).toContain('gemini-flash-latest');
         expect(coding).toContain('gemini-2.5-pro');
         coding.forEach(id => expect(mm.isFreeTier(models[id])).toBe(true));
     });
@@ -298,7 +322,7 @@ describe('ModelMenuFiltering — Category Browse (FREE-TIER ONLY)', () => {
         expect(fast).toContain('gemini-2.0-flash');
     });
 
-    test('reasoning category with Google key includes gemini-2.5-flash (free)', () => {
+    test('reasoning category with Google key includes gemini-3.5-flash (free)', () => {
         const models = buildValidatedModels({ googleKey: 'AIzaSyTest' });
         const reasoning = Object.keys(models).filter(id => {
             if (!models[id].available) return false;
@@ -306,7 +330,7 @@ describe('ModelMenuFiltering — Category Browse (FREE-TIER ONLY)', () => {
             const cats = Array.isArray(models[id].category) ? models[id].category : [models[id].category];
             return cats.includes('reasoning');
         });
-        expect(reasoning).toContain('gemini-2.5-flash');
+        expect(reasoning).toContain('gemini-3.5-flash');
     });
 
     test('category browse with no keys returns empty list', () => {
@@ -323,7 +347,7 @@ describe('ModelMenuFiltering — Category Browse (FREE-TIER ONLY)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('ModelMenuFiltering — Provider Browse (FREE-TIER ONLY)', () => {
+describe('ModelMenuFiltering — Provider Browse (KEYED FREE + PAID)', () => {
     let mm;
     beforeEach(() => {
         modelCacheService.clearCache();
@@ -332,8 +356,7 @@ describe('ModelMenuFiltering — Provider Browse (FREE-TIER ONLY)', () => {
 
     test('Provider browse with Google key only: shows google-ai-studio', () => {
         const models = buildValidatedModels({ googleKey: 'AIzaSyTest' });
-        const accessible = getFreeAccessibleKeys(models, mm);
-        const providers = [...new Set(accessible.map(id => models[id].provider))].filter(Boolean);
+        const providers = mm.getKeyedProviders(models);
         expect(providers).toContain('google-ai-studio');
         expect(providers).not.toContain('openrouter');
         expect(providers).not.toContain('perplexity');
@@ -341,27 +364,31 @@ describe('ModelMenuFiltering — Provider Browse (FREE-TIER ONLY)', () => {
 
     test('Provider browse with no keys: empty provider list', () => {
         const models = buildValidatedModels({});
-        const accessible = getFreeAccessibleKeys(models, mm);
-        const providers = [...new Set(accessible.map(id => models[id].provider))].filter(Boolean);
-        expect(providers).toHaveLength(0);
+        expect(mm.getKeyedProviders(models)).toHaveLength(0);
     });
 
-    test('Provider browse: filtering by provider shows ONLY free-tier models', () => {
+    test('Provider browse for Perplexity includes free Sonar and paid Sonar Pro family', () => {
+        const models = buildValidatedModels({ perplexityKey: 'pplx-test' });
+        const ids = mm.getModelsByProviderView(models, 'perplexity');
+        expect(ids).toContain('sonar');
+        expect(ids).toContain('sonar-pro');
+        expect(ids).toContain('sonar-reasoning-pro');
+        expect(ids).toContain('sonar-deep-research');
+        expect(ids).not.toContain('sonar-reasoning'); // deprecated / removed
+        expect(ids.length).toBe(4);
+    });
+
+    test('Provider browse OpenRouter includes free and paid when keyed', () => {
         const models = buildValidatedModels({ openRouterKey: 'sk-or-v1-test' });
-        const orFreeTier = Object.keys(models).filter(id =>
-            !modelCacheService.isModelFailed(id) && models[id].available && mm.isFreeTier(models[id]) && models[id].provider === 'openrouter'
-        );
-        expect(orFreeTier.length).toBeGreaterThan(0);
-        orFreeTier.forEach(id => {
-            expect(models[id].provider).toBe('openrouter');
-            expect(mm.isFreeTier(models[id])).toBe(true);
-        });
+        const ids = mm.getModelsByProviderView(models, 'openrouter');
+        expect(ids.length).toBeGreaterThan(0);
+        expect(ids.some(id => mm.isFreeTier(models[id]))).toBe(true);
+        expect(ids.some(id => !mm.isFreeTier(models[id]))).toBe(true);
     });
 
     test('Provider list for all keys: contains all 3 providers', () => {
         const models = buildValidatedModels({ googleKey: 'AIzaSyTest', openRouterKey: 'sk-or-v1-test', perplexityKey: 'pplx-test' });
-        const accessible = getFreeAccessibleKeys(models, mm);
-        const providers = [...new Set(accessible.map(id => models[id].provider))].filter(Boolean);
+        const providers = mm.getKeyedProviders(models);
         expect(providers).toContain('google-ai-studio');
         expect(providers).toContain('openrouter');
         expect(providers).toContain('perplexity');
@@ -390,7 +417,7 @@ describe('ModelMenuFiltering — View All → Paid Catalog', () => {
         const models = buildValidatedModels({});
         const paidCatalog = getPaidCatalogKeys(models, mm);
         expect(paidCatalog).not.toContain('sonar');
-        expect(paidCatalog).not.toContain('gemini-2.5-flash');
+        expect(paidCatalog).not.toContain('gemini-flash-latest');
         expect(paidCatalog).not.toContain('deepseek/deepseek-r1');
     });
 
@@ -486,7 +513,7 @@ describe('ModelMenuFiltering — Deduplication', () => {
 
 describe('ModelMenuFiltering — Context/Rate Display', () => {
     test('gemini-2.5-flash has contextLength >= 1M tokens', () => {
-        const m = DEFAULT_GOOGLE_MODELS['gemini-2.5-flash'];
+        const m = DEFAULT_GOOGLE_MODELS['gemini-flash-latest'];
         expect(m.contextLength).toBeGreaterThanOrEqual(1000000);
     });
 
@@ -547,7 +574,7 @@ describe('ModelMenuFiltering — Selection Confirmation Messages', () => {
     });
 
     test('Free model (from Currently Usable): no warning triggered', () => {
-        const item = DEFAULT_GOOGLE_MODELS['gemini-2.5-flash'];
+        const item = DEFAULT_GOOGLE_MODELS['gemini-flash-latest'];
         const isSelectedPaid = !mm.isFreeTier(item);
         expect(isSelectedPaid).toBe(false);
     });
@@ -557,7 +584,7 @@ describe('ModelMenuFiltering — Selection Confirmation Messages', () => {
 
 describe('ModelMenuFiltering — Category Tag Display', () => {
     test('category tag for gemini-2.5-flash shows fast/reasoning/coding (no media)', () => {
-        const item = DEFAULT_GOOGLE_MODELS['gemini-2.5-flash'];
+        const item = DEFAULT_GOOGLE_MODELS['gemini-flash-latest'];
         const cats = Array.isArray(item.category) ? item.category : [item.category];
         const chatCats = cats.filter(c => !['audio', 'image', 'video'].includes(c));
         expect(chatCats.length).toBeGreaterThan(0);
@@ -605,7 +632,7 @@ describe('ModelMenuFiltering — isFreeTier consistency across all default model
     test('FREE models: sonar, gemini-2.5-flash, gemini-2.0-flash, deepseek-r1', () => {
         const mm2 = new ModelManager();
         expect(mm2.isFreeTier(DEFAULT_PERPLEXITY_MODELS['sonar'])).toBe(true);
-        expect(mm2.isFreeTier(DEFAULT_GOOGLE_MODELS['gemini-2.5-flash'])).toBe(true);
+        expect(mm2.isFreeTier(DEFAULT_GOOGLE_MODELS['gemini-flash-latest'])).toBe(true);
         expect(mm2.isFreeTier(DEFAULT_GOOGLE_MODELS['gemini-2.0-flash'])).toBe(true);
         expect(mm2.isFreeTier(DEFAULT_OPENROUTER_MODELS['deepseek/deepseek-r1'])).toBe(true);
         expect(mm2.isFreeTier(DEFAULT_OPENROUTER_MODELS['meta-llama/llama-4-maverick'])).toBe(true);
@@ -674,7 +701,7 @@ describe('ModelMenuFiltering — Strict Separation Invariants', () => {
         });
     });
 
-    test('Provider browse never leaks paid models (all key combos)', () => {
+    test('Provider browse lists all keyed models for a provider (free + paid)', () => {
         const keyCombos = [
             { googleKey: 'AIzaSyTest' },
             { openRouterKey: 'sk-or-v1-test' },
@@ -685,10 +712,11 @@ describe('ModelMenuFiltering — Strict Separation Invariants', () => {
         keyCombos.forEach(keys => {
             const models = buildValidatedModels(keys);
             provs.forEach(prov => {
-                const filtered = Object.keys(models).filter(id =>
-                    !modelCacheService.isModelFailed(id) && models[id].available && mm.isFreeTier(models[id]) && models[id].provider === prov
-                );
-                filtered.forEach(id => expect(mm.isFreeTier(models[id])).toBe(true));
+                const filtered = mm.getModelsByProviderView(models, prov);
+                filtered.forEach(id => {
+                    expect(models[id].provider).toBe(prov);
+                    expect(models[id].available).toBe(true);
+                });
             });
         });
     });

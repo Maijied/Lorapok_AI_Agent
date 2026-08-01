@@ -9,6 +9,7 @@ const chalk = require('chalk');
 const boxen = require('boxen');
 const { Select, Input } = require('enquirer');
 const TerminalUI = require('../lib/ui');
+const { menuChoice, backChoice } = require('../lib/menu-format');
 
 /**
  * Helper function to configure GitHub token across agent, config, and environment.
@@ -57,17 +58,17 @@ async function showAuthMenu(agent, config) {
         const choices = [];
 
         if (isGhInstalled) {
-            choices.push({ name: 'gh_login', message: '📱 Device Login (GitHub CLI) - Recommended' });
+            choices.push(menuChoice('gh_login', '📱', 'Device Login (GitHub CLI) - Recommended'));
         }
         if (clientId) {
-            choices.push({ name: 'device_flow', message: '📲 Device Login (Custom OAuth)' });
+            choices.push(menuChoice('device_flow', '📲', 'Device Login (Custom OAuth)'));
         }
 
-        choices.push({ name: 'generate', message: '🌐 Generate Token (Browser)' });
-        choices.push({ name: 'token', message: '🔑 Enter Access Token Manually' });
-        choices.push({ name: 'password', message: '🔒 Enter GitHub Password (Legacy)' });
-        choices.push({ name: 'clear', message: '🗑️  Clear Credentials' });
-        choices.push({ name: 'back', message: '⬅️  Back' });
+        choices.push(menuChoice('generate', '🌐', 'Generate Token (Browser)'));
+        choices.push(menuChoice('token', '🔑', 'Enter Access Token Manually'));
+        choices.push(menuChoice('password', '🔒', 'Enter GitHub Password (Legacy)'));
+        choices.push(menuChoice('clear', '🗑', 'Clear Credentials'));
+        choices.push(backChoice());
 
         const select = new Select({
             message: 'Choose authentication method:',

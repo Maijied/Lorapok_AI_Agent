@@ -20,6 +20,9 @@ describe('LorapokCodingAgent', () => {
         jest.spyOn(os, 'homedir').mockReturnValue(testHome);
         jest.clearAllMocks();
         agent = new LorapokCodingAgent('fake-api-key');
+        // Default config model is Google flash-latest; pin Perplexity for these unit tests.
+        agent.config.setModel('sonar');
+        agent.config.setPerplexityApiKey('fake-api-key');
     });
 
     afterEach(() => {
@@ -61,10 +64,39 @@ describe('LorapokCodingAgent', () => {
     });
 
     test('should check available models', async () => {
-        // Since active pinging is removed, both should be available as long as the key is present
-        const results = await agent.checkAvailableModels();
+        axios.post.mockResolvedValue({
+            status: 200,
+            data: { choices: [{ message: { content: 'pong' } }] }
+        });
+        axios.get.mockResolvedValue({
+            status: 200,
+            data: { data: [], models: [] }
+        });
+
+        const results = await agent.checkAvailableModels({ force: true });
+        expect(results['sonar']).toBeDefined();
         expect(results['sonar'].available).toBe(true);
-        expect(results['sonar-reasoning'].available).toBe(true);
+        expect(['accessible', 'rate_limited', 'unverified']).toContain(results['sonar'].accessState);
+    });
+
+    test('Perplexity API call uses legacy chat/completions endpoint (same as main)', async () => {
+        axios.post.mockResolvedValue({
+            data: {
+                choices: [{ message: { content: 'ok' } }],
+                citations: []
+            }
+        });
+        agent.config.setModel('sonar');
+        await agent.chat('ping');
+        expect(axios.post).toHaveBeenCalledWith(
+            'https://api.perplexity.ai/chat/completions',
+            expect.objectContaining({ model: 'sonar' }),
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    Authorization: expect.stringMatching(/^Bearer /)
+                })
+            })
+        );
     });
 
     test('should maintain conversation history', async () => {

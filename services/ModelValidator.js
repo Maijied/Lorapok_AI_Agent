@@ -1,5 +1,6 @@
 const logger = require('../lib/logger');
 const modelCacheService = require('./ModelCacheService');
+const modelAccessService = require('./ModelAccessService');
 
 /**
  * Service for dynamically validating LLM model usability, response modality compatibility, and key availability.
@@ -30,10 +31,13 @@ class ModelValidator {
             // Embeddings
             'embedding', 'embed-content', 'embed-gecko', 'text-embedding',
             'embedding-001', 'embedding-exp',
-            // Image generation
+            // Image generation (incl. Gemini *-image / nano-banana)
             'imagen', 'image-generation', 'imagegeneration',
+            '-image', 'flash-image', 'nano-banana',
             // Video generation
             'veo', 'video-generation',
+            // Computer-use / robotics hardware (not general chat CLI)
+            'computer-use', 'robotics-er-', 'robotics-1.', 'gemini-robotics',
             // Deprecated / non-chat Google models
             'bison-001', 'gecko-001', 'gecko-002',
             'code-gecko', 'code-bison', 'text-bison',
@@ -41,6 +45,8 @@ class ModelValidator {
             '-aqa', 'aqa@',
             // Retrieval / Semantic search models
             'retrieval-',
+            // Experimental non-chat / often 404 on OpenAI-compat chat
+            'antigravity-', 'deep-research-max', 'deep-research-preview', 'deep-research-pro',
         ];
 
         return nonTextKeywords.some(kw => idStr.includes(kw) || nameStr.includes(kw) || descStr.includes(kw));
@@ -88,13 +94,15 @@ class ModelValidator {
             const hasKey = Boolean(googleKey && String(googleKey).trim() !== '');
             if (!hasKey) return false;
 
-            // Confirmed deprecated/zero-quota Google models that always return errors.
-            // NOTE: gemini-2.5-flash and gemini-2.5-pro are NOT in this list — they are usable.
+            // Confirmed deprecated / closed to new users / always-error Google IDs (live probe 2026-08).
             const deprecatedOrZeroQuota = [
                 // Legacy Palm-era models (always 404/deprecated)
                 'gemini-1.0-pro', 'gemini-pro',
-                // Gemini 1.5 — deprecated in favor of 2.x (may still work but being sunset)
+                // Gemini 1.5 — sunset
                 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b',
+                // Gemini 2.5 flash family — "no longer available to new users" on chat endpoint
+                'gemini-2.5-flash', 'gemini-2.5-flash-lite',
+                'gemini-2.5-flash-001', 'gemini-2.5-flash-lite-001',
                 // Robotics / special hardware models (not API-accessible)
                 'gemini-robotics-er-1.5-preview', 'gemini-robotics-er-1.6-preview',
                 'gemini-robotics-1.5-preview',
@@ -146,13 +154,17 @@ class ModelValidator {
                     tier = paymentRequired ? 'pro' : 'free';
                 }
             }
+            const accessState = meta.accessState || modelAccessService.getAccessState(id);
+            let available = isUsable;
+            if (accessState === 'unavailable') available = false;
             validated[id] = {
                 ...meta,
                 id,
-                available: isUsable,
+                available,
                 paymentRequired,
                 rateLimited: Boolean(rateLimited),
-                tier: tier || (paymentRequired ? 'pro' : 'free')
+                tier: tier || (paymentRequired ? 'pro' : 'free'),
+                accessState
             };
         }
 

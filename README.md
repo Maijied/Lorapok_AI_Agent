@@ -14,7 +14,7 @@
       <div align="left">
         <code><b>[ SYSTEM ONLINE ]</b></code> — <b>Lorapok Labs</b> · 🌐 <a href="https://ai.lorapok.tech" target="_blank"><b>https://ai.lorapok.tech</b></a>
         <br />
-        <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>v1.3.1</b></sub>
+        <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>v1.4.0</b></sub>
       </div>
     </td>
     <td align="right" valign="middle" width="180">
@@ -40,9 +40,9 @@
 <br />
 
 [![Live Web Application](https://img.shields.io/badge/LIVE_URL-ai.lorapok.tech-0D9488?style=for-the-badge&logo=googlechrome&logoColor=white)](https://ai.lorapok.tech)
-[![Release](https://img.shields.io/badge/RELEASE-v1.3.1-7C3AED?style=for-the-badge&logo=git&logoColor=white)](https://ai.lorapok.tech)
-[![npm version](https://img.shields.io/badge/NPM-v1.3.1-0284C7?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/lorapok-ai)
-[![Unit Tests](https://img.shields.io/badge/TESTS-270_PASSING-16A34A?style=for-the-badge&logo=jest&logoColor=white)](https://github.com/Maijied/Lorapok_AI_Agent)
+[![Release](https://img.shields.io/badge/RELEASE-v1.4.0-7C3AED?style=for-the-badge&logo=git&logoColor=white)](https://ai.lorapok.tech)
+[![npm version](https://img.shields.io/badge/NPM-v1.4.0-0284C7?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/lorapok-ai)
+[![Unit Tests](https://img.shields.io/badge/TESTS-321%2B_PASSING-16A34A?style=for-the-badge&logo=jest&logoColor=white)](https://github.com/Maijied/Lorapok_AI_Agent)
 [![License](https://img.shields.io/badge/LICENSE-MIT-D97706?style=for-the-badge)](LICENSE)
 [![Node.js](https://img.shields.io/badge/NODE.JS-%3E%3D18.0.0-15803D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 
@@ -70,7 +70,7 @@
 | 🧠 **Multi-Provider Model Engine** | Google AI Studio (Gemini 2.x), Perplexity AI, and OpenRouter with API-dynamic catalogs | `Ready` |
 | 🛡️ **Sanitized Model Views** | Single service-layer usable vs paid separation; non-chat & failed models excluded | `Ready` |
 | 📊 **Token Capacity & Limit UI** | Real-time turn usage & available model context capacity tracking | `Ready` |
-| 🆓 **Usable vs Paid Catalog** | Currently Usable = free/no-payment; Paid Catalog for credits-required models only | `Ready` |
+| 🆓 **Usable vs Paid Catalog** | Currently Usable = free/no-payment + live probe; Provider browse = all keyed models; Paid Catalog for credits | `Ready` |
 | ⚡ **Token-Saving Response Cache** | Persistent SHA-256 LLM response cache (`/cache`) reducing token consumption & latency | `Ready` |
 | 💻 **Collapsible Bash Process Box** | Framed bash execution box with duration badges, exit status, and collapsible output | `Ready` |
 | 🤖 **Interactive AI REPL** | Terminal-first interactive chat with context-aware workspace file injection | `Ready` |
@@ -82,7 +82,120 @@
 | 📋 **Plan & Execute Workflow** | `/plan` multi-step workflow: Plan → Checklist → Execution → Summary | `Ready` |
 | 🐳 **Docker-First Environment** | Isolated Docker container execution with host volume mounting | `Ready` |
 | 🌐 **REST API Server** | Express web server providing REST endpoints (default port 3847) | `Ready` |
+| 🔐 **Encrypted Secrets Vault** | AES-256-GCM vault for API keys under `~/.lorapok/secrets.enc` | `Ready` |
+| 🧪 **Live Model Sanitize Pipeline** | Discover → classify → probe (`max_tokens ≥ 16`) → usable/paid/selectable views | `Ready` |
 
+
+---
+
+## 🏗️ System Architecture
+
+Lorapok is a **Node.js ≥ 18** CommonJS monorepo-ready agent: a terminal CLI, an Express REST API, and shared model/git/file services. Deep docs live under [`Docs/`](Docs/); agent memory in [`BRAIN.md`](BRAIN.md).
+
+### High-level runtime
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         Lorapok AI Coding Agent                          │
+├───────────────┬──────────────────────────┬───────────────────────────────┤
+│  CLI Entry    │  Interactive REPL        │  Express REST (server.js)     │
+│  bin/lorapok  │  index.js + commands/*   │  /api/chat /api/models …      │
+│  --local|docker                          │  CORS + Multer + sessions     │
+└───────┬───────┴────────────┬─────────────┴──────────────┬────────────────┘
+        │                    │                            │
+        ▼                    ▼                            ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         Core Agent Layer (lib/)                          │
+│  agent.js / agent-enhanced.js · config.js · ui.js · theme.js · cache     │
+│  menu-format.js · larva-art.js · renderer.js · errors.js · logger.js     │
+└──────────────────────────────────┬───────────────────────────────────────┘
+                                   │
+        ┌──────────────────────────┼──────────────────────────┐
+        ▼                          ▼                          ▼
+┌───────────────────┐  ┌───────────────────────┐  ┌──────────────────────┐
+│ Model Stack       │  │ Workspace / Git       │  │ Auth & Secrets       │
+│ ModelManager      │  │ FileManager           │  │ SecretsVault         │
+│ ModelValidator    │  │ GitManager            │  │ GithubAuth           │
+│ ModelAccessService│  │ ActionsManager        │  │ SessionStore         │
+│ ModelSanitizeSvc  │  │ WorkspaceService      │  │                      │
+│ ActiveModelService│  │ GeekLinesService      │  │                      │
+│ ModelCacheService │  │                       │  │                      │
+└─────────┬─────────┘  └───────────────────────┘  └──────────────────────┘
+          │
+          ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Providers (OpenAI-compatible chat where possible)                        │
+│  • Google AI Studio — generativelanguage…/openai/chat/completions        │
+│  • OpenRouter     — openrouter.ai/api/v1/chat/completions (+ /models)    │
+│  • Perplexity     — api.perplexity.ai/chat/completions (Sonar seed set)  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Model sanitize & selection (why menus differ)
+
+```text
+ Discover          Normalize/Classify       Probe (live)           Views
+───────────       ───────────────────     ──────────────        ──────────
+Google /models    modality + tier         mini-chat             Currently Usable
+OpenRouter /models paymentRequired?       max_tokens ≥ 16       Category (usable∩domain)
+Perplexity seed   free vs paid            accessible|locked     Provider (all keyed)
+  (4 Sonar IDs)   key → available         rate_limited|error    Paid Catalog
+```
+
+| Menu option | What you see | Rule |
+| :--- | :--- | :--- |
+| 🟢 **Currently Usable** | Free-tier models your keys can call | `available` + not payment-required + probe `accessible`/`rate_limited` |
+| 📁 **Browse by category** | Usable models in a domain (coding, research, …) | Same as Usable ∩ category tag |
+| 🏢 **Browse by provider** | **All** models for a keyed provider (free + paid) | `available === true` for that provider (Perplexity = 4 Sonar models) |
+| 🌐 **View all → Usable** | Same as Currently Usable | Shared `getUsableModelIds` |
+| 🌐 **View all → Paid** | Credits / Pro reference catalog | `paymentRequired` / pro tier; select still live-probes |
+
+**Important:** Perplexity has **no public model-list API**. The Sonar catalog is a fixed official seed (`sonar`, `sonar-pro`, `sonar-reasoning-pro`, `sonar-deep-research`). Large multi-model lists come from **OpenRouter** and **Google AI Studio**.
+
+After saving a key, Lorapok **live-tests** the provider (`ModelAccessService.verifyProviderKey`), clears stale probe caches, and Model Selection force-refreshes via `ModelSanitizeService`.
+
+### Module map
+
+| Path | Role |
+| :--- | :--- |
+| `bin/lorapok.js`, `index.js` | CLI bootstrap (native or Docker) |
+| `commands/` | Slash handlers; `registry.js` is the single source for `/` palette, system menu, `/help` |
+| `lib/agent.js` | Provider routing, chat, fallback rank, `checkAvailableModels` → sanitize |
+| `lib/ui.js` / `theme.js` / `larva-art.js` | Branding, themes, classic/cyber logos |
+| `lib/menu-format.js` | Aligned emoji menu columns |
+| `services/Model*.js` | Catalog, validate, probe, sanitize, cache, active model |
+| `services/GitManager.js` / `ActionsManager.js` | Git + GitHub Actions |
+| `services/SecretsVault.js` | Encrypted API key storage |
+| `server.js` | REST API (default `:3847`) |
+| `packages/sdk/` | HTTP client stub for apps |
+| `apps/website/` | Marketing / docs site |
+| `Docs/` | Architecture, CLI, REST, providers |
+| `.agents/` | Skills, steer, subagents, hooks |
+| `tests/` | Jest (321+ tests) |
+
+### Data & config on disk
+
+```text
+~/.lorapok/
+  config.json          # prefs (theme, model id, …) — never raw keys in plaintext when vault is used
+  secrets.enc          # AES-256-GCM vault (API keys)
+  model_access_cache.json
+  models_cache.json
+  sessions/            # chat recaps
+  logs/
+```
+
+Environment overrides still work: `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `PERPLEXITY_API_KEY`, `GH_TOKEN`, `LORAPOK_MODEL`.
+
+### Request path (chat turn)
+
+1. User message (optional `@file` context) → agent builds messages  
+2. `callPerplexityAPI` resolves provider from model id → Bearer chat completion  
+3. On 429/404/modality failure → scored `buildFallbackRank` retries  
+4. Actions (CREATE/UPDATE/bash/git) confirmed via Enquirer when TTY  
+5. Turn metrics + optional response cache (`/cache`)
+
+More detail: [`Docs/providers/ARCHITECTURE.md`](Docs/providers/ARCHITECTURE.md), [`Docs/architecture/MODULE_MAP.md`](Docs/architecture/MODULE_MAP.md), [`BRAIN.md`](BRAIN.md).
 
 ---
 
@@ -153,7 +266,7 @@ rm -rf ~/.lorapok
    # Get key at: https://openrouter.ai/keys
    export OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxx
 
-   # Option C: Perplexity AI API Key (Sonar, Sonar Pro, Sonar Reasoning)
+   # Option C: Perplexity AI API Key (Sonar API: sonar, sonar-pro, sonar-reasoning-pro, sonar-deep-research)
    # Get key at: https://www.perplexity.ai/settings/api
    export PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxx
    ```

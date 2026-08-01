@@ -12,6 +12,7 @@ const { renderMarkdown } = require('../lib/renderer');
 const { withCancellation } = require('./utils');
 const { showAuthMenu } = require('./auth');
 const boxen = require('boxen');
+const { menuChoice, backChoice } = require('../lib/menu-format');
 
 /**
  * Interactive menu runner for Git operations.
@@ -25,18 +26,18 @@ async function showGitMenu(agent, config) {
             name: 'gitAction',
             message: '🔗 Git Operations',
             choices: [
-                { name: 'status', message: '🔍 Status' },
-                { name: 'diff', message: '📝 View Diff' },
-                { name: 'commit_ai', message: '🤖 Smart Commit (AI)' },
-                { name: 'commit_manual', message: '📝 Manual Commit' },
-                { name: 'branches', message: '🌿 Branches' },
-                { name: 'log', message: '📜 Commit Log' },
-                { name: 'sync', message: '🔄 Push/Pull' },
-                { name: 'stash', message: '📥 Stash Management' },
-                { name: 'remotes', message: '🌐 Manage Remotes' },
-                { name: 'auth', message: '🔑 Authentication' },
-                { name: 'advanced', message: '⚙️  Advanced...' },
-                { name: 'back', message: '⬅️  Back' }
+                menuChoice('status', '🔍', 'Status'),
+                menuChoice('diff', '📝', 'View Diff'),
+                menuChoice('commit_ai', '🤖', 'Smart Commit (AI)'),
+                menuChoice('commit_manual', '📝', 'Manual Commit'),
+                menuChoice('branches', '🌿', 'Branches'),
+                menuChoice('log', '📜', 'Commit Log'),
+                menuChoice('sync', '🔄', 'Push/Pull'),
+                menuChoice('stash', '📥', 'Stash Management'),
+                menuChoice('remotes', '🌐', 'Manage Remotes'),
+                menuChoice('auth', '🔑', 'Authentication'),
+                menuChoice('advanced', '⚙', 'Advanced...'),
+                backChoice()
             ]
         });
 
@@ -98,9 +99,9 @@ async function showGitMenu(agent, config) {
                         name: 'bCmd',
                         message: 'Branch Operations:',
                         choices: [
-                            { name: 'create', message: '➕ Create New Branch' },
-                            { name: 'switch', message: '🔀 Switch Branch' },
-                            { name: 'back', message: '🔙 Back' }
+                            menuChoice('create', '➕', 'Create New Branch'),
+                            menuChoice('switch', '🔀', 'Switch Branch'),
+                            backChoice()
                         ],
                         result(name) { return this.map(name)[name]; }
                     });
@@ -115,7 +116,7 @@ async function showGitMenu(agent, config) {
                     } else if (bCmd === 'switch') {
                         const swRes = new Select({
                             message: 'Select branch to switch to:',
-                            choices: branches.map(b => ({ name: b.name, message: `🌿 ${b.name}${b.current ? ' (current)' : ''}` }))
+                            choices: branches.map(b => menuChoice(b.name, '🌿', `${b.name}${b.current ? ' (current)' : ''}`))
                         });
                         const target = await swRes.run();
                         const switchRes = agent.switchGitBranch(target);
@@ -144,8 +145,8 @@ async function showGitMenu(agent, config) {
                     const addRemote = await new Select({
                         message: 'Add a remote now?',
                         choices: [
-                            { name: 'yes', message: '🟢 Yes, configure remote' },
-                            { name: 'no', message: '❌ No' }
+                            menuChoice('yes', '🟢', 'Yes, configure remote'),
+                            menuChoice('no', '❌', 'No')
                         ],
                         result(name) { return this.map(name)[name]; }
                     }).run().catch(() => 'no');
@@ -160,9 +161,9 @@ async function showGitMenu(agent, config) {
                     name: 'sCmd',
                     message: 'Sync Operation:',
                     choices: [
-                        { name: 'pull', message: '⬇️  Pull (Fetch & Merge)' },
-                        { name: 'push', message: '⬆️  Push (Upload Commits)' },
-                        { name: 'back', message: '🔙 Back' }
+                        menuChoice('pull', '⬇', 'Pull (Fetch & Merge)'),
+                        menuChoice('push', '⬆', 'Push (Upload Commits)'),
+                        backChoice()
                     ],
                     result(name) { return this.map(name)[name]; }
                 });
@@ -186,11 +187,11 @@ async function showGitMenu(agent, config) {
 
                         const sshAvailable = agent.gitManager.testSSHConnection().success;
                         const choices = [
-                            { name: 'browser', message: '🌐 Login via Browser (Recommended)' },
-                            { name: 'token', message: '🔑 Enter Token or Password' }
+                            menuChoice('browser', '🌐', 'Login via Browser (Recommended)'),
+                            menuChoice('token', '🔑', 'Enter Token or Password')
                         ];
-                        if (sshAvailable) choices.push({ name: 'ssh', message: '🗝️  Switch to SSH' });
-                        choices.push({ name: 'cancel', message: '❌ Cancel' });
+                        if (sshAvailable) choices.push(menuChoice('ssh', '🗝', 'Switch to SSH'));
+                        choices.push(menuChoice('cancel', '❌', 'Cancel'));
 
                         const fixSelect = new Select({
                             message: 'Select Authentication Method:',
@@ -275,11 +276,11 @@ async function showStashMenu(agent) {
         const select = new Select({
             message: '📥 Git Stash Management',
             choices: [
-                { name: 'push', message: '📥 Push Stash' },
-                { name: 'pop', message: '📤 Pop Stash (Apply & Remove)' },
-                { name: 'list', message: '📋 List Stashes' },
-                { name: 'clear', message: '🔥 Clear All Stashes' },
-                { name: 'back', message: '⬅️  Back' }
+                menuChoice('push', '📥', 'Push Stash'),
+                menuChoice('pop', '📤', 'Pop Stash (Apply & Remove)'),
+                menuChoice('list', '📋', 'List Stashes'),
+                menuChoice('clear', '🔥', 'Clear All Stashes'),
+                backChoice()
             ]
         });
 
@@ -324,15 +325,15 @@ async function showAdvancedGitMenu(agent) {
         const select = new Select({
             message: '⚙️  Advanced Git Operations',
             choices: [
-                { name: 'amend', message: '⚒️  Amend Last Commit' },
-                { name: 'tags', message: '🏷️  Manage Tags' },
-                { name: 'merge', message: '🤝 Merge Branch' },
-                { name: 'cherry', message: '🍒 Cherry-pick Commit' },
-                { name: 'diag', message: '🔍 Repo Diagnostics' },
-                { name: 'clean', message: '🧹 Clean Untracked Files' },
-                { name: 'reset', message: '⚠️  Hard Reset (to HEAD)' },
-                { name: 'init', message: '🏁 Initialize Repository' },
-                { name: 'back', message: '⬅️  Back' }
+                menuChoice('amend', '⚒', 'Amend Last Commit'),
+                menuChoice('tags', '🏷', 'Manage Tags'),
+                menuChoice('merge', '🤝', 'Merge Branch'),
+                menuChoice('cherry', '🍒', 'Cherry-pick Commit'),
+                menuChoice('diag', '🔍', 'Repo Diagnostics'),
+                menuChoice('clean', '🧹', 'Clean Untracked Files'),
+                menuChoice('reset', '⚠', 'Hard Reset (to HEAD)'),
+                menuChoice('init', '🏁', 'Initialize Repository'),
+                backChoice()
             ]
         });
 
@@ -468,11 +469,11 @@ async function showRemoteMenu(agent) {
         const select = new Select({
             message: '🌐 Git Remote Management',
             choices: [
-                { name: 'add', message: '➕ Add Remote' },
-                { name: 'remove', message: '❌ Remove Remote' },
-                { name: 'rename', message: '✏️  Rename Remote' },
-                { name: 'url', message: '🔗 Update Remote URL' },
-                { name: 'back', message: '⬅️  Back' }
+                menuChoice('add', '➕', 'Add Remote'),
+                menuChoice('remove', '❌', 'Remove Remote'),
+                menuChoice('rename', '✏', 'Rename Remote'),
+                menuChoice('url', '🔗', 'Update Remote URL'),
+                backChoice()
             ]
         });
 
@@ -547,9 +548,9 @@ async function promptSmartCommit(context) {
         const commitConfirm = new Select({
             message: chalk.cyan.bold(`Implementation complete. Commit these ${total} changes now?`),
             choices: [
-                { name: 'Yes (AI Message)', message: '✨ Yes (Generate AI Message)' },
-                { name: 'Yes (Manual Message)', message: '✏️ Yes (Write Manual Message)' },
-                { name: 'No', message: '❌ No (Do not commit)' }
+                menuChoice('Yes (AI Message)', '✨', 'Yes (Generate AI Message)'),
+                menuChoice('Yes (Manual Message)', '✏', 'Yes (Write Manual Message)'),
+                menuChoice('No', '❌', 'No (Do not commit)')
             ],
             result(name) { return this.map(name)[name]; }
         });

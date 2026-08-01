@@ -256,31 +256,35 @@ async function handleError(err, agent, config) {
     const msg = err.message || String(err);
     if (msg === 'ABORTED') return;
 
-    console.log(TerminalUI.formatError(msg));
+    console.log(TerminalUI.formatError(msg, config));
 
     if (msg.includes('Invalid API key') || msg.includes('401')) {
+        const isGoogle = /google|gemini|aistudio/i.test(msg);
+        const isOpenRouter = /openrouter/i.test(msg);
+        const providerLabel = isGoogle ? 'Google AI Studio' : isOpenRouter ? 'OpenRouter' : 'Perplexity';
+
         const updateKey = new Select({
-            message: 'Your API key seems invalid. Update it now?',
-            choices: ['Yes, enter new key', 'No, I will check my .env']
+            message: `${providerLabel} API key looks invalid. Update it now?`,
+            choices: [
+                { name: 'yes', message: `Yes — enter new ${providerLabel} key` },
+                { name: 'no', message: 'No — I will update it in Settings later' }
+            ]
         });
 
-        const updateChoice = await updateKey.run().catch(() => 'No');
-        if (updateChoice === 'Yes, enter new key') {
-            const newKey = await new Input({ message: 'Paste new Perplexity API Key:' }).run().catch(() => null);
+        const updateChoice = await updateKey.run().catch(() => 'no');
+        if (updateChoice === 'yes') {
+            const newKey = await new Input({ message: `Paste new ${providerLabel} API key:` }).run().catch(() => null);
             if (newKey && newKey.trim()) {
                 const cleanedKey = newKey.trim().replace(/^["'](.+)["']$/, '$1');
-
-                console.log(chalk.gray('  Verify new key...'));
+                console.log(chalk.gray('  Saving key to encrypted vault…'));
                 try {
-                    const probeAgent = new (require('../lib/agent').LorapokCodingAgent)(cleanedKey);
-                    await probeAgent.callPerplexityAPI([{ role: 'user', content: 'hi' }], 'sonar', { maxTokens: 1 });
-
-                    if (config) config.setApiKey(cleanedKey);
-                    if (agent) agent.apiKey = cleanedKey;
-                    console.log(TerminalUI.formatSuccess('API Key verified and updated! You can try your request again.'));
+                    if (config) {
+                        const { saveAndVerifyApiKey } = require('./settings');
+                        const which = isGoogle ? 'google' : isOpenRouter ? 'openrouter' : 'perplexity';
+                        await saveAndVerifyApiKey(config, which, cleanedKey);
+                    }
                 } catch (verifyErr) {
-                    console.log(TerminalUI.formatError(`The new key is also invalid: ${verifyErr.message}`));
-                    console.log(chalk.gray('  Please check your Perplexity account balance and API settings.'));
+                    console.log(TerminalUI.formatError(`Could not save key: ${verifyErr.message}`, config));
                 }
             }
         }

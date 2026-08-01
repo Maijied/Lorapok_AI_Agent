@@ -40,12 +40,22 @@ describe('ModelValidator Service', () => {
         expect(modelValidator.isNonTextModality('learnlm-1.5-pro-experimental')).toBe(false);
     });
 
-    test('gemini-2.5-flash IS usable with a valid Google key (was wrongly blocklisted in previous version)', () => {
-        const metaGoogle = { provider: 'google-ai-studio', name: 'Gemini 2.5 Flash' };
-        expect(modelValidator.isModelUsable('gemini-2.5-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+    test('gemini-2.5-flash is closed to new users; flash-latest / 3.5-flash remain usable', () => {
+        const metaGoogle = { provider: 'google-ai-studio', name: 'Gemini' };
+        expect(modelValidator.isModelUsable('gemini-2.5-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(false);
+        expect(modelValidator.isModelUsable('gemini-2.5-flash-lite', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(false);
         expect(modelValidator.isModelUsable('gemini-2.5-pro', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
         expect(modelValidator.isModelUsable('gemini-2.0-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
-        expect(modelValidator.isModelUsable('gemini-2.5-flash-lite', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        expect(modelValidator.isModelUsable('gemini-flash-latest', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        expect(modelValidator.isModelUsable('gemini-3.5-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+    });
+
+    test('image / computer-use / robotics Google IDs are non-text modality', () => {
+        expect(modelValidator.isNonTextModality('gemini-2.5-flash-image')).toBe(true);
+        expect(modelValidator.isNonTextModality('gemini-3.1-flash-lite-image')).toBe(true);
+        expect(modelValidator.isNonTextModality('nano-banana-pro-preview')).toBe(true);
+        expect(modelValidator.isNonTextModality('gemini-2.5-computer-use-preview-10-2025')).toBe(true);
+        expect(modelValidator.isNonTextModality('gemini-robotics-er-2-preview')).toBe(true);
     });
 
     test('genuinely deprecated Google models remain blocked even with a valid key', () => {
@@ -62,12 +72,12 @@ describe('ModelValidator Service', () => {
         const metaPerplexity = { provider: 'perplexity', name: 'Sonar' };
 
         // No keys — nothing usable
-        expect(modelValidator.isModelUsable('gemini-2.5-flash', metaGoogle, {})).toBe(false);
+        expect(modelValidator.isModelUsable('gemini-flash-latest', metaGoogle, {})).toBe(false);
         expect(modelValidator.isModelUsable('openai/gpt-4o', metaOpenRouter, {})).toBe(false);
         expect(modelValidator.isModelUsable('sonar', metaPerplexity, {})).toBe(false);
 
         // Google key present — real models usable
-        expect(modelValidator.isModelUsable('gemini-2.5-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
+        expect(modelValidator.isModelUsable('gemini-flash-latest', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
         expect(modelValidator.isModelUsable('gemini-2.0-flash', metaGoogle, { googleKey: 'AIzaSyGoogleKey' })).toBe(true);
 
         // TTS stays excluded even with key
@@ -82,6 +92,7 @@ describe('ModelValidator Service', () => {
 
     test('should filter model catalog through validateUsableModels', () => {
         const models = {
+            'gemini-flash-latest': { name: 'Gemini Flash Latest', provider: 'google-ai-studio' },
             'gemini-2.5-flash': { name: 'Gemini 2.5 Flash', provider: 'google-ai-studio' },
             'gemini-2.5-flash-preview-tts': { name: 'TTS Model', provider: 'google-ai-studio' },
             'openai/gpt-4o': { name: 'GPT-4o', provider: 'openrouter' },
@@ -92,8 +103,9 @@ describe('ModelValidator Service', () => {
             googleKey: 'AIzaSyGoogleKey'
         });
 
-        // gemini-2.5-flash now correctly usable
-        expect(validated['gemini-2.5-flash'].available).toBe(true);
+        expect(validated['gemini-flash-latest'].available).toBe(true);
+        // Closed to new users
+        expect(validated['gemini-2.5-flash'].available).toBe(false);
         // TTS excluded by modality filter
         expect(validated['gemini-2.5-flash-preview-tts'].available).toBe(false);
         // No OpenRouter key

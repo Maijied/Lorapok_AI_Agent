@@ -7,7 +7,6 @@ const openRouterKey = process.env.OPENROUTER_API_KEY;
 const perplexityModels = [
     'sonar',
     'sonar-pro',
-    'sonar-reasoning',
     'sonar-reasoning-pro',
     'sonar-deep-research'
 ];
@@ -34,7 +33,7 @@ async function testModel(provider, model, key, hostname, path) {
         const data = JSON.stringify({
             model: model,
             messages: [{ role: 'user', content: 'hello' }],
-            max_tokens: 10
+            max_tokens: 16
         });
 
         const req = https.request({

@@ -94,8 +94,8 @@ describe('Google AI Studio Provider Support', () => {
         expect(googleModels['gemini-2.5-flash']).toBeDefined();
         expect(googleModels['gemma-4-31b-it']).toBeDefined();
         expect(googleModels['gemma-4-31b-it'].provider).toBe('google-ai-studio');
-        expect(googleModels['antigravity-preview-05-2026']).toBeDefined();
-        expect(googleModels['antigravity-preview-05-2026'].category).toContain('agent');
+        // antigravity / deep-research experimental IDs are filtered (probe-error prone non-chat)
+        expect(googleModels['antigravity-preview-05-2026']).toBeUndefined();
         
         // Embedding only model should be excluded from chat/generation catalog
         expect(googleModels['embedding-001']).toBeUndefined();
@@ -107,8 +107,9 @@ describe('Google AI Studio Provider Support', () => {
         delete process.env.GOOGLE_API_KEY;
         const googleModels = await modelManager.fetchGoogleModels(null);
         // Real verified model IDs that must exist in defaults
-        expect(googleModels['gemini-2.5-flash']).toBeDefined();
-        expect(googleModels['gemini-2.5-flash'].provider).toBe('google-ai-studio');
+        expect(googleModels['gemini-flash-latest']).toBeDefined();
+        expect(googleModels['gemini-flash-latest'].provider).toBe('google-ai-studio');
+        expect(googleModels['gemini-3.5-flash']).toBeDefined();
         expect(googleModels['gemini-2.0-flash']).toBeDefined();
         expect(googleModels['gemini-2.0-flash-lite']).toBeDefined();
     });

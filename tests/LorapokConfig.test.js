@@ -26,7 +26,7 @@ describe('LorapokConfig', () => {
     });
 
     test('should initialize with default values', () => {
-        expect(config.getModel()).toBe('sonar');
+        expect(config.getModel()).toBe('gemini-flash-latest');
         expect(config.getLanguage()).toBe('javascript');
     });
 
@@ -65,14 +65,28 @@ describe('LorapokConfig', () => {
         expect(config2.getModel()).toBe('sonar-pro');
     });
 
-    test('should persist to correct directory', () => {
+    test('should persist secrets encrypted, not plaintext in config.json', () => {
         config.setApiKey('abc');
         config.setOpenRouterApiKey('sk-or-v1-xyz');
         const configPath = path.join(testHome, '.lorapok', 'config.json');
+        const vaultPath = path.join(testHome, '.lorapok', 'secrets.enc');
         expect(fs.existsSync(configPath)).toBe(true);
+        expect(fs.existsSync(vaultPath)).toBe(true);
         const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        expect(data.apiKey).toBe('abc');
-        expect(data.openrouterApiKey).toBe('sk-or-v1-xyz');
+        expect(data.apiKey).toBeUndefined();
+        expect(data.openrouterApiKey).toBeUndefined();
+        expect(config.getApiKey()).toBe('abc');
+        expect(config.getOpenRouterApiKey()).toBe('sk-or-v1-xyz');
+    });
+
+    test('should save and load logo style', () => {
+        expect(config.getLogoStyle()).toBe('classic');
+        config.setLogoStyle('cyber');
+        expect(config.getLogoStyle()).toBe('cyber');
+        const config2 = new LorapokConfig();
+        expect(config2.getLogoStyle()).toBe('cyber');
     });
 });
+
+
 

@@ -14,6 +14,7 @@ describe('Command registry', () => {
         expect(names).toContain('/refresh-models');
         expect(names).toContain('/settings');
         expect(names).toContain('/bypass');
+        expect(names).toContain('/sessions');
     });
 
     test('aliases resolve via getCommandByName', () => {

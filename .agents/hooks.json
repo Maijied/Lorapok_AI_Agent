@@ -20,6 +20,16 @@
         "server.js",
         "commands/settings.js"
       ]
+    },
+    {
+      "event": "beforePrompt",
+      "command": "node .agents/hooks/before-prompt-assembler.js",
+      "description": "Dynamically scans the workspace and injects available skills, MCP servers, and subagents into context"
+    },
+    {
+      "event": "afterPromptResponse",
+      "command": "node .agents/hooks/post-prompt-trigger.js",
+      "description": "Enforce documentation and test synchronization after every agent response"
     }
   ]
 }

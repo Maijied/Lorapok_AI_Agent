@@ -1,11 +1,14 @@
 ---
 description: CLI registry and TTY safety
 globs: commands/**,index.js
-alwaysApply: false
+alwaysApply: true
 ---
 
-# CLI Rules
+# 💻 CLI Rules
 
-- Slash commands must be registered in `commands/registry.js`
-- Autocomplete, system menu, and help derive from the registry
-- Guard Enquirer/Ora with `process.stdout.isTTY`
+- 🔌 Slash commands must be explicitly registered in `commands/registry.js`.
+- ⚙️ Autocomplete, system menu, and `/help` must dynamically derive from the registry.
+- 🛡️ Guard Enquirer/Ora spinners with `process.stdout.isTTY` to prevent CI/Docker crashes.
+
+> [!IMPORTANT]
+> **Post-Prompt Trigger**: After your prompt response is complete, ALWAYS review and update corresponding architecture documentation and tests.

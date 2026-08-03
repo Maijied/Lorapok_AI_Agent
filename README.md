@@ -14,7 +14,7 @@
       <div align="left">
         <code><b>[ SYSTEM ONLINE ]</b></code> — <b>Lorapok Labs</b> · 🌐 <a href="https://ai.lorapok.tech" target="_blank"><b>https://ai.lorapok.tech</b></a>
         <br />
-        <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>v1.4.0</b></sub>
+        <sub><b>Lorapok AI Coding Agent</b> · Autonomous Terminal Engine & REST API · <b>v1.7.0</b></sub>
       </div>
     </td>
     <td align="right" valign="middle" width="180">
@@ -40,9 +40,9 @@
 <br />
 
 [![Live Web Application](https://img.shields.io/badge/LIVE_URL-ai.lorapok.tech-0D9488?style=for-the-badge&logo=googlechrome&logoColor=white)](https://ai.lorapok.tech)
-[![Release](https://img.shields.io/badge/RELEASE-v1.4.0-7C3AED?style=for-the-badge&logo=git&logoColor=white)](https://ai.lorapok.tech)
-[![npm version](https://img.shields.io/badge/NPM-v1.4.0-0284C7?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/lorapok-ai)
-[![Unit Tests](https://img.shields.io/badge/TESTS-321%2B_PASSING-16A34A?style=for-the-badge&logo=jest&logoColor=white)](https://github.com/Maijied/Lorapok_AI_Agent)
+[![Release](https://img.shields.io/badge/RELEASE-v1.7.0-7C3AED?style=for-the-badge&logo=git&logoColor=white)](https://ai.lorapok.tech)
+[![npm version](https://img.shields.io/badge/NPM-v1.7.0-0284C7?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/lorapok-ai)
+[![Unit Tests](https://img.shields.io/badge/TESTS-579%2B_PASSING-16A34A?style=for-the-badge&logo=jest&logoColor=white)](https://github.com/Maijied/Lorapok_AI_Agent)
 [![License](https://img.shields.io/badge/LICENSE-MIT-D97706?style=for-the-badge)](LICENSE)
 [![Node.js](https://img.shields.io/badge/NODE.JS-%3E%3D18.0.0-15803D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 
@@ -69,6 +69,7 @@
 | :--- | :--- | :---: |
 | 🧠 **Multi-Provider Model Engine** | Google AI Studio (Gemini 2.x), Perplexity AI, and OpenRouter with API-dynamic catalogs | `Ready` |
 | 🛡️ **Sanitized Model Views** | Single service-layer usable vs paid separation; non-chat & failed models excluded | `Ready` |
+| 🔍 **Smart Context Indexing** | Multi-tier AST (Tree-sitter) & Semantic (LanceDB) context assembly to eliminate prompt bloat | `Ready` |
 | 📊 **Token Capacity & Limit UI** | Real-time turn usage & available model context capacity tracking | `Ready` |
 | 🆓 **Usable vs Paid Catalog** | Currently Usable = free/no-payment + live probe; Provider browse = all keyed models; Paid Catalog for credits | `Ready` |
 | ⚡ **Token-Saving Response Cache** | Persistent SHA-256 LLM response cache (`/cache`) reducing token consumption & latency | `Ready` |
@@ -92,54 +93,169 @@
 
 Lorapok is a **Node.js ≥ 18** CommonJS monorepo-ready agent: a terminal CLI, an Express REST API, and shared model/git/file services. Deep docs live under [`Docs/`](Docs/); agent memory in [`BRAIN.md`](BRAIN.md).
 
-### High-level runtime
+### Comprehensive System Architecture (Deep Dive)
 
-```text
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         Lorapok AI Coding Agent                          │
-├───────────────┬──────────────────────────┬───────────────────────────────┤
-│  CLI Entry    │  Interactive REPL        │  Express REST (server.js)     │
-│  bin/lorapok  │  index.js + commands/*   │  /api/chat /api/models …      │
-│  --local|docker                          │  CORS + Multer + sessions     │
-└───────┬───────┴────────────┬─────────────┴──────────────┬────────────────┘
-        │                    │                            │
-        ▼                    ▼                            ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         Core Agent Layer (lib/)                          │
-│  agent.js / agent-enhanced.js · config.js · ui.js · theme.js · cache     │
-│  menu-format.js · larva-art.js · renderer.js · errors.js · logger.js     │
-└──────────────────────────────────┬───────────────────────────────────────┘
-                                   │
-        ┌──────────────────────────┼──────────────────────────┐
-        ▼                          ▼                          ▼
-┌───────────────────┐  ┌───────────────────────┐  ┌──────────────────────┐
-│ Model Stack       │  │ Workspace / Git       │  │ Auth & Secrets       │
-│ ModelManager      │  │ FileManager           │  │ SecretsVault         │
-│ ModelValidator    │  │ GitManager            │  │ GithubAuth           │
-│ ModelAccessService│  │ ActionsManager        │  │ SessionStore         │
-│ ModelSanitizeSvc  │  │ WorkspaceService      │  │                      │
-│ ActiveModelService│  │ GeekLinesService      │  │                      │
-│ ModelCacheService │  │                       │  │                      │
-└─────────┬─────────┘  └───────────────────────┘  └──────────────────────┘
-          │
-          ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Providers (OpenAI-compatible chat where possible)                        │
-│  • Google AI Studio — generativelanguage…/openai/chat/completions        │
-│  • OpenRouter     — openrouter.ai/api/v1/chat/completions (+ /models)    │
-│  • Perplexity     — api.perplexity.ai/chat/completions (Sonar seed set)  │
-└──────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  %% User & Frontends
+  User(("🧑‍💻 User"))
+
+  subgraph Interfaces["🔌 Entrypoints & Interfaces"]
+    direction TB
+    CLI["💻 CLI (bin/lorapok)"]
+    REST["🌐 Express API (server.js)\nPort: 3847"]
+    
+    subgraph CLIModes["⚡ Core CLI Modes"]
+      Chat["💬 /chat (Interactive)"]
+      Plan["📝 /plan (Multi-step)"]
+      Agent["🤖 /agent (Autonomous)"]
+      Debug["🐛 /debug (Analysis)"]
+      Analyze["🔍 /analyze (Audit)"]
+    end
+    CLI --> CLIModes
+  end
+
+  %% The Agent Core Engine
+  subgraph Core["🧠 Agent Core Engine"]
+    direction TB
+    EnhancedAgent["🤖 LorapokEnhancedAgent\n(lib/agent-enhanced.js)"]
+    Orch["⚙️ Orchestrator\n(Budget Guard & Tools)"]
+    Policy["🛡️ PolicyEngine\n(Security & Constraints)"]
+    Session["💾 SessionManager\n(Chat History)"]
+    UI["🎨 Terminal UI\n(lib/ui.js, Chalk, Ora)"]
+  end
+
+  %% Services Layer
+  subgraph Services["🛠️ Micro-Services & Managers"]
+    direction TB
+    subgraph ContextSvc["📚 Context & RAG"]
+      CtxAssembler["ContextAssembler"]
+      Indexer["IndexerService"]
+      TreeSitter["Tree-sitter AST"]
+      LanceDB[("LanceDB Vector DB\nSemantic KNN Search")]
+    end
+
+    subgraph ToolsSvc["🔨 Tool Handlers"]
+      FileTool["FileManager\n(read, write, modify)"]
+      GitTool["GitManager\n(commit, branch, push)"]
+      ShellTool["ShellExecutor\n(bash/zsh commands)"]
+    end
+
+    subgraph AuthSvc["🔐 Identity & Secrets"]
+      Vault["SecretsVault\n(AES-256-GCM)"]
+      GHAuth["GitHub OAuth/PAT"]
+    end
+
+    subgraph ModelSvc["⚡ Model Router"]
+      ModMgr["ModelManager"]
+      Sanitize["ModelSanitizeService"]
+      Cache["Response SHA Cache"]
+    end
+  end
+
+  %% External Connections
+  subgraph External["🌐 External AI Providers"]
+    direction LR
+    Gemini["Google AI Studio\n(Gemini 2.x)"]
+    OpenRouter["OpenRouter\n(Llama, Claude, DeepSeek)"]
+    Perplexity["Perplexity AI\n(Sonar Research)"]
+  end
+
+  %% Data Storage
+  subgraph LocalStorage["📁 Local Storage (~/.lorapok)"]
+    direction LR
+    Config["config.json"]
+    SecretsEnc["secrets.enc"]
+    VectorIdx["/lancedb_data"]
+    SessLog["/sessions"]
+  end
+
+  %% Workspace
+  Workspace[("📁 Target User Workspace\n(Local Filesystem)")]
+
+  %% Connections
+  User -->|Types / Starts| CLI
+  User -->|HTTP Requests| REST
+  
+  CLIModes --> EnhancedAgent
+  REST --> EnhancedAgent
+
+  EnhancedAgent <--> Session
+  EnhancedAgent <--> Orch
+  EnhancedAgent --> UI
+
+  Orch --> Policy
+  Orch --> ToolsSvc
+
+  %% Service Routing
+  EnhancedAgent <--> ContextSvc
+  EnhancedAgent <--> ModelSvc
+
+  %% Context DBs
+  CtxAssembler --> Indexer
+  Indexer --> TreeSitter
+  Indexer --> LanceDB
+  LanceDB -.->|Reads| Workspace
+
+  %% Tools acting on Workspace
+  ToolsSvc -.->|Mutates / Reads| Workspace
+
+  %% Config & State
+  AuthSvc --> SecretsEnc
+  ModMgr --> Config
+  Session --> SessLog
+
+  %% Model Routing
+  ModMgr --> Sanitize
+  Sanitize --> Gemini & OpenRouter & Perplexity
+  ModMgr --> Cache
+```
+
+### Context Indexing Flow
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Agent as Lorapok Agent
+  participant Context as ContextAssembler
+  participant Index as IndexerService (Tree-sitter/LanceDB)
+  participant LLM as LLM API
+
+  User->>Agent: "Explain how orchestration works"
+  Agent->>Context: assembleContext(query)
+  Context->>Index: search(query)
+  Index-->>Context: Return AST signatures + semantic vectors
+  Context-->>Agent: Formatted system context injection
+  Agent->>LLM: Send context + query
+  LLM-->>Agent: Generate response
+  Agent-->>User: Output markdown
 ```
 
 ### Model sanitize & selection (why menus differ)
 
-```text
- Discover          Normalize/Classify       Probe (live)           Views
-───────────       ───────────────────     ──────────────        ──────────
-Google /models    modality + tier         mini-chat             Currently Usable
-OpenRouter /models paymentRequired?       max_tokens ≥ 16       Category (usable∩domain)
-Perplexity seed   free vs paid            accessible|locked     Provider (all keyed)
-  (4 Sonar IDs)   key → available         rate_limited|error    Paid Catalog
+```mermaid
+flowchart LR
+  %% Stages
+  Disc["🔍 Discover\n(API fetch)"]
+  Norm["🔧 Normalize\n(Format attributes)"]
+  Probe["⚡ Live Probe\n(Verify key/access)"]
+  Policy["🛡️ Policy & Budget\n(Orchestrator guard)"]
+  
+  %% Views
+  subgraph Views["👁️ Selectable Views"]
+    Usable["🟢 Usable\n(Free/Accessible)"]
+    Cat["📁 Category\n(Coding/Chat)"]
+    Prov["🏢 Provider\n(Google/OpenRouter)"]
+    Paid["💰 Paid Catalog\n(Credits/Pro)"]
+  end
+
+  Disc -->|Raw Models| Norm
+  Norm -->|Sanitized| Probe
+  Probe -->|Valid?| Policy
+  Policy -->|Approved| Views
+  
+  %% Paths
+  Probe -.->|Fails| CacheDrop["🗑️ Drop from Cache"]
 ```
 
 | Menu option | What you see | Rule |
@@ -164,6 +280,7 @@ After saving a key, Lorapok **live-tests** the provider (`ModelAccessService.ver
 | `lib/ui.js` / `theme.js` / `larva-art.js` | Branding, themes, classic/cyber logos |
 | `lib/menu-format.js` | Aligned emoji menu columns |
 | `services/Model*.js` | Catalog, validate, probe, sanitize, cache, active model |
+| `services/ContextAssembler.js`, `IndexerService.js` | AST & Semantic (LanceDB) Context indexing |
 | `services/GitManager.js` / `ActionsManager.js` | Git + GitHub Actions |
 | `services/SecretsVault.js` | Encrypted API key storage |
 | `server.js` | REST API (default `:3847`) |

@@ -1,0 +1,239 @@
+<!-- This is an auto-generated comment: summarize by coderabbit.ai -->
+<!-- review_stack_entry_start -->
+
+[![Review Change Stack](https://storage.googleapis.com/coderabbit_public_assets/review-stack-in-coderabbit-ui.svg)](https://app.coderabbit.ai/change-stack/Maijied/Lorapok_AI_Agent/pull/17?utm_source=github_walkthrough&utm_medium=github&utm_campaign=change_stack)
+
+<!-- review_stack_entry_end -->
+<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->
+
+> [!WARNING]
+> ## Review limit reached
+> 
+> `@Maijied`, you've reached your PR review limit, so we couldn't start this review.
+> 
+> **Next review available in:** **44 minutes**
+> 
+> You've used all free OSS reviews for now. Wait for the free limit to reset to keep reviewing this public repository.
+> 
+> <details>
+> <summary>How can I continue?</summary>
+> 
+> After more reviews become available, a review can be triggered using the `@coderabbitai review` command as a PR comment. Alternatively, push new commits to this PR.
+> 
+> To avoid repeated limits, reduce automatic review volume by pausing incremental auto-reviews earlier, using label-based review opt-in, excluding WIP or generated PR titles, or requesting reviews manually when the PR is ready. If your team needs uninterrupted high-volume reviews, an organization admin can enable usage-based reviews.
+> 
+> </details>
+> 
+> 
+> <details>
+> <summary>How do review limits work?</summary>
+> 
+> CodeRabbit enforces per-developer PR review limits for each organization. Most developers receive the normal plan review availability.
+> 
+> For paid Pro and Pro+ PR reviews, CodeRabbit uses adaptive limits for sustained high-volume activity. When a developer's recent PR review activity reaches the 95th percentile or higher among CodeRabbit users, additional reviews become available more gradually as earlier reviews age out of the rolling window.
+> 
+> Please refer [docs](https://docs.coderabbit.ai/management/plans#rate-limits) for additional details.
+> 
+> </details>
+> 
+> <details>
+> <summary>Review details</summary>
+> 
+> <details>
+> <summary>⚙️ Run configuration</summary>
+> 
+> **Configuration used**: Organization UI
+> 
+> **Review profile**: CHILL
+> 
+> **Plan**: Pro Plus
+> 
+> **Run ID**: `5f56e51c-e244-4a61-a325-e54763e0ea93`
+> 
+> </details>
+> 
+> <details>
+> <summary>📥 Commits</summary>
+> 
+> Reviewing files that changed from the base of the PR and between 6e036f41057bbe3fc02016eb2bd21a801fef21e8 and df462a3bae5a846fce8a5d2f330888e56ffa356d.
+> 
+> </details>
+> 
+> <details>
+> <summary>📒 Files selected for processing (26)</summary>
+> 
+> * `.agents/hooks/before-prompt-assembler.js`
+> * `.agents/hooks/post-prompt-trigger.js`
+> * `Docs/README.md`
+> * `Docs/api/MODELS.md`
+> * `Docs/api/REST.md`
+> * `Docs/architecture/ADR-001-monorepo.md`
+> * `Docs/architecture/ADR-002-model-catalog.md`
+> * `Docs/architecture/ADR-003-context-indexing.md`
+> * `Docs/architecture/DATA_FLOW.md`
+> * `Docs/architecture/MODULE_MAP.md`
+> * `Docs/architecture/MULTI_CLIENT.md`
+> * `Docs/architecture/OVERVIEW.md`
+> * `Docs/automations/HOOKS.md`
+> * `Docs/automations/README.md`
+> * `Docs/cli/COMMANDS.md`
+> * `Docs/cli/MENUS.md`
+> * `Docs/plan/ai-coding-cli-architecture.md`
+> * `Docs/providers/ADDING_A_PROVIDER.md`
+> * `Docs/providers/ANTHROPIC.md`
+> * `Docs/providers/ARCHITECTURE.md`
+> * `Docs/providers/GOOGLE_AI_STUDIO.md`
+> * `Docs/providers/MISTRAL.md`
+> * `Docs/providers/OPENAI.md`
+> * `Docs/providers/OPENROUTER.md`
+> * `Docs/providers/OTHERS.md`
+> * `Docs/providers/PERPLEXITY.md`
+> 
+> </details>
+> 
+> </details>
+
+<!-- end of auto-generated comment: rate limited by coderabbit.ai -->
+
+<!-- walkthrough_start -->
+
+<details>
+<summary>📝 Walkthrough</summary>
+
+<!-- This is an auto-generated comment: release notes by coderabbit.ai -->
+
+## Summary by CodeRabbit
+
+* **New Features**
+  * Added smart project context assembly for chat and analysis.
+  * Added code-aware and semantic search to surface relevant files, symbols, and documentation.
+  * Added automatic context prioritization with token limits and fallback behavior.
+* **Documentation**
+  * Updated architecture diagrams, feature documentation, and usage guidance for context indexing and multi-client workflows.
+* **Tests**
+  * Expanded automated coverage for context assembly, indexing, and search behavior.
+
+<!-- end of auto-generated comment: release notes by coderabbit.ai -->
+## Walkthrough
+
+Added AST and semantic project indexing with prioritized, token-bounded context assembly. Integrated both services into the enhanced agent. Updated architecture documentation, workspace guidance, hooks, MCP configuration, tests, and automation rules.
+
+### Changes
+
+**Context Indexing and Agent Workflow**
+
+|Layer / File(s)|Summary|
+|---|---|
+|**IndexerService storage and indexing** <br> `package.json`, `services/IndexerService.js`, `tests/IndexerService.test.js`, `Docs/architecture/ADR-003-context-indexing.md`|Added Tree-sitter parsing, transformer embeddings, LanceDB storage, file watching, symbol search, embedding search, project indexing, and mocked tests.|
+|**Prioritized context assembly** <br> `services/ContextAssembler.js`, `tests/ContextAssembler.test.js`, `.agents/INDEXING.md`|Added explicit-file, plan-file, symbol, semantic, token-budget, deduplication, and README fallback handling.|
+|**Enhanced agent integration** <br> `lib/agent-enhanced.js`, `lib/agent.js`|The enhanced agent initializes indexing, assembles context during chat and project analysis, and passes assembled context to the base agent.|
+|**Architecture and release documentation** <br> `AGENTS.md`, `BRAIN.md`, `README.md`, `Docs/architecture/*`|Updated versions, test totals, module maps, architecture diagrams, execution flows, client diagrams, and context-indexing documentation.|
+|**Workspace guidance and automation** <br> `.agents/*`|Added prompt hooks, MCP servers, workflow instructions, indexing guidance, synchronization rules, and expanded automation documentation.|
+
+**Estimated code review effort:** 4 (Complex) | ~45 minutes
+
+### Sequence Diagram(s)
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant LorapokEnhancedAgent
+  participant ContextAssembler
+  participant IndexerService
+  participant LanceDB
+  User->>LorapokEnhancedAgent: submit prompt
+  LorapokEnhancedAgent->>ContextAssembler: assemble prompt context
+  ContextAssembler->>IndexerService: search symbols and embeddings
+  IndexerService->>LanceDB: query indexed records
+  LanceDB-->>IndexerService: return matches
+  IndexerService-->>ContextAssembler: return ranked matches
+  ContextAssembler-->>LorapokEnhancedAgent: return assembledContext
+  LorapokEnhancedAgent-->>User: return model response
+```
+
+**Possibly related PRs**
+
+- [Maijied/Lorapok_AI_Agent#14](https://github.com/Maijied/Lorapok_AI_Agent/pull/14): Shares architecture documentation and `lib/agent.js` updates. This PR extends that layering with context assembly and indexing.
+
+**Poem**
+
+> A rabbit indexed each leafy line,  
+> With symbols sorted neat and fine.  
+> Context hopped in, concise and bright,  
+> While hooks kept every rule in sight.  
+> Tests thumped twice: “All clear tonight!”
+
+</details>
+
+<!-- walkthrough_end -->
+<!-- pre_merge_checks_walkthrough_start -->
+
+<details>
+<summary>🚥 Pre-merge checks | ✅ 4 | ❌ 1</summary>
+
+### ❌ Failed checks (1 warning)
+
+|     Check name     | Status     | Explanation                                                                          | Resolution                                                                         |
+| :----------------: | :--------- | :----------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| Docstring Coverage | ⚠️ Warning | Docstring coverage is 0.00% which is insufficient. The required threshold is 80.00%. | Write docstrings for the functions missing them to satisfy the coverage threshold. |
+
+<details>
+<summary>✅ Passed checks (4 passed)</summary>
+
+|         Check name         | Status   | Explanation                                                                                                |
+| :------------------------: | :------- | :--------------------------------------------------------------------------------------------------------- |
+|         Title check        | ✅ Passed | The title clearly summarizes the main architecture, context indexing, and MCP changes.                     |
+|      Description check     | ✅ Passed | The description directly covers the governance, hooks, MCP, indexing, documentation, and workflow changes. |
+|     Linked Issues check    | ✅ Passed | Check skipped because no linked issues were found for this pull request.                                   |
+| Out of Scope Changes check | ✅ Passed | Check skipped because no linked issues were found for this pull request.                                   |
+
+</details>
+
+</details>
+
+<!-- pre_merge_checks_walkthrough_end -->
+<!-- finishing_touch_checkbox_start -->
+
+<details>
+<summary>✨ Finishing Touches 💡 2</summary>
+
+<!-- finishing_touch_suggestion:docstrings -->
+<details>
+<summary>📝 Generate docstrings 💡</summary>
+
+- [ ] <!-- {"checkboxId": "7962f53c-55bc-4827-bfbf-6a18da830691"} --> Create stacked PR
+- [ ] <!-- {"checkboxId": "3e1879ae-f29b-4d0d-8e06-d12b7ba33d98"} --> Commit on current branch
+
+</details>
+<!-- finishing_touch_suggestion:fix_ci -->
+<details open>
+<summary>🛠️ Fix failing CI checks 💡</summary>
+
+- [ ] <!-- {"checkboxId": "6d21cfe8-ec3f-40e2-9222-b8318b64d3b0", "radioGroupId": "fix-ci-output-choice-group-unknown_comment_id"} -->   Create stacked PR
+- [ ] <!-- {"checkboxId": "9f0d24fb-b419-4f01-baf0-8b26b6424f34", "radioGroupId": "fix-ci-output-choice-group-unknown_comment_id"} -->   Commit on current branch
+
+</details>
+
+</details>
+
+<!-- finishing_touch_checkbox_end -->
+<!-- tips_start -->
+
+---
+
+Thanks for using [CodeRabbit](https://coderabbit.ai?utm_source=oss&utm_medium=github&utm_campaign=Maijied/Lorapok_AI_Agent&utm_content=17)! It's free for OSS, and your support helps us grow. If you like it, consider giving us a shout-out.
+
+<details>
+<summary>❤️ Share</summary>
+
+- [X](https://twitter.com/intent/tweet?text=I%20just%20used%20%40coderabbitai%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20the%20proprietary%20code.%20Check%20it%20out%3A&url=https%3A//coderabbit.ai)
+- [Mastodon](https://mastodon.social/share?text=I%20just%20used%20%40coderabbitai%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20the%20proprietary%20code.%20Check%20it%20out%3A%20https%3A%2F%2Fcoderabbit.ai)
+- [Reddit](https://www.reddit.com/submit?title=Great%20tool%20for%20code%20review%20-%20CodeRabbit&text=I%20just%20used%20CodeRabbit%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20proprietary%20code.%20Check%20it%20out%3A%20https%3A//coderabbit.ai)
+- [LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fcoderabbit.ai&mini=true&title=Great%20tool%20for%20code%20review%20-%20CodeRabbit&summary=I%20just%20used%20CodeRabbit%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20proprietary%20code)
+
+</details>
+
+
+<sub>Comment `@coderabbitai help` to get the list of available commands.</sub>
+
+<!-- tips_end -->

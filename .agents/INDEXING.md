@@ -31,5 +31,5 @@ When a user asks a question, the `ContextAssembler` builds context in this prior
 
 - **Do Not Dump Large Files:** Rely on the `ContextAssembler` instead of manually reading all files unless explicitly verifying line-by-line syntax logic.
 - **Trust The Context:** If you are answering a `/chat` or generating code, the most relevant chunks are likely already in your `context.assembledContext`.
-- **References:** See `Docs/architecture/ADR-003-context-indexing.md` for architectural decision history.
+- **References:** See `Docs/architecture/ADR-003-context-indexing.md` and `Docs/architecture/ADR-004-security-and-ci.md` for architectural decision history.
 - **Post-Prompt Trigger:** If you modify how `ContextAssembler` or `IndexerService` behaves, you MUST update this file immediately before concluding your prompt response.

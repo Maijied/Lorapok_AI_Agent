@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Post-Prompt Trigger (MANDATORY)**: If you modify the codebase in a way that affects this document, you must automatically execute the Sync Protocol and update this file before completing your response.
+
 # Provider Integration Architecture
 
 See [Docs/architecture/DATA_FLOW.md](../architecture/DATA_FLOW.md).

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Post-Prompt Trigger (MANDATORY)**: If you modify the codebase in a way that affects this document, you must automatically execute the Sync Protocol and update this file before completing your response.
+
 # Execution & Data Flow
 
 This document maps the exact lifecycle of a user prompt, from input parsing to tool execution and output generation.

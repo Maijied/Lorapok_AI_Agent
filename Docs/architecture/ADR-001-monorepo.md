@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Post-Prompt Trigger (MANDATORY)**: If you modify the codebase in a way that affects this document, you must automatically execute the Sync Protocol and update this file before completing your response.
+
 # ADR-001: Monorepo-ready layout
 
 ## Decision

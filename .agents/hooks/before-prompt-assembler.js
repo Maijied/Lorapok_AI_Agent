@@ -11,6 +11,13 @@
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Retrieves a comma-separated list of items in the given directory path.
+ * Ignores hidden files or directories starting with a dot.
+ *
+ * @param {string} dirPath - The absolute path to the directory to read.
+ * @returns {string} Comma-separated directory contents, or 'None' if unavailable.
+ */
 function getDirectoryContents(dirPath) {
     try {
         if (!fs.existsSync(dirPath)) return 'None';

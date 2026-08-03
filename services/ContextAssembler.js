@@ -29,7 +29,9 @@ class ContextAssembler {
         while ((match = pathRegex.exec(prompt)) !== null) {
             const possiblePath = match[1];
             const absPath = path.resolve(this.projectRoot, possiblePath);
-            if (fs.existsSync(absPath) && fs.statSync(absPath).isFile()) {
+            const relCheck = path.relative(this.projectRoot, absPath);
+            const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
+            if (isInside && fs.existsSync(absPath) && fs.statSync(absPath).isFile()) {
                 explicitFiles.add(absPath);
             }
         }
@@ -90,7 +92,7 @@ class ContextAssembler {
         for (const file of explicitFiles) {
             try {
                 const content = fs.readFileSync(file, 'utf-8');
-                const relPath = path.relative(this.projectRoot, file);
+                const relPath = path.relative(this.projectRoot, file).split(path.sep).join('/');
                 addBlock(relPath, content, 'explicit file');
             } catch (err) {
                 logger.warn(`ContextAssembler: Failed to read explicit file ${file}`);
@@ -100,10 +102,12 @@ class ContextAssembler {
         // 2. Current plan files
         for (const file of planFiles) {
             const absPath = path.resolve(this.projectRoot, file);
-            if (!explicitFiles.includes(absPath) && fs.existsSync(absPath)) {
+            const relCheck = path.relative(this.projectRoot, absPath);
+            const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
+            if (isInside && !explicitFiles.includes(absPath) && fs.existsSync(absPath)) {
                 try {
                     const content = fs.readFileSync(absPath, 'utf-8');
-                    const relPath = path.relative(this.projectRoot, absPath);
+                    const relPath = path.relative(this.projectRoot, absPath).split(path.sep).join('/');
                     addBlock(relPath, content, 'plan file');
                 } catch (err) { }
             }

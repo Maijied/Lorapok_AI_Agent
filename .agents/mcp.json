@@ -55,7 +55,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-sqlite"
+        "@modelcontextprotocol/server-sqlite",
+        "--db-path",
+        ".lorapok/lancedb/lorapok.db"
       ],
       "description": "Directly inspect and query local .sqlite databases."
     }

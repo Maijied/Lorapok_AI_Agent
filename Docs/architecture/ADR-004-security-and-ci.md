@@ -9,7 +9,7 @@ With the introduction of LanceDB for semantic search and Tree-sitter for AST par
 We enforced strict path normalization in `ContextAssembler.js`. Absolute paths pointing outside the workspace and relative paths attempting directory traversal (`../`) are explicitly blocked during explicit file inclusion and plan parsing.
 
 ### 2. Security: Prompt Isolation
-System prompts in `lib/agent.js` and `lib/agent-enhanced.js` are separated from dynamic user workspace content. Repository context is now placed in an explicitly labeled `<UNTRUSTED_REPOSITORY_CONTEXT>` sandbox to prevent prompt injection attacks that could trick the agent into misinterpreting its directives.
+System prompts in `lib/agent.js` and `lib/agent-enhanced.js` are separated from dynamic user workspace content. Repository context is now placed in a normal user message using `[UNTRUSTED REPOSITORY CONTEXT START]` and `[UNTRUSTED REPOSITORY CONTEXT END]` prompt-handling markers to prevent prompt injection attacks that could trick the agent into misinterpreting its directives, rather than a hard sandbox.
 
 ### 3. Stability: Tree-Sitter Parser Consolidation
 Due to ABI mismatches between `tree-sitter` v0.25 and `tree-sitter-typescript` v0.23 resulting in segmentation faults on macOS/Windows CI runners, we removed `tree-sitter-typescript`. TypeScript and TSX files now fallback to the `tree-sitter-javascript` (v0.25) parser. This provides sufficient structural AST extraction (classes, methods, functions) for our semantic chunking without causing native binary link failures.

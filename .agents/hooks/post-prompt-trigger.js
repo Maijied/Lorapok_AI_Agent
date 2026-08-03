@@ -36,7 +36,8 @@ Before you halt execution and return control to the user, you MUST verify:
 1. Did you modify any architecture, logic, models, or core functionality?
 2. If YES, have you updated \`BRAIN.md\`, \`AGENTS.md\`, and dynamically verified ALL \`*.md\` files in the repository (including the following directories) to ensure they are updated if needed?
 ${docsDirsList || '   - Docs/ (and all contained .md files)'}
-3. Have you run the test suite (\`npm test\`) to verify zero regressions?
+3. If you implemented a NEW feature, have you generated a NEW \`.md\` file in the appropriate \`Docs/\` subdirectory to document its architecture, usage, and behavior?
+4. Have you run the test suite (\`npm test\`) to verify zero regressions?
 
 Failure to perform these checks violates the core rule (.agents/rules/*.mdc).
 If updates are needed, DO THEM NOW before finishing your response.

@@ -41,9 +41,11 @@
   "author": "Lorapok Labs <https://lorapok.tech>",
   "license": "UNLICENSED",
   "dependencies": {
+    "@xenova/transformers": "^2.17.2",
     "axios": "^1.6.0",
     "boxen": "^5.1.2",
     "chalk": "^4.1.2",
+    "chokidar": "^3.6.0",
     "cli-table3": "^0.6.5",
     "commander": "^11.0.0",
     "cors": "^2.8.5",
@@ -58,7 +60,10 @@
     "open": "^8.4.2",
     "ora": "^5.4.1",
     "terminal-image": "^1.2.1",
+    "tree-sitter": "^0.25.1",
+    "tree-sitter-javascript": "^0.25.0",
     "uuid": "^9.0.1",
+    "vectordb": "^0.21.2",
     "winston": "^3.11.0"
   },
   "devDependencies": {

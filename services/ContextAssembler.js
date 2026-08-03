@@ -109,7 +109,9 @@ class ContextAssembler {
                     const content = fs.readFileSync(absPath, 'utf-8');
                     const relPath = path.relative(this.projectRoot, absPath).split(path.sep).join('/');
                     addBlock(relPath, content, 'plan file');
-                } catch (err) { }
+                } catch (err) {
+                    logger.warn(`ContextAssembler: Failed to read plan file ${absPath}: ${err.message}`);
+                }
             }
         }
 

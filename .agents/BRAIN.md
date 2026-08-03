@@ -74,6 +74,7 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 ## 🛠️ Sync Protocol
 
 After code changes: `npm test` → update BRAIN ×2, AGENTS ×2, CHANGELOG → `npm cache clean --force`.
+*Note: Explicitly exclude response-format or metadata-only changes. Do not run another protocol run when those are the only required changes.*
 
 > [!IMPORTANT]
 > **Post-Prompt Trigger (MANDATORY)**: Immediately after a prompt response completes, you must automatically execute this Sync Protocol if you modified architecture, added new modules, or changed test counts.

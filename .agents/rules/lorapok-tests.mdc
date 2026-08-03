@@ -1,10 +1,13 @@
 ---
 description: Zero-regression testing policy
 globs: tests/**
-alwaysApply: false
+alwaysApply: true
 ---
 
-# Test Rules
+# 🧪 Test Rules
 
-- Every code change needs tests under `tests/`
-- `npm test` must pass 100% before task completion
+- 📝 Every single code change requires accompanying tests under `tests/`.
+- 💯 `npm test` must pass flawlessly (100%) before task completion.
+
+> [!IMPORTANT]
+> **Post-Prompt Trigger**: After your prompt response is complete, ALWAYS review and update corresponding architecture documentation and tests.

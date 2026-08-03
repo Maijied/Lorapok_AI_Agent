@@ -1,9 +1,14 @@
 ---
 description: Professional markdown standards
 globs: "**/*.md"
-alwaysApply: false
+alwaysApply: true
 ---
 
-# Docs Rules
+# 📝 Docs Rules
 
-Follow `.agents/skills/professional-readme-creator`: badges, feature matrix, env tables, fenced examples, accurate version (`package.json`).
+- 🎨 Follow `.agents/skills/professional-readme-creator` logic: use badges, feature matrices, env tables, and fenced examples.
+- 🏷️ Maintain accurate versioning synchronized with `package.json`.
+- 📊 Use Mermaid diagrams (Flowcharts, Sequence Diagrams, Mindmaps) to visualize architecture.
+
+> [!IMPORTANT]
+> **Post-Prompt Trigger**: After your prompt response is complete, ALWAYS review and update corresponding architecture documentation and tests.

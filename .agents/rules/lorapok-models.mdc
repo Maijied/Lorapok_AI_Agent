@@ -1,12 +1,15 @@
 ---
 description: Model catalog and menu invariants
 globs: services/Model*.js,commands/settings.js,lib/agent.js
-alwaysApply: false
+alwaysApply: true
 ---
 
-# Model Rules
+# ⚡ Model Rules
 
-- Sanitize only in `ModelManager` / `ModelValidator`
-- Usable menus = no paymentRequired + available + not failed
-- Paid catalog = paymentRequired only; Google free-API is usable
-- Never select inaccessible models via CLI or API
+- 🛡️ Sanitize models exclusively in `ModelManager` / `ModelValidator`.
+- 🟢 **Usable menus** = no `paymentRequired` + `available` (live probed) + not failed.
+- 💰 **Paid catalog** = `paymentRequired` only. Note: Google AI Studio free-API models are treated as usable, not paid.
+- ⛔ Never allow selection of inaccessible models via CLI or REST API.
+
+> [!IMPORTANT]
+> **Post-Prompt Trigger**: After your prompt response is complete, ALWAYS review and update corresponding architecture documentation and tests.

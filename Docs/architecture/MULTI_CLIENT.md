@@ -4,6 +4,35 @@
 
 All non-CLI clients talk to the **Express REST API** through **`@lorapok/sdk`**. Never duplicate model sanitization in clients — always use `GET /api/models?view=usable|paid|all`.
 
+```mermaid
+flowchart TD
+  %% Clients
+  subgraph Client Ecosystem
+    Web["🌍 apps/website\n(React/Next.js)"]
+    Android["📱 Android App\n(Future)"]
+    iOS["🍏 iOS App\n(Future)"]
+    Desktop["💻 Desktop App\n(Future)"]
+  end
+
+  %% SDK Transport Layer
+  SDK["📦 @lorapok/sdk\n(HTTP Transport)"]
+
+  %% Server Backend
+  subgraph Server Backend
+    API["🌐 Express REST API\n(server.js)"]
+    Agent["🤖 LorapokEnhancedAgent\n(Stateful Session)"]
+  end
+
+  %% Connections
+  Web --> SDK
+  Android --> SDK
+  iOS --> SDK
+  Desktop --> SDK
+  
+  SDK -->|JSON / REST| API
+  API --> Agent
+```
+
 ## Clients
 
 | Client | Location | Status |

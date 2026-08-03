@@ -1,11 +1,14 @@
 ---
 description: Express REST API contracts
 globs: server.js,packages/sdk/**
-alwaysApply: false
+alwaysApply: true
 ---
 
-# API Rules
+# 🌐 API Rules
 
-- `GET /api/models` must use validated views — never raw `getAllKnownModels()` alone
-- Guard chat/settings model IDs with `canSelectModel`
-- Prefer `lib/logger` over `console.error` in server middleware
+- 🔐 `GET /api/models` MUST use validated views — never return raw `getAllKnownModels()` alone.
+- 🛡️ Guard chat/settings model IDs with `canSelectModel`.
+- 📝 Prefer `lib/logger` over `console.error` in server middleware.
+
+> [!IMPORTANT]
+> **Post-Prompt Trigger**: After your prompt response is complete, ALWAYS review and update corresponding architecture documentation and tests.

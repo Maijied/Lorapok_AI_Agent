@@ -3,10 +3,14 @@ description: Core Lorapok coding standards
 alwaysApply: true
 ---
 
-# Lorapok Core
+# 🤖 Lorapok Core
 
-- CommonJS only (`require` / `module.exports`)
-- Use `lib/errors.js` and `lib/logger.js` — no silent catches
-- Never commit secrets or `.env`
-- Run `npm test` before finishing tasks that change code
-- Read `BRAIN.md` and `.agents/rules/` at task start
+- 🏗️ CommonJS only (`require` / `module.exports`).
+- 🚨 Use `lib/errors.js` and `lib/logger.js` — no silent catches.
+- 🔐 Never commit secrets or `.env`.
+- ✅ Run `npm test` before finishing tasks that change code.
+- 🧠 Read `BRAIN.md` and `.agents/rules/` at task start.
+- 📚 **Context is Auto-Assembled**: Rely on `ContextAssembler` for semantic indexing in `/analyze` and `/chat`. Avoid blind `fs.readFileSync` dumps that blow up the token window.
+
+> [!IMPORTANT]
+> **Post-Prompt Trigger**: After your prompt response is complete, ALWAYS review and update corresponding architecture documentation and tests.

@@ -63,7 +63,6 @@
     "terminal-image": "^1.2.1",
     "tree-sitter": "^0.25.1",
     "tree-sitter-javascript": "^0.25.0",
-    "tree-sitter-typescript": "^0.23.2",
     "uuid": "^9.0.1",
     "vectordb": "^0.21.2",
     "winston": "^3.11.0"
@@ -94,11 +93,6 @@
     "README.md",
     "LICENSE"
   ],
-  "overrides": {
-    "tree-sitter-typescript": {
-      "tree-sitter": "$tree-sitter"
-    }
-  },
   "publishConfig": {
     "access": "public",
     "provenance": true

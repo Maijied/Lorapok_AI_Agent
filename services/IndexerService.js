@@ -273,7 +273,9 @@ class IndexerService {
         }
 
         // Update symbol index
-        this.symbolIndex.set(relPath, symbols); console.error("MY_DEBUG_LOG_SYMBOLS:", symbols.length);
+        this.symbolIndex.set(relPath, symbols);
+        // use logger.debug rather than console.error to avoid Jest noise
+        logger.debug(`IndexerService: symbol count for ${relPath}: ${symbols.length}`);
 
         if (chunks.length > 0) {
             // Compute embeddings

@@ -36,7 +36,9 @@ Before you halt execution and return control to the user, you MUST verify:
 1. Did you modify any architecture, logic, models, or core functionality?
 2. If YES, have you updated \`BRAIN.md\`, \`AGENTS.md\`, and dynamically verified ALL \`*.md\` files in the repository (including the following directories) to ensure they are updated if needed?
 ${docsDirsList || '   - Docs/ (and all contained .md files)'}
-3. If you implemented a NEW feature, have you generated a NEW \`.md\` file in the appropriate \`Docs/\` subdirectory to document its architecture, usage, and behavior?
+3. If you implemented a new feature or functionality, have you generated a highly professional \`.md\` file documenting its architecture, usage, and behavior?
+   - If a relevant category folder does not exist in \`Docs/\`, you MUST dynamically create a new category folder and place the professionally formatted \`.md\` file inside it.
+   - If the category folder already exists, place the new \`.md\` file there.
 4. Have you run the test suite (\`npm test\`) to verify zero regressions?
 
 Failure to perform these checks violates the core rule (.agents/rules/*.mdc).

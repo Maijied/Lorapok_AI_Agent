@@ -62,7 +62,7 @@ describe('IndexerService', () => {
     beforeEach(() => {
         // Suppress logger in tests
         jest.spyOn(console, 'log').mockImplementation(() => {});
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+        
 
         // Don't actually make dirs in tests
         jest.spyOn(fs, 'existsSync').mockReturnValue(true);

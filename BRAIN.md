@@ -1,7 +1,7 @@
 # 🧠 Lorapok AI Agent - Central System Brain (BRAIN.md)
 
 > **LIVING SYSTEM MEMORY & KNOWLEDGE BASE**  
-> *Last Synced: 2026-08-01 | Version: 1.5.0 | Test Suite: 44/44 Passed (570 Tests)*
+> *Last Synced: 2026-08-03 | Version: 1.7.0 | Test Suite: 46/46 Passed (579 Tests)*
 
 ---
 
@@ -25,7 +25,7 @@ lorapok_ai_agent/
 ├── bin/ lorapok.js
 ├── commands/          # registry.js + handlers
 ├── lib/               # agent, core schema, config, ui, menu-format
-├── services/          # Orchestrator, ModeRouter, Adapters, Model*, Git, File
+├── services/          # Orchestrator, ModeRouter, ContextAssembler, IndexerService, Model*, Git, File
 ├── server.js
 ├── packages/sdk/      # HTTP client stub
 ├── apps/website/      # marketing site
@@ -41,7 +41,7 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 ## 📊 Live Metrics
 
 - Node.js >= 18
-- Jest: **44 suites, 570 tests passing**
+- Jest: **46 suites, 579 tests passing**
 - Model sanitize: `ModelSanitizeService` + `ModelAccessService` + `ActiveModelService`
 - Secrets: `SecretsVault` AES-256-GCM; sessions: `SessionStore`; geek lines: `GeekLinesService`
 - Themes: default ANSI Shadow; Banner3 as **Banner** theme; dual-tone wordmark fill; cyber laptop vs classic + AI Coding badge
@@ -54,7 +54,8 @@ See [Docs/architecture/MODULE_MAP.md](Docs/architecture/MODULE_MAP.md).
 - Smart Chat UI: Suggested questions (`<suggestions>`) render seamlessly before the status bar to create a perfect iteration separator line.
 - Architecture: `currentMode` is explicitly tracked in `context` to ensure `handleChat` differentiates between `/chat`, `/agent`, and `/plan` modes, automatically injecting strong autonomous prompt directives when needed.
 - Exit: `TerminalUI.exitSession` — larva spinner steps then aligned SESSION RECAP with animated bye-bye emblem
-- Workspace: `WorkspaceService`; npm package version: **1.5.0**
+- Workspace: `WorkspaceService`; npm package version: **1.7.0**
+- Context & Indexing: `ContextAssembler` + `IndexerService` provide intelligent symbol matching (Tree-sitter) and semantic code chunk embeddings (LanceDB + Transformers) for prompt context assembly.
 
 ---
 

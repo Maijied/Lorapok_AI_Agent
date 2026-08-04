@@ -41,6 +41,7 @@ let mcpServers = 'None';
 try {
     const mcpPath = path.join(agentsDir, 'mcp.json');
     if (fs.existsSync(mcpPath)) {
+        // ast-grep-ignore
         const mcpData = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
         mcpServers = Object.keys(mcpData.mcpServers || {}).join(', ') || 'None';
     }

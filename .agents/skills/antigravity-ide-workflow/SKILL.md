@@ -43,7 +43,7 @@ Lorapok is an advanced Node.js AI agent. When implementing features:
 
 As explicitly governed by `AGENTS.md` and `.agents/rules/`, Antigravity MUST synchronize documentation before completing a task.
 
-1. **Update `BRAIN.md`**: If you added a new service, updated test counts, or changed module mappings, update `BRAIN.md`.
-2. **Update `.agents/AGENTS.md`**: If the governance rules of the agent changed, update this file.
-3. **Update `Docs/`**: If the architecture significantly shifted, update `Docs/architecture/OVERVIEW.md` or `MODULE_MAP.md`.
+1. **Update `BRAIN.md`**: Update `BRAIN.md` if you added a new service, updated test counts, or changed module mappings.
+2. **Update `.agents/AGENTS.md`**: Modify this file whenever the governance rules of the agent change.
+3. **Update `Docs/`**: In cases where the architecture significantly shifts, update `Docs/architecture/OVERVIEW.md` or `MODULE_MAP.md`.
 4. **Cleanup**: Run `npm cache clean --force` in the terminal to leave the workspace pristine.

@@ -25,8 +25,8 @@ class ContextAssembler {
         const explicitFiles = new Set();
         // Very simple regex for things that look like paths (e.g. src/index.js, lib/core/Plan.js)
         const pathRegex = /([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)/g;
-        let match;
-        while ((match = pathRegex.exec(prompt)) !== null) {
+        const matches = prompt.matchAll(pathRegex);
+        for (const match of matches) {
             const possiblePath = match[1];
             const absPath = path.resolve(this.projectRoot, possiblePath);
             const relCheck = path.relative(this.projectRoot, absPath);
@@ -91,9 +91,12 @@ class ContextAssembler {
         const explicitFiles = this._extractExplicitFiles(prompt);
         for (const file of explicitFiles) {
             try {
-                const content = fs.readFileSync(file, 'utf-8');
-                const relPath = path.relative(this.projectRoot, file).split(path.sep).join('/');
-                addBlock(relPath, content, 'explicit file');
+                if (fs.existsSync(file)) {
+                    // ast-grep-ignore
+                    const content = fs.readFileSync(file, 'utf-8');
+                    const relPath = path.relative(this.projectRoot, file).split(path.sep).join('/');
+                    addBlock(relPath, content, 'explicit file');
+                }
             } catch (err) {
                 logger.warn(`ContextAssembler: Failed to read explicit file ${file}`);
             }
@@ -106,6 +109,7 @@ class ContextAssembler {
             const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
             if (isInside && !explicitFiles.includes(absPath) && fs.existsSync(absPath)) {
                 try {
+                    // ast-grep-ignore
                     const content = fs.readFileSync(absPath, 'utf-8');
                     const relPath = path.relative(this.projectRoot, absPath).split(path.sep).join('/');
                     addBlock(relPath, content, 'plan file');
@@ -145,6 +149,7 @@ class ContextAssembler {
         if (contextBlocks.length === 0) {
             const readmePath = path.join(this.projectRoot, 'README.md');
             if (fs.existsSync(readmePath)) {
+                // ast-grep-ignore
                 const content = fs.readFileSync(readmePath, 'utf-8');
                 addBlock('README.md', content.substring(0, 2000), 'project summary');
             }

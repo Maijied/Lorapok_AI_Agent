@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.7.0...v1.8.0) (2026-08-04)
+
+
+### Features
+
+* add master operational workflow documentation for Lorapok AI agent development ([cc2b5fc](https://github.com/Maijied/Lorapok_AI_Agent/commit/cc2b5fcb36422d1760f5b5f69f4c4c7944a0c7c8))
+* **agents:** enhance documentation, automations, MCP, and antigravity IDE workflow ([fe347ec](https://github.com/Maijied/Lorapok_AI_Agent/commit/fe347ecd82b454879f9b6cd4f07882472fa87517))
+* **agents:** expand new feature doc automation to mandate dynamic category folders and professional formatting ([b56f213](https://github.com/Maijied/Lorapok_AI_Agent/commit/b56f213323117726959cccb917b47a4126787d6d))
+* **agents:** make post-prompt-trigger scan Docs dynamically ([14b3888](https://github.com/Maijied/Lorapok_AI_Agent/commit/14b3888bc4f6aa01540aeeb8200781fa11c27aa6))
+* **agents:** mandate ALL .md files are verified in post-prompt-trigger ([093b811](https://github.com/Maijied/Lorapok_AI_Agent/commit/093b811d5d5ab39b8d8fa41a31cb07aca8e15408))
+* **agents:** mandate creation of new .md files for new features in post-prompt-trigger ([e077140](https://github.com/Maijied/Lorapok_AI_Agent/commit/e07714089e0c115db75757e88df915199204c531))
+* enhance file resolution with realpath validation, implement indexing regex fallback, and update IDE workflow guidelines. ([3542d11](https://github.com/Maijied/Lorapok_AI_Agent/commit/3542d11f12cff4b034fb5a71e848eb818965e533))
+* Implement Context Store and Indexing mechanism using LanceDB and Tree-sitter ([699c447](https://github.com/Maijied/Lorapok_AI_Agent/commit/699c44788b62d3c015567e0bf3f621cd9033132c))
+* make indexer universal by using ignore list ([66750d7](https://github.com/Maijied/Lorapok_AI_Agent/commit/66750d71cac65ed477065d32aab2691225f547b7))
+* **mcp:** add browsermcp integration ([7a1aac1](https://github.com/Maijied/Lorapok_AI_Agent/commit/7a1aac189a04bf3c858f138ad3176d54e82deaa2))
+* support multiple languages in IndexerService ([a65c91c](https://github.com/Maijied/Lorapok_AI_Agent/commit/a65c91c07a6b18c5cb038f288e2c3ad51d23e02e))
+
+
+### Bug Fixes
+
+* add missing docstrings to IndexerService ([f0ae4af](https://github.com/Maijied/Lorapok_AI_Agent/commit/f0ae4afd017d0c6e81f94a511fdb0698212ab9ce))
+* address CodeRabbit review issues across mcp, hooks, and indexer ([ea2800f](https://github.com/Maijied/Lorapok_AI_Agent/commit/ea2800fa521b4ae30dc5af9d1cc90bb7ba952ae7))
+* address CodeRabbit warnings for path traversal and styles ([e957ccd](https://github.com/Maijied/Lorapok_AI_Agent/commit/e957ccd1dcb5797efb4260a42cf85bfdb49495dd))
+* **agents:** add JSDoc to before-prompt-assembler to resolve CodeRabbit docstring coverage warning ([6227bdc](https://github.com/Maijied/Lorapok_AI_Agent/commit/6227bdc284e4e84142cb56cd57eef4418e84480c))
+* **ci:** Resolve cross-platform Tree-Sitter compilation failures ([5621dc4](https://github.com/Maijied/Lorapok_AI_Agent/commit/5621dc442cf365205c645496140ab665e249f86f))
+* **ci:** Resolve tree-sitter peer dependency conflict ([6c7b1e3](https://github.com/Maijied/Lorapok_AI_Agent/commit/6c7b1e32c227739ef4cc837f9d4576af970d47cc))
+* **indexer:** add regex fallback for symbol extraction and replace console.error with logger.debug (fix CI) ([f00786f](https://github.com/Maijied/Lorapok_AI_Agent/commit/f00786fb2f7159adb472119e46086c29abf97840))
+* **indexer:** normalize relative paths to posix format for cross-platform compatibility ([fdeafa9](https://github.com/Maijied/Lorapok_AI_Agent/commit/fdeafa9260dd494198a99867943caba1894202c2))
+* **pr-17:** Address CodeRabbit review feedback for context assembly and indexing ([e188c2e](https://github.com/Maijied/Lorapok_AI_Agent/commit/e188c2eee35ce92957530a578f4089ffc99bf3b8))
+
 ## [1.7.0](https://github.com/Maijied/Lorapok_AI_Agent/compare/v1.6.0...v1.7.0) (2026-08-01)
 
 

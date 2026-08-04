@@ -11,9 +11,9 @@ This skill defines the highly-optimized, step-by-step development workflow for u
 
 When you start a new task in Antigravity IDE, follow these steps before writing code:
 
-1. **Review the Brain**: Always read `BRAIN.md` and `.agents/INDEXING.md` to ensure your mental model of the Lorapok architecture is perfectly up to date.
+1. **Review Governance Sources**: Always read `.agents/rules/`, `BRAIN.md`, and `.agents/INDEXING.md` to ensure your mental model of the Lorapok architecture and rules is perfectly up to date.
 2. **Engage MCP Servers**: 
-   - If the task involves internet research, invoke the **Brave Search** MCP server.
+   - If the task involves checking web content like GitHub Actions, invoke the **browsermcp** MCP server.
    - If the task requires deep architectural refactoring, invoke the **Sequential Thinking** MCP server to plan the execution.
    - If the task involves GitHub issues/PRs, invoke the **GitHub** MCP server.
 

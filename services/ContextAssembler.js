@@ -29,10 +29,18 @@ class ContextAssembler {
         for (const match of matches) {
             const possiblePath = match[1];
             const absPath = path.resolve(this.projectRoot, possiblePath);
-            const relCheck = path.relative(this.projectRoot, absPath);
-            const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
-            if (isInside && fs.existsSync(absPath) && fs.statSync(absPath).isFile()) {
-                explicitFiles.add(absPath);
+            if (fs.existsSync(absPath)) {
+                try {
+                    const realPath = fs.realpathSync(absPath);
+                    const realRoot = fs.realpathSync(this.projectRoot);
+                    const relCheck = path.relative(realRoot, realPath);
+                    const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
+                    if (isInside && fs.statSync(realPath).isFile()) {
+                        explicitFiles.add(realPath);
+                    }
+                } catch (e) {
+                    // ignore
+                }
             }
         }
         return Array.from(explicitFiles);
@@ -105,14 +113,18 @@ class ContextAssembler {
         // 2. Current plan files
         for (const file of planFiles) {
             const absPath = path.resolve(this.projectRoot, file);
-            const relCheck = path.relative(this.projectRoot, absPath);
-            const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
-            if (isInside && !explicitFiles.includes(absPath) && fs.existsSync(absPath)) {
+            if (fs.existsSync(absPath)) {
                 try {
-                    // ast-grep-ignore
-                    const content = fs.readFileSync(absPath, 'utf-8');
-                    const relPath = path.relative(this.projectRoot, absPath).split(path.sep).join('/');
-                    addBlock(relPath, content, 'plan file');
+                    const realPath = fs.realpathSync(absPath);
+                    const realRoot = fs.realpathSync(this.projectRoot);
+                    const relCheck = path.relative(realRoot, realPath);
+                    const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
+                    if (isInside && !explicitFiles.includes(realPath)) {
+                        // ast-grep-ignore
+                        const content = fs.readFileSync(realPath, 'utf-8');
+                        const relPathStr = path.relative(realRoot, realPath).split(path.sep).join('/');
+                        addBlock(relPathStr, content, 'plan file');
+                    }
                 } catch (err) {
                     logger.warn(`ContextAssembler: Failed to read plan file ${absPath}: ${err.message}`);
                 }
@@ -149,9 +161,19 @@ class ContextAssembler {
         if (contextBlocks.length === 0) {
             const readmePath = path.join(this.projectRoot, 'README.md');
             if (fs.existsSync(readmePath)) {
-                // ast-grep-ignore
-                const content = fs.readFileSync(readmePath, 'utf-8');
-                addBlock('README.md', content.substring(0, 2000), 'project summary');
+                try {
+                    const realPath = fs.realpathSync(readmePath);
+                    const realRoot = fs.realpathSync(this.projectRoot);
+                    const relCheck = path.relative(realRoot, realPath);
+                    const isInside = relCheck && !relCheck.startsWith('..') && !path.isAbsolute(relCheck);
+                    if (isInside) {
+                        // ast-grep-ignore
+                        const content = fs.readFileSync(realPath, 'utf-8');
+                        addBlock('README.md', content.substring(0, 2000), 'project summary');
+                    }
+                } catch (err) {
+                    // ignore
+                }
             }
         }
 

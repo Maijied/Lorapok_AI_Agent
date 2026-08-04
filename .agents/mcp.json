@@ -60,7 +60,9 @@
         ".lorapok/lancedb/lorapok.db"
       ],
       "description": "Directly inspect and query local .sqlite databases."
-    },
+    }
+  },
+  "optInServers": {
     "browsermcp": {
       "command": "npx",
       "args": [

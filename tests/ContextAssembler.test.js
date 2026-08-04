@@ -20,6 +20,7 @@ describe('ContextAssembler', () => {
         });
 
         jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+        jest.spyOn(fs, 'realpathSync').mockImplementation((p) => p);
         jest.spyOn(fs, 'statSync').mockReturnValue({ isFile: () => true });
         jest.spyOn(fs, 'readFileSync').mockImplementation((filePath) => {
             if (filePath.includes('README.md')) return 'Mock Readme';

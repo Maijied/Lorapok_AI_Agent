@@ -132,7 +132,7 @@ class IndexerService {
         // Index all text/code files, skipping binaries and media
         if (IGNORED_EXTENSIONS.test(filePath)) return;
 
-        const relPath = path.relative(this.projectRoot, filePath);
+        const relPath = path.relative(this.projectRoot, filePath).split(path.sep).join('/');
         if (this.debounceTimers.has(relPath)) {
             clearTimeout(this.debounceTimers.get(relPath));
         }
@@ -154,7 +154,7 @@ class IndexerService {
      * @returns {Promise<void>}
      */
     async removeFile(filePath) {
-        const relPath = path.relative(this.projectRoot, filePath);
+        const relPath = path.relative(this.projectRoot, filePath).split(path.sep).join('/');
         this.symbolIndex.delete(relPath);
         
         if (this.table) {
@@ -178,7 +178,7 @@ class IndexerService {
     async indexFile(filePath) {
         if (!this.pipeline || !this.db) await this.init();
 
-        const relPath = path.relative(this.projectRoot, filePath);
+        const relPath = path.relative(this.projectRoot, filePath).split(path.sep).join('/');
         let content;
         try {
             content = fs.readFileSync(filePath, 'utf-8');

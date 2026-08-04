@@ -5,8 +5,15 @@ const path = require('path');
 const crypto = require('crypto');
 const chokidar = require('chokidar');
 const lancedb = require('vectordb');
-const Parser = require('tree-sitter');
-const JavaScript = require('tree-sitter-javascript');
+let Parser, JavaScript;
+try {
+    Parser = require('tree-sitter');
+    JavaScript = require('tree-sitter-javascript');
+} catch (e) {
+    // Tree-sitter native modules might fail to install on some CI environments (e.g., Windows)
+    Parser = null;
+    JavaScript = null;
+}
 const logger = require('../lib/logger');
 
 // Dynamically require transformers since it might be heavy and we want to lazy load
@@ -26,8 +33,12 @@ class IndexerService {
         this.watcher = null;
         this.symbolIndex = new Map(); // filePath -> array of symbols
         this.pipeline = null;
-        this.parser = new Parser();
-        this.parser.setLanguage(JavaScript);
+        if (Parser && JavaScript) {
+            this.parser = new Parser();
+            this.parser.setLanguage(JavaScript);
+        } else {
+            this.parser = null;
+        }
         this.debounceTimers = new Map();
         this.initFailed = false;
         
@@ -154,9 +165,19 @@ class IndexerService {
             return; // File might have been deleted right after being changed
         }
 
-        this.parser.setLanguage(JavaScript);
+        if (this.parser) {
+            this.parser.setLanguage(JavaScript);
+        }
 
-        const tree = this.parser.parse(content);
+        let tree = null;
+        if (this.parser) {
+            try {
+                tree = this.parser.parse(content);
+            } catch (e) {
+                logger.debug(`IndexerService: Failed to parse ${filePath}: ${e.message}`);
+            }
+        }
+
         const symbols = [];
         const chunks = [];
 
@@ -223,7 +244,9 @@ class IndexerService {
             }
         };
 
-        traverse(tree.rootNode);
+        if (tree && tree.rootNode) {
+            traverse(tree.rootNode);
+        }
 
         // Fallback: if tree-sitter didn't find anything (e.g. native parser not available in runner),
         // fall back to lightweight regex-based symbol extraction so tests and environments without

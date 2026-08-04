@@ -45,7 +45,9 @@ try {
         const mcpData = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
         mcpServers = Object.keys(mcpData.mcpServers || {}).join(', ') || 'None';
     }
-} catch (e) {}
+} catch (e) {
+    console.error(`Error loading mcp.json: ${e.message}`);
+}
 
 console.log(`
 ================================================================================

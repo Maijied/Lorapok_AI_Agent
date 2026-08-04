@@ -155,6 +155,18 @@ describe('IndexerService', () => {
         const arrows = indexer.searchSymbols('myArrow');
         expect(arrows.length).toBeGreaterThan(0);
         expect(arrows[0].name).toBe('myArrow');
+        
+        // Check that a chunk was generated and added to the database
+        expect(indexer.table.add).toHaveBeenCalled();
+        const addCalls = indexer.table.add.mock.calls;
+        const lastCallChunks = addCalls[addCalls.length - 1][0];
+        expect(lastCallChunks.length).toBeGreaterThan(0);
+        expect(lastCallChunks[0].symbol_type).toBe('file');
+        expect(lastCallChunks[0].content.includes('MyRegexClass')).toBe(true);
+
+        // Verify that the searchEmbeddings works and returns the mocked chunk (the mock always returns mock/path.js)
+        const results = await indexer.searchEmbeddings('regex');
+        expect(results.length).toBeGreaterThan(0);
     });
 
     it('should extract symbols for other languages using regex fallback', async () => {

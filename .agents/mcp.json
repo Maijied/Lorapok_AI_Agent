@@ -52,10 +52,9 @@
       "description": "Headless browser automation for testing, scraping docs, and visual inspection."
     },
     "sqlite": {
-      "command": "npx",
+      "command": "uvx",
       "args": [
-        "-y",
-        "@modelcontextprotocol/server-sqlite",
+        "mcp-server-sqlite",
         "--db-path",
         ".lorapok/lancedb/lorapok.db"
       ],

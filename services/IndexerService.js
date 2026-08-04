@@ -80,6 +80,8 @@ class IndexerService {
 
     /**
      * Start the incremental file watcher.
+     * Initializes the watcher to listen for file additions, changes, and deletions,
+     * triggering the indexer appropriately while ignoring configured paths.
      */
     startWatching() {
         if (this.watcher) return;
@@ -108,6 +110,7 @@ class IndexerService {
 
     /**
      * Stop watching.
+     * Closes the active file watcher and clears the reference.
      */
     stopWatching() {
         if (this.watcher) {
@@ -116,6 +119,12 @@ class IndexerService {
         }
     }
 
+    /**
+     * Queue a file for indexing. Uses a debounce mechanism to avoid rapid re-indexing.
+     * Only processes JS, JSX, TS, and TSX files.
+     * 
+     * @param {string} filePath - The absolute path of the file to queue for indexing.
+     */
     queueIndex(filePath) {
         // Only index JS/TS files for now
         if (!/\.(js|jsx|ts|tsx)$/.test(filePath)) return;
@@ -135,6 +144,12 @@ class IndexerService {
         this.debounceTimers.set(relPath, timer);
     }
 
+    /**
+     * Remove a file from both the symbol index and the semantic database.
+     * 
+     * @param {string} filePath - The absolute path of the file to remove.
+     * @returns {Promise<void>}
+     */
     async removeFile(filePath) {
         const relPath = path.relative(this.projectRoot, filePath);
         this.symbolIndex.delete(relPath);
@@ -152,6 +167,10 @@ class IndexerService {
 
     /**
      * Parse and chunk a file, extract symbols, and generate embeddings.
+     * Handles both Tree-sitter AST parsing and regex-based fallbacks.
+     * 
+     * @param {string} filePath - The absolute path of the file to index.
+     * @returns {Promise<void>}
      */
     async indexFile(filePath) {
         if (!this.pipeline || !this.db) await this.init();
@@ -382,7 +401,9 @@ class IndexerService {
     
     /**
      * Synchronously await full project indexing.
-     * Useful for initial bootstrapping.
+     * Useful for initial bootstrapping by recursively walking the project directory.
+     * 
+     * @returns {Promise<void>}
      */
     async indexProjectSync() {
         logger.info('Starting full project index...');

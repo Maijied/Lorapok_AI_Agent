@@ -16,8 +16,8 @@ try {
 }
 const logger = require('../lib/logger');
 
-// Regex for broadly supported code and text extensions
-const SUPPORTED_EXTENSIONS = /\.(js|jsx|ts|tsx|py|rb|go|rs|java|c|cpp|h|hpp|cs|swift|php|sh|md|json|yml|yaml|xml|html|css|scss|sql)$/i;
+// Blocklist for binary, media, and other non-text files that shouldn't be indexed
+const IGNORED_EXTENSIONS = /\.(jpg|jpeg|png|gif|bmp|tiff|ico|mp3|mp4|wav|avi|mkv|mov|webm|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|tar|gz|rar|7z|exe|dll|so|dylib|bin|iso|class|jar|o|obj|pyc)$/i;
 
 // Dynamically require transformers since it might be heavy and we want to lazy load
 let transformersModule = null;
@@ -129,8 +129,8 @@ class IndexerService {
      * @param {string} filePath - The absolute path of the file to queue for indexing.
      */
     queueIndex(filePath) {
-        // Index a wide variety of code and text files
-        if (!SUPPORTED_EXTENSIONS.test(filePath)) return;
+        // Index all text/code files, skipping binaries and media
+        if (IGNORED_EXTENSIONS.test(filePath)) return;
 
         const relPath = path.relative(this.projectRoot, filePath);
         if (this.debounceTimers.has(relPath)) {
@@ -312,8 +312,8 @@ class IndexerService {
                     });
                 }
                 
-                // Other languages (python, go, rust): def/func/fn name(
-                const otherFuncRe = /(?:def|func|fn)\s+([A-Za-z0-9_]+)\s*\(/g;
+                // Other languages (python, go, rust, ruby, vb): def/func/fn/sub name(
+                const otherFuncRe = /(?:def|func|fn|sub|function)\s+([A-Za-z0-9_]+)\s*\(/gi;
                 while ((m = otherFuncRe.exec(content)) !== null) {
                     const startRow = content.slice(0, m.index).split('\n').length;
                     symbols.push({
@@ -434,7 +434,7 @@ class IndexerService {
                 if (entry.isDirectory()) {
                     results = results.concat(walk(fullPath));
                 } else {
-                    if (SUPPORTED_EXTENSIONS.test(fullPath)) {
+                    if (!IGNORED_EXTENSIONS.test(fullPath)) {
                         results.push(fullPath);
                     }
                 }

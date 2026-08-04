@@ -327,6 +327,18 @@ class IndexerService {
                 // If regex fallback somehow fails, log but continue — we don't want tests to crash.
                 logger.debug(`IndexerService: regex fallback failed: ${err.message}`);
             }
+
+            if (chunks.length === 0 && content.length > 50) {
+                chunks.push({
+                    id: crypto.randomUUID(),
+                    file_path: relPath,
+                    symbol_name: 'file',
+                    symbol_type: 'file',
+                    content: content.slice(0, 8000),
+                    start_line: 1,
+                    end_line: content.split('\n').length
+                });
+            }
         }
 
         // Update symbol index

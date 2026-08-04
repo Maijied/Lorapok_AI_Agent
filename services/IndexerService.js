@@ -16,6 +16,9 @@ try {
 }
 const logger = require('../lib/logger');
 
+// Regex for broadly supported code and text extensions
+const SUPPORTED_EXTENSIONS = /\.(js|jsx|ts|tsx|py|rb|go|rs|java|c|cpp|h|hpp|cs|swift|php|sh|md|json|yml|yaml|xml|html|css|scss|sql)$/i;
+
 // Dynamically require transformers since it might be heavy and we want to lazy load
 let transformersModule = null;
 
@@ -126,8 +129,8 @@ class IndexerService {
      * @param {string} filePath - The absolute path of the file to queue for indexing.
      */
     queueIndex(filePath) {
-        // Only index JS/TS files for now
-        if (!/\.(js|jsx|ts|tsx)$/.test(filePath)) return;
+        // Index a wide variety of code and text files
+        if (!SUPPORTED_EXTENSIONS.test(filePath)) return;
 
         const relPath = path.relative(this.projectRoot, filePath);
         if (this.debounceTimers.has(relPath)) {
@@ -189,7 +192,7 @@ class IndexerService {
         }
 
         let tree = null;
-        if (this.parser) {
+        if (this.parser && /\.(js|jsx|ts|tsx)$/i.test(filePath)) {
             try {
                 tree = this.parser.parse(content);
             } catch (e) {
@@ -308,6 +311,18 @@ class IndexerService {
                         endRow: startRow
                     });
                 }
+                
+                // Other languages (python, go, rust): def/func/fn name(
+                const otherFuncRe = /(?:def|func|fn)\s+([A-Za-z0-9_]+)\s*\(/g;
+                while ((m = otherFuncRe.exec(content)) !== null) {
+                    const startRow = content.slice(0, m.index).split('\n').length;
+                    symbols.push({
+                        name: m[1],
+                        type: 'function',
+                        startRow,
+                        endRow: startRow
+                    });
+                }
             } catch (err) {
                 // If regex fallback somehow fails, log but continue — we don't want tests to crash.
                 logger.debug(`IndexerService: regex fallback failed: ${err.message}`);
@@ -408,16 +423,18 @@ class IndexerService {
     async indexProjectSync() {
         logger.info('Starting full project index...');
         const walk = (dir) => {
-            const results = [];
-            const list = fs.readdirSync(dir);
-            for (const file of list) {
-                const fullPath = path.join(dir, file);
-                if (fullPath.includes('node_modules') || fullPath.includes('.git') || fullPath.includes('.lorapok')) continue;
-                const stat = fs.statSync(fullPath);
-                if (stat && stat.isDirectory()) {
-                    results.push(...walk(fullPath));
+            let results = [];
+            const list = fs.readdirSync(dir, { withFileTypes: true });
+            for (const entry of list) {
+                const fullPath = path.join(dir, entry.name);
+                // exclude hidden files/dirs (like .git, .env) and node_modules
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build' || entry.name === 'coverage') {
+                    continue;
+                }
+                if (entry.isDirectory()) {
+                    results = results.concat(walk(fullPath));
                 } else {
-                    if (/\.(js|jsx|ts|tsx)$/.test(fullPath)) {
+                    if (SUPPORTED_EXTENSIONS.test(fullPath)) {
                         results.push(fullPath);
                     }
                 }

@@ -60,6 +60,13 @@
         ".lorapok/lancedb/lorapok.db"
       ],
       "description": "Directly inspect and query local .sqlite databases."
+    },
+    "browsermcp": {
+      "command": "npx",
+      "args": [
+        "@browsermcp/mcp@latest"
+      ],
+      "description": "Browser MCP for checking web content like GitHub Actions."
     }
   }
 }

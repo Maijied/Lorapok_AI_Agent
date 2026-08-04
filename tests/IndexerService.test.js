@@ -109,4 +109,111 @@ describe('IndexerService', () => {
         expect(results.length).toBe(1);
         expect(results[0].file_path).toBe('mock/path.js');
     });
+
+    it('should ignore files with extensions in IGNORED_EXTENSIONS block-list', () => {
+        jest.spyOn(indexer, 'indexFile').mockResolvedValue();
+        jest.useFakeTimers();
+
+        indexer.queueIndex('/mock/project/image.png');
+        indexer.queueIndex('/mock/project/app.exe');
+        indexer.queueIndex('/mock/project/archive.tar.gz');
+        indexer.queueIndex('/mock/project/src/main.py');
+        indexer.queueIndex('/mock/project/src/app.js');
+        
+        jest.runAllTimers();
+        
+        expect(indexer.indexFile).toHaveBeenCalledTimes(2);
+        expect(indexer.indexFile).toHaveBeenCalledWith('/mock/project/src/main.py');
+        expect(indexer.indexFile).toHaveBeenCalledWith('/mock/project/src/app.js');
+
+        jest.useRealTimers();
+    });
+
+    it('should extract symbols using regex fallback for JS when tree-sitter is unavailable', async () => {
+        await indexer.init();
+        indexer.parser = null; // Disable parser to force regex fallback
+        
+        const mockCode = `
+        class MyRegexClass {
+            hello() {}
+        }
+        function regexTestFunc() {}
+        const myArrow = () => { }
+        `;
+        jest.spyOn(fs, 'readFileSync').mockReturnValue(mockCode);
+
+        await indexer.indexFile('/mock/project/src/regex_test.js');
+
+        const symbols = indexer.searchSymbols('regexTestFunc');
+        expect(symbols.length).toBeGreaterThan(0);
+        expect(symbols[0].name).toBe('regexTestFunc');
+
+        const classes = indexer.searchSymbols('MyRegexClass');
+        expect(classes.length).toBeGreaterThan(0);
+        expect(classes[0].name).toBe('MyRegexClass');
+
+        const arrows = indexer.searchSymbols('myArrow');
+        expect(arrows.length).toBeGreaterThan(0);
+        expect(arrows[0].name).toBe('myArrow');
+    });
+
+    it('should extract symbols for other languages using regex fallback', async () => {
+        await indexer.init();
+        
+        const mockCode = `
+        def python_func(args):
+            pass
+        fn rust_func():
+            pass
+        func go_func() {
+        }
+        sub basic_sub()
+        `;
+        jest.spyOn(fs, 'readFileSync').mockReturnValue(mockCode);
+
+        // A file extension not matched by the JS parser filter
+        await indexer.indexFile('/mock/project/src/main.rs');
+
+        expect(indexer.searchSymbols('python_func').length).toBeGreaterThan(0);
+        expect(indexer.searchSymbols('rust_func').length).toBeGreaterThan(0);
+        expect(indexer.searchSymbols('go_func').length).toBeGreaterThan(0);
+        expect(indexer.searchSymbols('basic_sub').length).toBeGreaterThan(0);
+    });
+
+    it('should remove a file from index and db', async () => {
+        await indexer.init();
+        const escapedPath = 'src/test.js';
+        indexer.symbolIndex.set(escapedPath, [{ name: 'testFunc' }]);
+        
+        await indexer.removeFile('/mock/project/' + escapedPath);
+        
+        expect(indexer.symbolIndex.has(escapedPath)).toBe(false);
+        expect(indexer.table.delete).toHaveBeenCalledWith("file_path = 'src/test.js'");
+    });
+
+    it('should synchronously index project directory while respecting block-list', async () => {
+        await indexer.init();
+        
+        const path = require('path');
+        jest.spyOn(fs, 'readdirSync').mockImplementation((dir) => {
+            if (dir === '/mock/project') {
+                return [
+                    { name: 'app.js', isDirectory: () => false },
+                    { name: 'main.py', isDirectory: () => false },
+                    { name: 'image.jpg', isDirectory: () => false },
+                    { name: 'node_modules', isDirectory: () => true },
+                    { name: '.git', isDirectory: () => true }
+                ];
+            }
+            return [];
+        });
+
+        jest.spyOn(indexer, 'indexFile').mockResolvedValue();
+
+        await indexer.indexProjectSync();
+
+        expect(indexer.indexFile).toHaveBeenCalledTimes(2);
+        expect(indexer.indexFile).toHaveBeenCalledWith(path.join('/mock/project', 'app.js'));
+        expect(indexer.indexFile).toHaveBeenCalledWith(path.join('/mock/project', 'main.py'));
+    });
 });
